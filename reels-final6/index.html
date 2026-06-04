@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Norys Reels</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #04040A;
+      --surface: #08080F;
+      --card: #0D0D18;
+      --card2: #111120;
+      --border: rgba(120,80,255,.12);
+      --border2: rgba(120,80,255,.25);
+      --purple: #7B50FF;
+      --purple2: #A080FF;
+      --purple-glow: rgba(123,80,255,.35);
+      --purple-dim: rgba(123,80,255,.08);
+      --text: #EEECff;
+      --text2: #7B78A8;
+      --text3: #3A3858;
+      --success: #22D97A;
+      --error: #FF4466;
+      --warn: #FFB84D;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND EFFECTS ─────────────────────────────── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: orb-float 8s ease-in-out infinite;
+    }
+    .bg-orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(123,80,255,.15) 0%, transparent 70%);
+      top: -150px; left: -100px;
+      animation-delay: 0s;
+    }
+    .bg-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(160,128,255,.1) 0%, transparent 70%);
+      bottom: -100px; right: -80px;
+      animation-delay: -4s;
+    }
+    @keyframes orb-float {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(20px,-30px) scale(1.05); }
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(123,80,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(123,80,255,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    .header {
+      margin-bottom: 52px;
+      animation: fade-up .6s ease both;
+    }
+    @keyframes fade-up {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .logo-wrap {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 14px;
+    }
+    .logo-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #7B50FF, #A080FF);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 24px var(--purple-glow);
+      animation: pulse-icon 3s ease-in-out infinite;
+    }
+    @keyframes pulse-icon {
+      0%,100% { box-shadow: 0 0 24px var(--purple-glow); }
+      50% { box-shadow: 0 0 40px rgba(123,80,255,.6); }
+    }
+    .logo-name {
+      font-size: 28px; font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .logo-name span { color: var(--purple2); }
+    .logo-badge {
+      font-size: 10px; font-weight: 600;
+      background: var(--purple-dim);
+      border: 1px solid var(--border2);
+      color: var(--purple2);
+      border-radius: 999px;
+      padding: 3px 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .header-desc {
+      font-size: 14px; color: var(--text2);
+      line-height: 1.7; max-width: 520px;
+    }
+
+    /* ── STATUS BAR ─────────────────────────────────────── */
+    .status-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 24px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      animation: fade-up .6s .1s ease both;
+    }
+    .s-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text3); flex-shrink: 0;
+      transition: background .3s;
+    }
+    .s-dot.ok  { background: var(--success); animation: blink 2s ease infinite; }
+    .s-dot.err { background: var(--error); }
+    .s-dot.spin { background: var(--purple2); animation: blink .5s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* ── INSTALL GUIDE ──────────────────────────────────── */
+    .install-guide {
+      display: none;
+      background: rgba(255,68,102,.05);
+      border: 1px solid rgba(255,68,102,.2);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      animation: fade-up .3s ease both;
+    }
+    .install-guide.show { display: block; }
+    .install-title { font-size: 14px; font-weight: 700; color: var(--error); margin-bottom: 12px; }
+    .install-step { font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+    .install-cmd {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--purple2);
+      margin: 5px 0 10px;
+    }
+
+    /* ── CARDS ──────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 16px;
+      transition: border-color .2s;
+      animation: fade-up .6s ease both;
+    }
+    .card:hover { border-color: var(--border2); }
+    .card:nth-child(2) { animation-delay: .1s; }
+    .card:nth-child(3) { animation-delay: .15s; }
+    .card:nth-child(4) { animation-delay: .2s; }
+
+    .card-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--purple2); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .card-label::before {
+      content: '';
+      width: 16px; height: 2px;
+      background: var(--purple); border-radius: 999px;
+    }
+
+    /* ── DROP ZONE ──────────────────────────────────────── */
+    .dropzone {
+      border: 2px dashed var(--border2);
+      border-radius: 14px;
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .dropzone::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, var(--purple-dim) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .dropzone:hover::before, .dropzone.drag::before { opacity: 1; }
+    .dropzone:hover, .dropzone.drag {
+      border-color: var(--purple);
+      box-shadow: 0 0 32px rgba(123,80,255,.15);
+    }
+    .dropzone.drag { transform: scale(1.01); }
+    .dz-icon {
+      font-size: 40px; margin-bottom: 14px; display: block;
+      filter: drop-shadow(0 0 16px rgba(123,80,255,.5));
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    .dz-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .dz-sub { font-size: 13px; color: var(--text2); }
+    #file-input { display: none; }
+
+    /* FILE LIST */
+    .file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px;
+      animation: slide-in .2s ease both;
+    }
+    @keyframes slide-in {
+      from { opacity:0; transform:translateX(-8px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .file-ext {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--purple-dim); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--purple2);
+      flex-shrink: 0; font-family: 'JetBrains Mono', monospace;
+    }
+    .file-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-size { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+    .file-del { font-size: 14px; color: var(--text3); cursor: pointer; transition: color .15s; flex-shrink: 0; }
+    .file-del:hover { color: var(--error); }
+
+    /* ── CONTROLS ───────────────────────────────────────── */
+    .controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .ctrl-label { font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 10px; display: block; }
+    .variant-num {
+      font-size: 42px; font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #fff 0%, var(--purple2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1; margin-bottom: 12px;
+    }
+    .slider {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      border-radius: 999px;
+      background: var(--border2);
+      outline: none; cursor: pointer;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+      cursor: pointer; border: 3px solid var(--bg);
+      box-shadow: 0 0 12px var(--purple-glow);
+      transition: box-shadow .15s;
+    }
+    .slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 20px rgba(123,80,255,.6);
+    }
+
+    .input-field {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .input-field:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,80,255,.1); }
+
+    /* ── TEMPLATES ──────────────────────────────────────── */
+    .templates-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
+    .t-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 12px;
+      cursor: pointer;
+      transition: all .15s;
+      user-select: none;
+    }
+    .t-chip:hover { border-color: var(--border2); }
+    .t-chip.on {
+      border-color: rgba(123,80,255,.45);
+      background: var(--purple-dim);
+      box-shadow: 0 0 12px rgba(123,80,255,.1);
+    }
+    .t-chip .ticon { font-size: 16px; flex-shrink: 0; }
+    .t-chip .tname { font-size: 11px; font-weight: 600; line-height: 1.3; }
+    .t-count { font-size: 11px; color: var(--purple2); font-family: 'JetBrains Mono', monospace; }
+
+    .chip-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .chip-btn {
+      font-size: 11px; padding: 5px 13px;
+      border-radius: 7px; cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600; transition: all .15s;
+    }
+    .chip-btn-on { background: var(--purple-dim); border: 1px solid var(--border2); color: var(--purple2); }
+    .chip-btn-on:hover { background: rgba(123,80,255,.15); }
+    .chip-btn-off { background: var(--card2); border: 1px solid var(--border); color: var(--text2); }
+    .chip-btn-off:hover { border-color: var(--border2); }
+
+    /* ── GENERATE BUTTON ────────────────────────────────── */
+    .gen-btn {
+      width: 100%; padding: 20px;
+      background: linear-gradient(135deg, #6030EE, #9060FF);
+      color: #fff; border: none;
+      border-radius: 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px; font-weight: 800;
+      cursor: pointer; letter-spacing: -.2px;
+      transition: all .25s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      position: relative; overflow: hidden;
+      margin-top: 16px;
+      animation: fade-up .6s .3s ease both;
+    }
+    .gen-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+      opacity: 0; transition: opacity .2s;
+    }
+    .gen-btn:hover::before { opacity: 1; }
+    .gen-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(123,80,255,.5);
+    }
+    .gen-btn:disabled {
+      background: var(--card2);
+      color: var(--text3);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .gen-btn:disabled::before { display: none; }
+
+    /* ── PROGRESS ───────────────────────────────────────── */
+    .progress-card {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      margin-top: 16px;
+      animation: fade-up .3s ease both;
+    }
+    .progress-card.show { display: block; }
+    .progress-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .progress-title { font-size: 15px; font-weight: 700; }
+    .progress-pct {
+      font-size: 22px; font-weight: 800;
+      color: var(--purple2);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .progress-track {
+      height: 6px; background: var(--card2);
+      border-radius: 999px; overflow: hidden; margin-bottom: 18px;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--purple2));
+      border-radius: 999px;
+      width: 0%; transition: width .4s ease;
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute; right: -1px; top: 50%;
+      transform: translateY(-50%);
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 8px var(--purple-glow);
+    }
+    .log-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      max-height: 200px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text2);
+      line-height: 1.8;
+    }
+    .log-ok   { color: var(--success); }
+    .log-err  { color: var(--error); }
+    .log-info { color: var(--purple2); }
+
+    /* ── DONE BANNER ────────────────────────────────────── */
+    .done-banner {
+      display: none;
+      background: rgba(34,217,122,.05);
+      border: 1px solid rgba(34,217,122,.2);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      margin-top: 16px;
+      animation: pop-in .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .done-banner.show { display: block; }
+    @keyframes pop-in {
+      from { opacity:0; transform:scale(.92); }
+      to   { opacity:1; transform:scale(1); }
+    }
+    .done-icon { font-size: 40px; display: block; margin-bottom: 12px; }
+    .done-title { font-size: 22px; font-weight: 800; color: var(--success); margin-bottom: 6px; }
+    .done-sub { font-size: 13px; color: var(--text2); }
+
+    /* Scrollbar */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <div class="app">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo-wrap">
+        <div class="logo-icon">🎬</div>
+        <div class="logo-name">Norys <span>Reels</span></div>
+        <div class="logo-badge">v2.0</div>
+      </div>
+      <p class="header-desc">Génère jusqu'à 500 variantes uniques. Hash binaire unique, métadonnées iPhone US, filtres visuels distincts. Invisible pour l'algo Instagram.</p>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-bar">
+      <div class="s-dot spin" id="s-dot"></div>
+      <span id="s-text" style="color:var(--text2);">Vérification de FFmpeg…</span>
+    </div>
+
+    <!-- INSTALL GUIDE -->
+    <div class="install-guide" id="install-guide">
+      <div class="install-title">⚠️ FFmpeg requis — voici comment l'installer</div>
+      <div class="install-step"><strong>Windows :</strong></div>
+      <div class="install-cmd">1. Télécharge : ffmpeg.org/download.html → Windows builds (gyan.dev)</div>
+      <div class="install-cmd">2. Extraire dans C:\ffmpeg</div>
+      <div class="install-cmd">3. Variables d'environnement → PATH → Nouveau → C:\ffmpeg\bin</div>
+      <div class="install-step" style="margin-top:8px;"><strong>Mac :</strong></div>
+      <div class="install-cmd">brew install ffmpeg</div>
+      <div class="install-step" style="margin-top:8px;color:var(--warn);">Puis ferme et réouvre l'app.</div>
+    </div>
+
+    <!-- CONVERTISSEUR MOV → MP4 -->
+    <div class="card" id="converter-card">
+      <div class="card-label">Convertisseur MOV → MP4</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+        Si tes vidéos ne s'ouvrent pas après génération, convertis-les d'abord en MP4 ici.
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="file" id="conv-input" accept="video/*,.mov,.MOV" style="display:none;" onchange="convertFile(this.files[0])"/>
+        <button onclick="document.getElementById('conv-input').click()" style="display:flex;align-items:center;gap:8px;padding:11px 20px;background:var(--purple-dim);border:1px solid var(--border2);border-radius:10px;color:var(--purple2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;transition:all .15s;" onmouseenter="this.style.background='rgba(123,80,255,.15)'" onmouseleave="this.style.background='var(--purple-dim)'">
+          <span>📁</span> Sélectionner une vidéo MOV
+        </button>
+        <div id="conv-status" style="font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;"></div>
+      </div>
+      <div id="conv-result" style="display:none;margin-top:12px;background:rgba(34,217,122,.06);border:1px solid rgba(34,217,122,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--success);"></div>
+    </div>
+
+    <!-- DROP ZONE -->
+    <div class="card">
+      <div class="card-label">Vidéos source</div>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+        <span class="dz-icon">🎞️</span>
+        <div class="dz-title">Glisse tes vidéos ici</div>
+        <div class="dz-sub">MP4, MOV, AVI · ou clique pour sélectionner</div>
+      </div>
+      <input type="file" id="file-input" accept="video/*" multiple/>
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="card">
+      <div class="card-label">Nombre de variantes</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+        <!-- Affichage + input direct -->
+        <input type="number" id="var-num-input" value="10" min="1" max="9999"
+          style="width:90px;background:var(--card2);border:1px solid var(--border2);border-radius:10px;color:var(--purple2);font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;padding:8px 12px;outline:none;text-align:center;-moz-appearance:textfield;"
+          oninput="syncSlider(this.value)"/>
+        <div style="flex:1;">
+          <input type="range" class="slider" id="var-slider" min="1" max="500" value="10"
+            oninput="syncInput(this.value)"/>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
+            <span>1</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500+</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);">📁 Les variantes seront créées dans un dossier <span style="color:var(--purple2);font-family:'JetBrains Mono',monospace;">Norys Reels Output</span> sur ton Bureau.</div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="card">
+      <div class="card-label" style="justify-content:space-between;display:flex;align-items:center;">
+        <span>Filtres</span>
+        <span class="t-count" id="t-count">12 / 12 actifs</span>
+      </div>
+      <div class="templates-wrap" id="t-grid"></div>
+      <div class="chip-actions">
+        <button class="chip-btn chip-btn-on" onclick="setAll(true)">Tout activer</button>
+        <button class="chip-btn chip-btn-off" onclick="setAll(false)">Tout désactiver</button>
+        <button class="chip-btn" id="combo-btn" onclick="toggleCombine()" style="background:var(--purple-dim);border:1px solid var(--border2);color:var(--purple2);">⚡ Combiner les filtres</button>
+      </div>
+      <div id="combo-info" style="display:none;margin-top:10px;font-size:12px;color:var(--text2);background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;line-height:1.7;">
+        <span style="color:var(--purple2);font-weight:600;">Mode combinaison actif</span> — chaque variante applique 2 filtres aléatoires en même temps.<br/>
+        Ex: Noir & Blanc + Grain, Zoom + Vignette, Flip + Sombre…
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <button class="gen-btn" id="gen-btn" onclick="generate()" disabled>
+      <span>⚡</span> <span id="gen-label">Générer les variantes</span>
+    </button>
+
+    <!-- PROGRESS -->
+    <div class="progress-card" id="progress-card">
+      <div class="progress-head">
+        <div class="progress-title" id="p-title">Génération en cours…</div>
+        <div class="progress-pct" id="p-pct">0%</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="p-fill"></div>
+      </div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+
+    <!-- DONE -->
+    <div class="done-banner" id="done-banner">
+      <span class="done-icon">🎉</span>
+      <div class="done-title" id="done-title">Variantes générées !</div>
+      <div class="done-sub" id="done-sub">Tes fichiers sont prêts dans output/</div>
+    </div>
+
+  </div>
+
+<script>
+// ── TEMPLATES ─────────────────────────────────────────────
+const TEMPLATES = [
+  { id:'clean',    icon:'✨', name:'Original clean',  filter:'' },
+  { id:'bw',       icon:'⬛', name:'Noir & Blanc',     filter:'hue=s=0' },
+  { id:'contrast', icon:'🔆', name:'Contraste +',     filter:'eq=contrast=1.08:brightness=0.02:saturation=1.05' },
+  { id:'warm',     icon:'🌅', name:'Tons chauds',     filter:'eq=saturation=1.15:contrast=1.05,hue=h=8' },
+  { id:'cool',     icon:'❄️', name:'Tons froids',     filter:'eq=saturation=0.85:contrast=1.03,hue=h=-12' },
+  { id:'vignette', icon:'🔲', name:'Vignette',        filter:'vignette=PI/4' },
+  { id:'sharpen',  icon:'🔍', name:'Sharpen',         filter:'unsharp=5:5:0.8:5:5:0.0' },
+  { id:'grain',    icon:'🎞️', name:'Film grain',      filter:'noise=alls=5:allf=t' },
+  { id:'zoom',     icon:'🔭', name:'Micro zoom',      filter:'scale=iw*1.02:ih*1.02,crop=iw/1.02:ih/1.02' },
+  { id:'flip',     icon:'🪞', name:'Mirror flip',     filter:'hflip' },
+  { id:'dark',     icon:'🌑', name:'Plus sombre',     filter:'eq=brightness=-0.04:contrast=1.03' },
+  { id:'saturate', icon:'🎨', name:'Saturation +',    filter:'eq=saturation=1.15' },
+  { id:'reverse',  icon:'⏪', name:'Vidéo inversée',  filter:'', special:'reverse' },
+  { id:'thermal',  icon:'🌡️', name:'Thermique',       filter:'hue=s=0,eq=contrast=1.3:brightness=-0.1' },
+  { id:'glitch',   icon:'⚡', name:'Glitch léger',    filter:'noise=alls=6:allf=t,eq=contrast=1.05' },
+  { id:'oldfilm',  icon:'📽️', name:'Vieux film',      filter:'hue=s=0.4,eq=contrast=1.1:brightness=-0.05,noise=alls=6:allf=t,vignette=PI/3' },
+  { id:'punch',    icon:'💥', name:'Punch color',     filter:'eq=contrast=1.15:saturation=1.3:brightness=0.03' },
+  { id:'fade',     icon:'🌫️', name:'Fade out',        filter:'fade=t=out:st=3:d=2' },
+];
+
+// Templates avec cuts aléatoires — gérés côté serveur
+const SPECIAL_TEMPLATES = [
+  { id:'randcut',  icon:'✂️', name:'Random cuts',     special:'randcut' },
+];
+
+const active = new Set(TEMPLATES.map(t=>t.id));
+let files = [];
+let combineMode = false;
+
+// ── INIT ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderTemplates();
+  setupDrop();
+  checkFFmpeg();
+});
+
+// ── COMBINE MODE ──────────────────────────────────────────
+function toggleCombine(){
+  combineMode = !combineMode;
+  const btn = document.getElementById('combo-btn');
+  const info = document.getElementById('combo-info');
+  if(combineMode){
+    btn.style.background = 'var(--purple)';
+    btn.style.color = '#fff';
+    btn.textContent = '⚡ Combinaisons : ON';
+    info.style.display = 'block';
+  } else {
+    btn.style.background = 'var(--purple-dim)';
+    btn.style.color = 'var(--purple2)';
+    btn.textContent = '⚡ Combiner les filtres';
+    info.style.display = 'none';
+  }
+}
+
+// ── FFMPEG ────────────────────────────────────────────────
+async function checkFFmpeg(){
+  try {
+    const r = await fetch('/check-ffmpeg');
+    const d = await r.json();
+    const dot = document.getElementById('s-dot');
+    const txt = document.getElementById('s-text');
+    if(d.ok){
+      dot.className = 's-dot ok';
+      txt.style.color = 'var(--success)';
+      txt.textContent = '✓ FFmpeg ' + d.version + ' — prêt à générer';
+      document.getElementById('gen-btn').disabled = false;
+    } else throw 0;
+  } catch {
+    document.getElementById('s-dot').className = 's-dot err';
+    document.getElementById('s-text').style.color = 'var(--error)';
+    document.getElementById('s-text').textContent = '✗ FFmpeg non détecté';
+    document.getElementById('install-guide').classList.add('show');
+  }
+}
+
+// ── TEMPLATES ─────────────────────────────────────────────
+function renderTemplates(){
+  const all = [...TEMPLATES, ...SPECIAL_TEMPLATES];
+  document.getElementById('t-grid').innerHTML = all.map(t=>`
+    <div class="t-chip on" id="chip-${t.id}" onclick="toggleChip('${t.id}')">
+      <span class="ticon">${t.icon}</span>
+      <span class="tname">${t.name}</span>
+    </div>`).join('');
+  updateCount();
+}
+
+function toggleChip(id){
+  active.has(id) ? active.delete(id) : active.add(id);
+  document.getElementById('chip-'+id).classList.toggle('on', active.has(id));
+  updateCount();
+}
+
+function setAll(on){
+  const all = [...TEMPLATES, ...SPECIAL_TEMPLATES];
+  all.forEach(t=>{
+    on ? active.add(t.id) : active.delete(t.id);
+    document.getElementById('chip-'+t.id).classList.toggle('on', on);
+  });
+  updateCount();
+}
+
+function updateCount(){
+  const total = TEMPLATES.length + SPECIAL_TEMPLATES.length;
+  document.getElementById('t-count').textContent = `${active.size} / ${total} actifs`;
+}
+
+// ── DROP & FILES ───────────────────────────────────────────
+function setupDrop(){
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    addFiles([...e.dataTransfer.files].filter(f=>f.type.startsWith('video/')));
+  });
+  document.getElementById('file-input').addEventListener('change', e=>addFiles([...e.target.files]));
+}
+
+function addFiles(newFiles){
+  newFiles.forEach(f=>{ if(!files.find(x=>x.name===f.name)) files.push(f); });
+  renderFiles();
+}
+
+function rmFile(name){ files=files.filter(f=>f.name!==name); renderFiles(); }
+
+function renderFiles(){
+  const list = document.getElementById('file-list');
+  list.innerHTML = files.map(f=>`
+    <div class="file-item">
+      <div class="file-ext">MP4</div>
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${(f.size/1024/1024).toFixed(1)}MB</span>
+      <span class="file-del" onclick="rmFile('${f.name}')">✕</span>
+    </div>`).join('');
+}
+
+// ── SYNC SLIDER/INPUT ─────────────────────────────────────
+function syncSlider(val){
+  const n = parseInt(val) || 1;
+  document.getElementById('var-slider').value = Math.min(n, 500);
+}
+function syncInput(val){
+  document.getElementById('var-num-input').value = val;
+}
+
+// ── GENERATE ──────────────────────────────────────────────
+async function generate(){
+  if(!files.length){ alert('Ajoute au moins une vidéo.'); return; }
+  if(!active.size){ alert('Active au moins un filtre.'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  const pc  = document.getElementById('progress-card');
+  const db  = document.getElementById('done-banner');
+  btn.disabled = true;
+  document.getElementById('gen-label').textContent = 'Génération en cours…';
+  pc.classList.add('show');
+  db.classList.remove('show');
+  document.getElementById('log-box').innerHTML = '';
+
+  const numVar   = parseInt(document.getElementById('var-num-input').value) || 10;
+  const outDir   = 'desktop'; // Sera mis sur le Bureau automatiquement
+  const filters  = [...TEMPLATES, ...SPECIAL_TEMPLATES].filter(t=>active.has(t.id));
+
+  log('info', `▶ Démarrage · ${files.length} vidéo(s) · ${numVar} variantes`);
+
+  const fd = new FormData();
+  files.forEach(f=>fd.append('videos', f));
+  fd.append('numVariants', numVar);
+  fd.append('outputDir', outDir);
+  fd.append('filters', JSON.stringify(filters));
+  fd.append('combineMode', combineMode ? '1' : '0');
+
+  try {
+    const res = await fetch('/generate', { method:'POST', body:fd });
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let total=0, done=0;
+
+    while(true){
+      const {value, done:end} = await reader.read();
+      if(end) break;
+      dec.decode(value).split('\n').filter(Boolean).forEach(line=>{
+        try {
+          const ev = JSON.parse(line);
+          if(ev.type==='start'){ total=ev.total; log('info',`${total} fichier(s) à générer`); }
+          else if(ev.type==='progress'){
+            done++;
+            const pct = Math.round(done/total*100);
+            document.getElementById('p-fill').style.width = pct+'%';
+            document.getElementById('p-pct').textContent = pct+'%';
+            log('ok', `✓ ${ev.file}`);
+          }
+          else if(ev.type==='error') log('err', `✗ ${ev.file}`);
+          else if(ev.type==='done'){
+            document.getElementById('p-fill').style.width = '100%';
+            document.getElementById('p-pct').textContent = '100%';
+            document.getElementById('p-title').textContent = 'Terminé ✓';
+            document.getElementById('done-title').textContent = `${ev.success} variante(s) générée(s) !`;
+            document.getElementById('done-sub').textContent = `📁 Dossier "Norys Reels Output" créé sur ton Bureau`;
+            db.classList.add('show');
+            btn.disabled = false;
+            document.getElementById('gen-label').textContent = '⚡ Générer les variantes';
+          }
+        } catch(e){}
+      });
+    }
+  } catch(e){
+    log('err', 'Erreur serveur : ' + e.message);
+    btn.disabled = false;
+    document.getElementById('gen-label').textContent = '⚡ Générer les variantes';
+  }
+}
+
+function log(type, msg){
+  const box = document.getElementById('log-box');
+  const cls = type==='ok'?'log-ok':type==='err'?'log-err':'log-info';
+  const t = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  box.innerHTML += `<div class="${cls}">[${t}] ${msg}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── CONVERTISSEUR ─────────────────────────────────────────
+async function convertFile(file){
+  if(!file) return;
+  const status = document.getElementById('conv-status');
+  const result = document.getElementById('conv-result');
+  result.style.display = 'none';
+  status.textContent = '⏳ Conversion en cours…';
+
+  const fd = new FormData();
+  fd.append('video', file);
+
+  try {
+    const res = await fetch('/convert', { method:'POST', body:fd });
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    while(true){
+      const {value, done} = await reader.read();
+      if(done) break;
+      dec.decode(value).split('\n').filter(Boolean).forEach(line => {
+        try {
+          const ev = JSON.parse(line);
+          if(ev.type === 'start') status.textContent = `⏳ Conversion de ${ev.file}…`;
+          else if(ev.type === 'done'){
+            status.textContent = '✓ Terminé';
+            result.style.display = 'block';
+            result.innerHTML = `✅ Fichier converti : <strong>${ev.file}</strong> (${ev.size}MB)<br/>📁 Sauvegardé dans : Norys Reels Output sur ton Bureau`;
+          }
+          else if(ev.type === 'error'){
+            status.textContent = '❌ Erreur : ' + ev.msg;
+          }
+        } catch(e){}
+      });
+    }
+  } catch(e){
+    status.textContent = '❌ Erreur : ' + e.message;
+  }
+}
+
+</script>
+</body>
+</html>
