@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const SIZE = 512; // haute résolution, downscale fait par l'OS pour les petites tailles
+const SIZE = 1024; // 1024 minimum pour la génération .icns macOS par electron-builder
 const OUT_DIR = path.join(__dirname, '..', 'assets');
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
