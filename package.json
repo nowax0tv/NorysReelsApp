@@ -1,0 +1,83 @@
+{
+  "name": "norys-reels",
+  "productName": "Norys Reels",
+  "version": "2.0.0",
+  "description": "Duplicateur vidéo Instagram — Electron + FFmpeg",
+  "main": "main.js",
+  "private": true,
+  "author": "Norys",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node build/generate-icon.js",
+    "dist": "electron-builder --win nsis portable",
+    "dist:nsis": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable",
+    "dist:mac": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.norys.reels",
+    "productName": "Norys Reels",
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "core.js",
+      "index.html",
+      "fonts/**/*",
+      "assets/**/*",
+      "vendor/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist_electron",
+      "buildResources": "build"
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Norys Reels"
+    },
+    "portable": {
+      "artifactName": "NorysReels-Portable.exe"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "category": "public.app-category.video",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "NorysReels-Mac.dmg"
+    }
+  }
+}
