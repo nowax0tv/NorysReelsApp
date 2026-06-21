@@ -2052,7 +2052,7 @@
           <div class="toggle-row" style="margin-bottom:10px;">
             <div>
               <div class="card-label" style="margin-bottom:2px;" data-i18n="namingModeLabel">Numérotation de sortie</div>
-              <div style="font-size:11px;color:var(--text3);" id="naming-preview">→ variant_001.mp4, variant_002.mp4, …</div>
+              <div style="font-size:11px;color:var(--text3);" id="naming-preview">→ nomvideo_v001_all2f.mp4, nomvideo_v002_all2f.mp4, …</div>
             </div>
           </div>
           <div class="bg-row">
@@ -2071,17 +2071,20 @@
           <button class="btn-xs" id="open-folder-btn" onclick="openOutputFolder()" style="flex-shrink:0;padding:0 18px;"><span data-icon="folderOpen"></span> <span data-i18n="openFolderBtn">Ouvrir dossier</span></button>
         </div>
 
-        <div class="progress-wrap" id="progress-card">
-          <div class="card">
-            <div class="prog-head">
-              <div class="prog-lbl" id="prog-lbl" data-i18n="generatingInProgress">Génération en cours…</div>
-              <div class="prog-pct" id="progress-pct">0%</div>
-            </div>
-            <div class="prog-bar-wrap"><div class="prog-bar" id="progress-bar"></div></div>
-            <div class="log-box" id="log-box"></div>
-            <div class="done-box" id="done-banner">
-              <div class="done-title" id="done-title">✅ Génération terminée !</div>
-              <div class="done-sub" id="done-sub"></div>
+        <div class="modal-overlay" id="progress-card">
+          <div class="modal-inner" style="width:min(92vw,480px);">
+            <div class="card" style="margin-bottom:0;">
+              <div class="modal-close" id="progress-close-btn" onclick="closeProgressModal()" style="display:none;">✕</div>
+              <div class="prog-head">
+                <div class="prog-lbl" id="prog-lbl" data-i18n="generatingInProgress">Génération en cours…</div>
+                <div class="prog-pct" id="progress-pct">0%</div>
+              </div>
+              <div class="prog-bar-wrap"><div class="prog-bar" id="progress-bar"></div></div>
+              <div class="log-box" id="log-box"></div>
+              <div class="done-box" id="done-banner">
+                <div class="done-title" id="done-title">✅ Génération terminée !</div>
+                <div class="done-sub" id="done-sub"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -3405,8 +3408,8 @@ function setNamingMode(mode){
   const preview = document.getElementById('naming-preview');
   if(preview){
     preview.textContent = namingMode === 'random'
-      ? '→ a1f9c3d2.mp4, 7e2b8a41.mp4, …'
-      : '→ variant_001.mp4, variant_002.mp4, …';
+      ? '→ nomvideo_a1f9c3d2.mp4, nomvideo_7e2b8a41.mp4, …'
+      : '→ nomvideo_v001_all2f.mp4, nomvideo_v002_all2f.mp4, …';
   }
   NorysSound.toggleOn();
 }
@@ -4037,7 +4040,8 @@ async function generate(){
   document.getElementById('prog-lbl').textContent = 'Génération en cours…';
   document.getElementById('progress-bar').style.width = '0%';
   document.getElementById('progress-pct').textContent = '0%';
-  pc.classList.add('visible');
+  document.getElementById('progress-close-btn').style.display = 'none';
+  pc.classList.add('open');
   db.classList.remove('visible');
   document.getElementById('log-box').innerHTML = '';
 
@@ -4110,6 +4114,7 @@ async function generate(){
             document.getElementById('done-title').textContent = `✅ ${ev.success} variante(s) générée(s) !`;
             document.getElementById('done-sub').textContent = '📁 Dossier "Norys Reels Output" créé sur ton Bureau';
             db.classList.add('visible');
+            document.getElementById('progress-close-btn').style.display = 'flex';
             btn.disabled = false;
             document.getElementById('generate-label').textContent = '⚡ Générer les variantes';
             if(typeof NorysSound !== 'undefined') NorysSound.success();
@@ -4120,10 +4125,16 @@ async function generate(){
     }
   } catch(e){
     log('err', 'Erreur serveur : ' + e.message);
+    document.getElementById('progress-close-btn').style.display = 'flex';
     btn.disabled = false;
     document.getElementById('generate-label').textContent = '⚡ Générer les variantes';
     if(typeof NorysSound !== 'undefined') NorysSound.error();
   }
+}
+
+function closeProgressModal(){
+  NorysSound.click();
+  document.getElementById('progress-card').classList.remove('open');
 }
 
 function log(type, msg){
