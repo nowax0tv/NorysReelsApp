@@ -2153,7 +2153,7 @@
         <div class="card">
           <div class="card-label">Usage cette semaine</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:13px;color:var(--text2);">Palier actuel : <strong id="billing-tier-label" style="color:var(--purple2);">—</strong></span>
+            <span style="font-size:13px;color:var(--text2);">Palier actuel : <strong id="billing-tier-label" style="color:var(--purple2);">Agency (inclus)</strong></span>
             <span id="billing-usage-text" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);">0 / 50</span>
           </div>
           <div class="prog-bar-wrap"><div class="prog-bar" id="billing-usage-bar" style="width:0%;"></div></div>
@@ -2161,7 +2161,7 @@
         </div>
 
         <div class="billing-plans-grid">
-          <div class="billing-plan-card" data-tier="agency_included">
+          <div class="billing-plan-card current" data-tier="agency_included">
             <div class="billing-plan-name">Agency <span class="billing-plan-current-badge">Inclus</span></div>
             <div class="billing-plan-price">0€<span>/mois</span></div>
             <div class="billing-plan-desc">50 variantes / semaine, inclus avec ton plan Agency NorysTracking.</div>
@@ -2941,7 +2941,10 @@ function renderReelsQuotaUI(){
   }
 
   document.querySelectorAll('.billing-plan-card').forEach(card => {
-    card.classList.toggle('current', card.dataset.tier === reelsTier);
+    // Un admin a un accès illimité sans être "abonné" au palier payant —
+    // on évite juste de lui montrer un bouton d'upgrade qui n'a pas de sens.
+    const matches = reelsTier === 'admin' ? card.dataset.tier === 'unlimited' : card.dataset.tier === reelsTier;
+    card.classList.toggle('current', matches);
   });
 
   const panelQuotaEl = document.getElementById('panel-reels-quota');
@@ -4277,7 +4280,10 @@ async function generate(){
   if(reelsLimit !== Infinity && reelsUsed + requested > reelsLimit){
     NorysSound.error();
     const remaining = Math.max(0, reelsLimit - reelsUsed);
-    showToast('🚫', `Quota hebdomadaire atteint (${reelsUsed}/${reelsLimit}) — il te reste ${remaining} variante(s). Passe à un palier supérieur dans Billing.`, 6000);
+    const msg = remaining === 0
+      ? `Quota hebdomadaire épuisé (${reelsUsed}/${reelsLimit}). Passe à un palier supérieur dans Billing pour continuer.`
+      : `Cette demande de ${requested} variantes dépasse ce qu'il te reste cette semaine (${remaining} restantes sur ${reelsLimit}). Réduis le nombre de variantes ou passe à un palier supérieur dans Billing.`;
+    showToast('🚫', msg, 7000);
     goPage('billing');
     return;
   }
