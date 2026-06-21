@@ -9,6 +9,7 @@ const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const path = require('path');
 const http = require('http');
 const { spawn } = require('child_process');
+const treeKill = require('tree-kill');
 
 const PORT = 3333;
 const SERVER_URL = `http://localhost:${PORT}`;
@@ -27,6 +28,20 @@ function startServer() {
   serverProcess.on('exit', (code) => {
     console.log('[Norys Reels] serveur arrêté (code ' + code + ')');
   });
+}
+
+// serverProcess.kill() ne tue QUE server.js — pas FFmpeg, que server.js lance
+// lui-même comme processus enfant. Sur Windows en particulier, tuer un
+// processus ne tue jamais ses propres enfants automatiquement : si une
+// génération est en cours quand on ferme l'app, FFmpeg continuait de
+// tourner en arrière-plan, invisible, après la fermeture de la fenêtre.
+// tree-kill tue tout l'arbre de processus (server.js + FFmpeg en cours).
+function killServerTree() {
+  if (!serverProcess || serverProcess.pid == null) return;
+  treeKill(serverProcess.pid, 'SIGKILL', (err) => {
+    if (err) console.error('[Norys Reels] tree-kill error:', err.message);
+  });
+  serverProcess = null;
 }
 
 function waitForServer(timeoutMs = 30000) {
@@ -120,11 +135,11 @@ if (!gotLock) {
   });
 
   app.on('window-all-closed', () => {
-    if (serverProcess) serverProcess.kill();
+    killServerTree();
     if (process.platform !== 'darwin') app.quit();
   });
 
   app.on('before-quit', () => {
-    if (serverProcess) serverProcess.kill();
+    killServerTree();
   });
 }
