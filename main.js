@@ -128,6 +128,24 @@ ipcMain.on('window-maximize', () => {
   else mainWindow.maximize();
 });
 ipcMain.on('window-close', () => mainWindow && mainWindow.close());
+// Ouvre le checkout Stripe (page web norystracking) dans le navigateur
+// système — pas dans la fenêtre Electron elle-même, qui n'a pas de session
+// de paiement. Limité au domaine du site pour éviter d'en faire un moyen
+// d'ouvrir n'importe quelle URL arbitraire depuis le renderer.
+const ALLOWED_EXTERNAL_HOSTS = ['nrys.link', 'www.nrys.link', 'localhost'];
+ipcMain.on('open-external-url', (_event, url) => {
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_EXTERNAL_HOSTS.includes(parsed.hostname)) {
+      console.error('[Norys Reels] open-external-url refusé, domaine non autorisé:', parsed.hostname);
+      return;
+    }
+    shell.openExternal(url);
+  } catch (e) {
+    console.error('[Norys Reels] open-external-url URL invalide:', e.message);
+  }
+});
+
 ipcMain.handle('open-output-folder', async () => {
   const outDir = path.join(require('os').homedir(), 'Desktop', 'Norys Reels Output');
   try {

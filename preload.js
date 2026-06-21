@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openOutputFolder: () => ipcRenderer.invoke('open-output-folder'),
   onUpdateReady: (callback) => ipcRenderer.on('update-ready', (_e, info) => callback(info)),
   restartAndInstallUpdate: () => ipcRenderer.send('restart-and-install-update'),
+  openExternalUrl: (url) => ipcRenderer.send('open-external-url', url),
 });

@@ -662,6 +662,32 @@
       transition: all .15s;
     }
     .bg-btn.active { border-color: var(--purple2); color: var(--purple2); background: var(--dim); box-shadow: 0 0 16px rgba(124,58,237,.3), inset 0 1px 0 rgba(255,255,255,.06); }
+
+    /* ── BILLING ───────────────────────────── */
+    .billing-plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 4px; }
+    .billing-plan-card {
+      position: relative;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      display: flex; flex-direction: column; gap: 6px;
+      transition: border-color .2s;
+    }
+    .billing-plan-card.current { border-color: var(--purple2); box-shadow: 0 0 20px rgba(124,58,237,.2), inset 0 1px 0 rgba(255,255,255,.06); }
+    .billing-plan-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .billing-plan-current-badge {
+      display: none;
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+      color: var(--purple2); background: var(--dim); border: 1px solid var(--border2);
+      border-radius: 999px; padding: 2px 8px;
+    }
+    .billing-plan-card.current .billing-plan-current-badge { display: inline-block; }
+    .billing-plan-price { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; margin: 2px 0; }
+    .billing-plan-price span { font-size: 12px; font-weight: 500; color: var(--text3); }
+    .billing-plan-desc { font-size: 12px; color: var(--text2); flex: 1; }
+    .billing-upgrade-btn { margin-top: 8px; }
+    .billing-plan-card.current .billing-upgrade-btn { display: none; }
     .swatches { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
     .swatch { width: 26px; height: 26px; border-radius: var(--r-s); cursor: pointer; border: 2px solid transparent; transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
     .swatch:hover   { transform: scale(1.15); }
@@ -1478,6 +1504,15 @@
     .profile-stat-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
 
     /* ── BOUTONS NÉON (panneau profil) ──────────────────────── */
+    .profile-panel-billing {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px; padding: 10px 12px;
+      background: var(--dim); border: 1px solid var(--border2); border-radius: var(--r-s);
+      font-size: 12px; font-weight: 600; color: var(--purple2);
+      cursor: pointer; transition: background .15s;
+    }
+    .profile-panel-billing:hover { background: rgba(124,58,237,.18); }
+    .profile-panel-billing-arrow { margin-left: auto; color: var(--text3); }
     .neon-btn-row { display: flex; gap: 8px; margin-top: 16px; }
     .neon-btn {
       position: relative;
@@ -1594,6 +1629,12 @@
     </div>
   </div>
 
+  <div class="profile-panel-billing" onclick="closeProfilePanel();goPage('billing');">
+    <span data-icon="creditCard"></span>
+    <span id="panel-reels-quota">0 / 50 cette semaine</span>
+    <span class="profile-panel-billing-arrow">→</span>
+  </div>
+
   <div class="neon-btn-row">
     <button class="neon-btn neon-blue" onclick="shareApp()"><span data-icon="link"></span> <span data-i18n="shareBtn">Partager</span></button>
     <button class="neon-btn neon-orange" onclick="showLeaderboard()"><span data-icon="trophy"></span> <span data-i18n="leaderboardBtn">Classement</span></button>
@@ -1692,6 +1733,9 @@
       </div>
       <div class="nav-step" id="nav-generate" onclick="goPage('generate')">
         <span class="nav-step-icon" data-icon="zap"></span> <span data-i18n="navGenerate">Générer</span>
+      </div>
+      <div class="nav-step" id="nav-billing" onclick="goPage('billing')">
+        <span class="nav-step-icon" data-icon="creditCard"></span> <span data-i18n="navBilling">Billing</span>
       </div>
     </nav>
 
@@ -2098,6 +2142,52 @@
       </div>
     </div>
 
+    <!-- PAGE : BILLING -->
+    <div class="page" id="page-billing">
+      <div class="page-inner">
+        <div class="section-head">
+          <div class="section-title">💳 Billing</div>
+          <div class="section-desc">Ton quota de variantes et tes options d'abonnement Reels</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Usage cette semaine</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:13px;color:var(--text2);">Palier actuel : <strong id="billing-tier-label" style="color:var(--purple2);">—</strong></span>
+            <span id="billing-usage-text" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);">0 / 50</span>
+          </div>
+          <div class="prog-bar-wrap"><div class="prog-bar" id="billing-usage-bar" style="width:0%;"></div></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">Réinitialisé chaque lundi à 00:00.</div>
+        </div>
+
+        <div class="billing-plans-grid">
+          <div class="billing-plan-card" data-tier="agency_included">
+            <div class="billing-plan-name">Agency <span class="billing-plan-current-badge">Inclus</span></div>
+            <div class="billing-plan-price">0€<span>/mois</span></div>
+            <div class="billing-plan-desc">50 variantes / semaine, inclus avec ton plan Agency NorysTracking.</div>
+          </div>
+
+          <div class="billing-plan-card" data-tier="standard">
+            <div class="billing-plan-name">Standard <span class="billing-plan-current-badge">Palier actuel</span></div>
+            <div class="billing-plan-price">50€<span>/mois</span></div>
+            <div class="billing-plan-desc">200 variantes / semaine.</div>
+            <button class="bg-btn billing-upgrade-btn" onclick="upgradeReelsPlan('reels_standard', 50)">Passer à Standard</button>
+          </div>
+
+          <div class="billing-plan-card" data-tier="unlimited">
+            <div class="billing-plan-name">Illimité <span class="billing-plan-current-badge">Palier actuel</span></div>
+            <div class="billing-plan-price">150€<span>/mois</span></div>
+            <div class="billing-plan-desc">Variantes illimitées, aucune limite hebdomadaire.</div>
+            <button class="bg-btn billing-upgrade-btn" onclick="upgradeReelsPlan('reels_unlimited', 150)">Passer à Illimité</button>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          Le paiement s'ouvre dans ton navigateur (norystracking.com) — connecte-toi avec le même compte que dans l'app.
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 
   <!-- BOTTOM NAV -->
@@ -2153,7 +2243,10 @@
 
 <script>
 
-const PAGES = ['filters','captions','music','videos','generate'];
+// "billing" n'est pas une étape de l'assistant (pas de Suivant/Précédent
+// vers/depuis elle) — accessible seulement via son propre item de nav.
+const WIZARD_PAGES = ['filters','captions','music','videos','generate'];
+const PAGES = [...WIZARD_PAGES, 'billing'];
 let currentPage = 0;
 
 function staggerReveal(pg){
@@ -2185,10 +2278,11 @@ function goPage(name){
   });
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
-  if(btnPrev) btnPrev.style.display = idx > 0 ? 'block' : 'none';
+  const inWizard = WIZARD_PAGES.includes(name);
+  if(btnPrev) btnPrev.style.display = (inWizard && idx > 0) ? 'block' : 'none';
   if(btnNext){
-    if(idx === PAGES.length - 1){ btnNext.style.display = 'none'; }
-    else { btnNext.style.display = 'block'; btnNext.textContent = idx === PAGES.length - 2 ? t('generateBtnLabel') + ' →' : t('nextBtn') + ' →'; }
+    if(!inWizard || idx === WIZARD_PAGES.length - 1){ btnNext.style.display = 'none'; }
+    else { btnNext.style.display = 'block'; btnNext.textContent = idx === WIZARD_PAGES.length - 2 ? t('generateBtnLabel') + ' →' : t('nextBtn') + ' →'; }
   }
   const info = document.getElementById('bottombar-info');
   if(info){
@@ -2391,6 +2485,8 @@ const ICONS = {
   clapperboard: '<path d="m12.296 3.464 3.02 3.956" /><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3z" /><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="m6.18 5.276 3.1 3.899" />',
   listOrdered: '<path d="M11 5h10" /><path d="M11 12h10" /><path d="M11 19h10" /><path d="M4 4h1v5" /><path d="M4 9h2" /><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02" />',
   shuffle: '<path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />',
+  creditCard: '<rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" />',
+  check: '<path d="M20 6 9 17l-5-5" />',
 };
 function iconSvgMarkup(name){
   const inner = ICONS[name];
@@ -2783,6 +2879,94 @@ async function loadProfileData(session){
 
   currentMemberSince = createdAt;
   renderLevelUI(currentTotalGenerated, agencyName, email, createdAt);
+  await loadReelsQuota(plan);
+}
+
+// ── QUOTA REELS (50/sem. inclus avec le plan Agency, ou abonnement
+// Reels séparé Standard 200/sem. / Illimité) ───────────────────────
+let reelsTier  = 'agency_included'; // 'agency_included' | 'standard' | 'unlimited' | 'admin'
+let reelsLimit = 50;
+let reelsUsed  = 0;
+
+async function loadReelsQuota(sitePlan){
+  if(!supabaseClient || !currentUserId) return;
+
+  if(sitePlan === 'admin'){
+    reelsTier = 'admin';
+    reelsLimit = Infinity;
+  } else {
+    let tier = null, status = null, periodEnd = null;
+    try {
+      const { data } = await supabaseClient.from('reels_subscriptions')
+        .select('tier, status, current_period_end').eq('user_id', currentUserId).maybeSingle();
+      if(data){ tier = data.tier; status = data.status; periodEnd = data.current_period_end; }
+    } catch(e){}
+
+    const reelsActive = status === 'active' && (!periodEnd || new Date(periodEnd) > new Date());
+    if(reelsActive && tier === 'unlimited'){
+      reelsTier = 'unlimited';
+      reelsLimit = Infinity;
+    } else if(reelsActive && tier === 'standard'){
+      reelsTier = 'standard';
+      reelsLimit = 200;
+    } else {
+      reelsTier = 'agency_included';
+      reelsLimit = 50; // inclus avec le plan Agency du site
+    }
+  }
+
+  try {
+    const { data } = await supabaseClient.rpc('get_reels_weekly_usage');
+    reelsUsed = typeof data === 'number' ? data : 0;
+  } catch(e){
+    reelsUsed = 0;
+  }
+
+  renderReelsQuotaUI();
+}
+
+function renderReelsQuotaUI(){
+  const TIER_LABELS = { agency_included:'Agency (inclus)', standard:'Standard', unlimited:'Illimité', admin:'Admin' };
+  const pct = reelsLimit === Infinity ? 0 : Math.min(100, Math.round((reelsUsed / reelsLimit) * 100));
+  const usedText = reelsLimit === Infinity ? (reelsUsed + ' / ∞') : (reelsUsed + ' / ' + reelsLimit);
+
+  const tierEl = document.getElementById('billing-tier-label');
+  const usedEl = document.getElementById('billing-usage-text');
+  const barEl  = document.getElementById('billing-usage-bar');
+  if(tierEl) tierEl.textContent = TIER_LABELS[reelsTier] || reelsTier;
+  if(usedEl) usedEl.textContent = usedText;
+  if(barEl){
+    barEl.style.width = pct + '%';
+    barEl.style.background = pct >= 100 ? 'var(--error)' : pct >= 80 ? '#f59e0b' : 'linear-gradient(90deg,var(--purple),var(--purple2))';
+  }
+
+  document.querySelectorAll('.billing-plan-card').forEach(card => {
+    card.classList.toggle('current', card.dataset.tier === reelsTier);
+  });
+
+  const panelQuotaEl = document.getElementById('panel-reels-quota');
+  if(panelQuotaEl) panelQuotaEl.textContent = usedText + ' cette semaine';
+}
+
+// Ouvre le checkout Stripe du site (norystracking) dans le navigateur
+// système — la fenêtre Electron elle-même n'a pas de session de paiement.
+async function upgradeReelsPlan(plan, price){
+  NorysSound.click();
+  let email = '';
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    email = (data && data.session && data.session.user.email) || '';
+  } catch(e){}
+
+  const qs = new URLSearchParams({ plan, price: String(price), cycle: 'monthly', email });
+  const url = 'https://nrys.link/checkout?' + qs.toString();
+
+  if(window.electronAPI && window.electronAPI.openExternalUrl){
+    window.electronAPI.openExternalUrl(url);
+    showToast('🔗', 'Page de paiement ouverte dans ton navigateur.', 4000);
+  } else {
+    showToast('⚠️', 'Impossible d\'ouvrir le navigateur depuis cette fenêtre.', 4000);
+  }
 }
 
 // Appelé après chaque génération réussie (voir generate())
@@ -2801,6 +2985,14 @@ async function registerGeneratedCount(n){
     } catch(e){
       totalGeneratedSyncsToSupabase = false;
     }
+  }
+  // Compte vers le quota hebdomadaire Reels (50 inclus / 200 Standard / illimité)
+  if(supabaseClient && reelsTier !== 'admin'){
+    try {
+      await supabaseClient.from('reels_generation_log').insert({ user_id: currentUserId, count: n });
+      reelsUsed += n;
+      renderReelsQuotaUI();
+    } catch(e){}
   }
 }
 
@@ -4079,6 +4271,17 @@ function syncInput(el){
 async function generate(){
   if(!files.length){ alert(t('needVideo')); return; }
   if(!active.size){ alert(t('needFilter')); return; }
+
+  const numVar = parseInt(document.getElementById('variants-input').value) || 10;
+  const requested = numVar * files.length;
+  if(reelsLimit !== Infinity && reelsUsed + requested > reelsLimit){
+    NorysSound.error();
+    const remaining = Math.max(0, reelsLimit - reelsUsed);
+    showToast('🚫', `Quota hebdomadaire atteint (${reelsUsed}/${reelsLimit}) — il te reste ${remaining} variante(s). Passe à un palier supérieur dans Billing.`, 6000);
+    goPage('billing');
+    return;
+  }
+
   NorysSound.click();
 
   const btn = document.getElementById('generate-btn');
@@ -4094,7 +4297,6 @@ async function generate(){
   db.classList.remove('visible');
   document.getElementById('log-box').innerHTML = '';
 
-  const numVar   = parseInt(document.getElementById('variants-input').value) || 10;
   const outDir   = 'desktop'; // Sera mis sur le Bureau automatiquement
   const filters  = [...TEMPLATES, ...SPECIAL_TEMPLATES].filter(t=>active.has(t.id));
 
