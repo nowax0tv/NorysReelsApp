@@ -3446,10 +3446,16 @@ function setNamingMode(mode){
   NorysSound.toggleOn();
 }
 
-function openOutputFolder(){
+async function openOutputFolder(){
   NorysSound.click();
-  if(window.electronAPI && window.electronAPI.openOutputFolder){
-    window.electronAPI.openOutputFolder();
+  if(!window.electronAPI || !window.electronAPI.openOutputFolder){
+    console.warn('[Norys Reels] electronAPI.openOutputFolder indisponible (preload non chargé ?)');
+    if(typeof showToast === 'function') showToast('⚠️', 'Impossible d\'ouvrir le dossier depuis cette fenêtre', 3500);
+    return;
+  }
+  const result = await window.electronAPI.openOutputFolder();
+  if(result && !result.ok && typeof showToast === 'function'){
+    showToast('⚠️', 'Dossier introuvable ou inaccessible : ' + (result.path||''), 4000);
   }
 }
 
@@ -4118,6 +4124,12 @@ async function generate(){
         try {
           const ev = JSON.parse(line);
           if(ev.type==='start'){ total=ev.total; log('info',`${total} fichier(s) à générer`); }
+          else if(ev.type==='subprogress'){
+            // Progression en direct pendant l'encodage d'une variante (pas
+            // seulement un saut une fois le fichier terminé).
+            document.getElementById('progress-bar').style.width = ev.pct+'%';
+            document.getElementById('progress-pct').textContent = ev.pct+'%';
+          }
           else if(ev.type==='progress'){
             done++;
             const pct = Math.round(done/total*100);

@@ -432,7 +432,7 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
 
 // ── GENERATE VARIANT ──────────────────────────────────────────
 
-function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts){
+function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress){
   special       = special       || '';
   captionLines  = captionLines  || [];
   captionStyle  = captionStyle  || {};
@@ -453,10 +453,14 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   const PRESET = 'slow';
   const AUDIO  = '192k';
 
+  // Durée connue à l'avance pour calculer une vraie progression en direct
+  // (out_time_ms / durée totale) plutôt qu'un saut brutal de 0% à 100%.
+  const inputDuration = getVideoDuration(inputFile);
+
   // ── Captions SRT ─────────────────────────────────────────────
   let srtPath = null;
   if(captionLines.length){
-    const duration   = getVideoDuration(inputFile);
+    const duration   = inputDuration;
     const _xPct = (captionStyle && captionStyle.xPct !== undefined) ? parseFloat(captionStyle.xPct) : 50;
     const _yPct = (captionStyle && captionStyle.yPct !== undefined) ? parseFloat(captionStyle.yPct) : 85;
     const posX = Math.round(1080 * _xPct / 100);
@@ -612,22 +616,56 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   }
 
   // ── Exécuter ─────────────────────────────────────────────────
-  // Utiliser spawn-style avec execSync mais en quotant proprement chaque arg
-  try {
-    // Utiliser execFileSync pour passer les args directement sans shell
-    // → évite tous les problèmes d'échappement Windows avec [ ] ; etc.
-    const { execFileSync } = require('child_process');
+  // spawn (pas execFileSync) + "-progress pipe:1" pour recevoir la
+  // progression de l'encodage en direct (out_time_ms) plutôt que de
+  // bloquer en silence jusqu'à la fin du fichier — avant ça, la barre
+  // de progression ne bougeait qu'une fois par variante terminée.
+  return new Promise((resolve) => {
+    const { spawn } = require('child_process');
+    const fullArgs = ['-progress', 'pipe:1', '-nostats', ...args];
     console.log('=== CMD COMPLÈTE ===');
-    console.log(FFMPEG_BIN, args.join(' '));
+    console.log(FFMPEG_BIN, fullArgs.join(' '));
     console.log('===================');
-    execFileSync(FFMPEG_BIN, args, { stdio:'pipe', timeout:600000 });
-    if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
-    return true;
-  } catch(e){
-    if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
-    console.error('FFmpeg error:', e.message.substring(0,300));
-    return false;
-  }
+
+    const proc = spawn(FFMPEG_BIN, fullArgs, { windowsHide: true });
+    let stderrTail = '';
+    let buf = '';
+    const timeoutMs = 600000;
+    const killTimer = setTimeout(() => { try{ proc.kill('SIGKILL'); }catch{} }, timeoutMs);
+
+    proc.stdout.on('data', (chunk) => {
+      buf += chunk.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop(); // ligne incomplète, on la garde pour le prochain chunk
+      for(const line of lines){
+        const m = line.match(/^out_time_ms=(\d+)/);
+        if(m && onProgress && inputDuration > 0){
+          const fraction = Math.min(1, (parseInt(m[1], 10) / 1e6) / inputDuration);
+          onProgress(fraction);
+        }
+      }
+    });
+    proc.stderr.on('data', (chunk) => {
+      stderrTail = (stderrTail + chunk.toString()).slice(-500);
+    });
+    proc.on('error', (e) => {
+      clearTimeout(killTimer);
+      if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
+      console.error('FFmpeg spawn error:', e.message);
+      resolve(false);
+    });
+    proc.on('close', (code) => {
+      clearTimeout(killTimer);
+      if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
+      if(code === 0){
+        if(onProgress) onProgress(1);
+        resolve(true);
+      } else {
+        console.error('FFmpeg error (code '+code+'):', stderrTail.slice(0,300));
+        resolve(false);
+      }
+    });
+  });
 }
 
 function bgMode(m){ return (m||'blur') === 'blur' ? 'blur' : 'color'; }
@@ -800,9 +838,11 @@ const server = http.createServer((req, res) => {
         console.log('Generating '+total+' variants → '+outputDir);
 
         let success = 0;
+        let attempted = 0;
         for(const vf of tmpFiles){
           const base = path.basename(vf.name, path.extname(vf.name));
           for(let i=0; i<numVariants; i++){
+            const attemptIndex = attempted++;
             let tplId, combinedFilter, combinedSpecial;
 
             // ── NOUVEAU MODE : chaque variante combine TOUS les filtres actifs ──
@@ -848,7 +888,14 @@ const server = http.createServer((req, res) => {
             console.log('['+(i+1)+'/'+numVariants+'] '+tplId+' → '+outName);
 
             const metaOpts = { injectMetadata, deviceModelId, gpsCountry };
-            const ok = generateVariant(vf.tmp, outPath, combinedFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts);
+            let lastSentPct = -1;
+            const ok = await generateVariant(vf.tmp, outPath, combinedFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
+              const pct = Math.round(((attemptIndex + fraction) / total) * 100);
+              if(pct !== lastSentPct){
+                lastSentPct = pct;
+                send(res,{type:'subprogress',pct});
+              }
+            });
             if(ok){
               success++;
               send(res,{type:'progress',file:outName});
@@ -914,7 +961,7 @@ const server = http.createServer((req, res) => {
           send(res, {type:'progress', file: outName});
 
           // Générer avec filtre clean (pas de modification visuelle) + sous-titres
-          const ok = generateVariant(vf.tmp, outPath, '', '', captionLines, captionStyle);
+          const ok = await generateVariant(vf.tmp, outPath, '', '', captionLines, captionStyle);
 
           if(ok){
             const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);

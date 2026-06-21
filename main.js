@@ -81,10 +81,20 @@ ipcMain.on('window-maximize', () => {
   else mainWindow.maximize();
 });
 ipcMain.on('window-close', () => mainWindow && mainWindow.close());
-ipcMain.on('open-output-folder', () => {
+ipcMain.handle('open-output-folder', async () => {
   const outDir = path.join(require('os').homedir(), 'Desktop', 'Norys Reels Output');
-  if (!require('fs').existsSync(outDir)) require('fs').mkdirSync(outDir, { recursive: true });
-  shell.openPath(outDir);
+  try {
+    if (!require('fs').existsSync(outDir)) require('fs').mkdirSync(outDir, { recursive: true });
+    // shell.openPath() résout en chaîne vide en cas de succès, ou un message
+    // d'erreur sinon — jamais de rejet, donc le bouton pouvait échouer en
+    // silence sans qu'aucune erreur ne soit jamais visible côté utilisateur.
+    const err = await shell.openPath(outDir);
+    if (err) console.error('[Norys Reels] shell.openPath a échoué:', err);
+    return { ok: !err, path: outDir, error: err || null };
+  } catch (e) {
+    console.error('[Norys Reels] open-output-folder error:', e.message);
+    return { ok: false, path: outDir, error: e.message };
+  }
 });
 
 const gotLock = app.requestSingleInstanceLock();
