@@ -1,5 +1,6 @@
-// Génère assets/icon.png (256x256) et assets/icon.ico — mark géométrique "N"
-// stylisé (pas d'émoji), dégradé violet→pink, dépendances zéro (zlib natif).
+// Génère assets/icon.png (256x256) et assets/icon.ico — symbole géométrique
+// (deux triangles "play" décalés, évoquant la duplication de vidéos — pas de
+// lettre), dégradé violet→pink, dépendances zéro (zlib natif).
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -29,13 +30,12 @@ function pointInPolygon(x, y, poly) {
   return inside;
 }
 
-// ── Monogramme "N" géométrique (espace de design 0..100) ──────
-const barW = 11;
-const top = 22, bottom = 78, left = 26, right = 74;
-const leftBar  = [[left, top], [left + barW, top], [left + barW, bottom], [left, bottom]];
-const rightBar = [[right - barW, top], [right, top], [right, bottom], [right - barW, bottom]];
-const diagonal  = [[left, top], [left + barW, top], [right, bottom], [right - barW, bottom]];
-const glyphPolys = [leftBar, rightBar, diagonal].map(poly => poly.map(([x, y]) => [x / 100 * SIZE, y / 100 * SIZE]));
+// ── Deux triangles "play" décalés (duplication vidéo), espace 0..100 ──
+// Symbole abstrait plutôt qu'une lettre : deux flèches de lecture qui se
+// chevauchent légèrement, l'une en haut-gauche, l'autre en bas-droite.
+const triBack  = [[28, 24], [28, 50], [56, 37]];
+const triFront = [[44, 50], [44, 76], [72, 63]];
+const glyphPolys = [triBack, triFront].map(poly => poly.map(([x, y]) => [x / 100 * SIZE, y / 100 * SIZE]));
 
 function inGlyph(x, y) {
   for (const poly of glyphPolys) if (pointInPolygon(x, y, poly)) return true;
@@ -189,4 +189,4 @@ const icoEntries = sizes.map(size => {
 const ico = buildIco(icoEntries);
 fs.writeFileSync(path.join(OUT_DIR, 'icon.ico'), ico);
 
-console.log('✅ assets/icon.png (' + SIZE + 'x' + SIZE + ') et assets/icon.ico (' + sizes.join(',') + ') générés — monogramme N, sans émoji');
+console.log('✅ assets/icon.png (' + SIZE + 'x' + SIZE + ') et assets/icon.ico (' + sizes.join(',') + ') générés — symbole double-play, sans lettre');
