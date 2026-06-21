@@ -16,7 +16,8 @@
   },
   "devDependencies": {
     "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "rcedit": "^5.0.2"
   },
   "build": {
     "appId": "com.norys.reels",
@@ -65,11 +66,24 @@
       "buildResources": "build"
     },
     "extraResources": [
-      { "from": "node_modules/builder-util-runtime", "to": "app/node_modules/builder-util-runtime" },
-      { "from": "node_modules/fs-extra", "to": "app/node_modules/fs-extra" },
-      { "from": "node_modules/semver", "to": "app/node_modules/semver" },
-      { "from": "node_modules/jsonfile", "to": "app/node_modules/jsonfile" }
+      {
+        "from": "node_modules/builder-util-runtime",
+        "to": "app/node_modules/builder-util-runtime"
+      },
+      {
+        "from": "node_modules/fs-extra",
+        "to": "app/node_modules/fs-extra"
+      },
+      {
+        "from": "node_modules/semver",
+        "to": "app/node_modules/semver"
+      },
+      {
+        "from": "node_modules/jsonfile",
+        "to": "app/node_modules/jsonfile"
+      }
     ],
+    "afterPack": "build/after-pack-icon.js",
     "win": {
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false,
