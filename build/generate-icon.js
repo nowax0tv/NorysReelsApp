@@ -1,6 +1,7 @@
-// Génère assets/icon.png (256x256) et assets/icon.ico — symbole géométrique
-// (deux triangles "play" décalés, évoquant la duplication de vidéos — pas de
-// lettre), dégradé violet→pink, dépendances zéro (zlib natif).
+// Génère assets/icon.png (1024x1024) et assets/icon.ico — fond sombre avec
+// lueur violette tamisée, symbole néon : une flèche qui se divise en deux
+// (1 vidéo source → plusieurs variantes générées). Dépendances zéro (zlib
+// natif), tout en pixels calculés à la main.
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -10,83 +11,113 @@ const OUT_DIR = path.join(__dirname, '..', 'assets');
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
 function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function smoothstep(edge0, edge1, x) {
+  const t = clamp01((x - edge0) / (edge1 - edge0));
+  return t * t * (3 - 2 * t);
+}
 function hexToRgb(hex) {
   hex = hex.replace('#', '');
   return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
 }
 
-const purple = hexToRgb('7c3aed');
-const pink = hexToRgb('c026d3');
+const violet = hexToRgb('a78bfa'); // coeur du néon, plus clair
+const pink   = hexToRgb('e879f9'); // teinte du halo extérieur
+const bgDark = hexToRgb('0a0a14'); // fond quasi noir, légèrement violet
+const bgGlow = hexToRgb('1f1235'); // lueur tamisée derrière le symbole
 
-function pointInPolygon(x, y, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
-      inside = !inside;
-    }
+// ── Distance point→segment (pour les traits du néon) ──────────────────
+function distToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  let t = lenSq === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = clamp01(t);
+  const cx = x1 + t * dx, cy = y1 + t * dy;
+  const ex = px - cx, ey = py - cy;
+  return Math.sqrt(ex * ex + ey * ey);
+}
+
+// ── Symbole : une flèche qui se divise en deux (espace de design 0..100) ──
+// Un seul trait entre à gauche, se sépare en deux branches qui pointent
+// chacune vers une pointe de flèche — "une vidéo source, plusieurs
+// variantes générées", pas juste une forme décorative.
+const forkX = 44, forkY = 50;
+const segments = [
+  // Tige d'entrée
+  [18, 50, forkX, forkY],
+  // Branche du haut + sa pointe de flèche
+  [forkX, forkY, 74, 27],
+  [74, 27, 64, 25],
+  [74, 27, 70, 36],
+  // Branche du bas + sa pointe de flèche
+  [forkX, forkY, 74, 73],
+  [74, 73, 64, 75],
+  [74, 73, 70, 64],
+].map(([x1, y1, x2, y2]) => [x1, y1, x2, y2].map((v, i) => v / 100 * SIZE));
+
+function minDistToSymbol(x, y) {
+  let best = Infinity;
+  for (const [x1, y1, x2, y2] of segments) {
+    const d = distToSegment(x, y, x1, y1, x2, y2);
+    if (d < best) best = d;
   }
-  return inside;
+  return best;
 }
 
-// ── Deux triangles "play" décalés (duplication vidéo), espace 0..100 ──
-// Symbole abstrait plutôt qu'une lettre : deux flèches de lecture qui se
-// chevauchent légèrement, l'une en haut-gauche, l'autre en bas-droite.
-const triBack  = [[28, 24], [28, 50], [56, 37]];
-const triFront = [[44, 50], [44, 76], [72, 63]];
-const glyphPolys = [triBack, triFront].map(poly => poly.map(([x, y]) => [x / 100 * SIZE, y / 100 * SIZE]));
-
-function inGlyph(x, y) {
-  for (const poly of glyphPolys) if (pointInPolygon(x, y, poly)) return true;
-  return false;
-}
-
-// Anti-aliasing léger par supersampling 2x2
-function coverage(testFn, x, y) {
-  let hits = 0;
-  const offs = [0.25, 0.75];
-  for (const oy of offs) for (const ox of offs) if (testFn(x + ox, y + oy)) hits++;
-  return hits / 4;
-}
-
-const radius = SIZE * 0.225; // rounded corners
-function roundedCoverageTest(x, y) {
+const radius = SIZE * 0.225; // coins arrondis du fond
+function roundedMask(x, y) {
   const rx = x < radius ? radius - x : (x > SIZE - radius ? x - (SIZE - radius) : 0);
   const ry = y < radius ? radius - y : (y > SIZE - radius ? y - (SIZE - radius) : 0);
-  if (rx === 0 || ry === 0) return true;
-  return (rx * rx + ry * ry) <= radius * radius;
+  if (rx === 0 || ry === 0) return 1;
+  const d = Math.sqrt(rx * rx + ry * ry);
+  return d <= radius ? 1 : clamp01(1 - (d - radius));
 }
 
 const pixels = Buffer.alloc(SIZE * SIZE * 4);
+const cx = SIZE * 0.5, cy = SIZE * 0.5;
+const glowRadius = SIZE * 0.62;
+
 for (let y = 0; y < SIZE; y++) {
   for (let x = 0; x < SIZE; x++) {
     const idx = (y * SIZE + x) * 4;
-    const maskCov = coverage(roundedCoverageTest, x, y);
-    if (maskCov === 0) { pixels[idx + 3] = 0; continue; }
+    const mask = roundedMask(x, y);
+    if (mask === 0) { pixels[idx + 3] = 0; continue; }
 
-    // Dégradé diagonal + légère lumière glossy en haut-gauche
-    const t = (x + y) / (SIZE * 2);
-    let r = lerp(purple[0], pink[0], t);
-    let g = lerp(purple[1], pink[1], t);
-    let b = lerp(purple[2], pink[2], t);
-    const dx = x / SIZE - 0.22, dy = y / SIZE - 0.18;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const glow = Math.max(0, 1 - dist / 0.55) * 0.16;
-    r = lerp(r, 255, glow); g = lerp(g, 255, glow); b = lerp(b, 255, glow);
+    // ── Fond : quasi-noir avec une lueur violette tamisée au centre ──
+    const dx = x - cx, dy = y - cy * 0.92;
+    const distCenter = Math.sqrt(dx * dx + dy * dy);
+    const ambient = Math.max(0, 1 - distCenter / glowRadius) * 0.55;
+    let r = lerp(bgDark[0], bgGlow[0], ambient);
+    let g = lerp(bgDark[1], bgGlow[1], ambient);
+    let b = lerp(bgDark[2], bgGlow[2], ambient);
 
-    // Monogramme blanc avec anti-aliasing
-    const glyphCov = coverage(inGlyph, x, y);
-    if (glyphCov > 0) {
-      r = lerp(r, 255, glyphCov);
-      g = lerp(g, 255, glyphCov);
-      b = lerp(b, 255, glyphCov);
-    }
+    // ── Néon : halo large et doux, puis cœur fin et brillant ──
+    const d = minDistToSymbol(x, y);
+    const strokeHalf = SIZE * 0.016;       // épaisseur du trait "physique"
+    const haloWide   = strokeHalf * 9;     // halo large, très doux
+    const haloMid    = strokeHalf * 4;     // halo moyen, plus marqué
+    const core       = strokeHalf * 1.0;   // cœur lumineux du tube néon
 
-    pixels[idx] = Math.round(r);
+    const haloWideCov = smoothstep(haloWide, haloWide * 0.15, d) * 0.22;
+    const haloMidCov  = smoothstep(haloMid, haloMid * 0.2, d) * 0.45;
+    const coreCov     = smoothstep(core * 2.2, 0, d);
+
+    // Halo : teinte violet→pink, en plus du fond
+    r = lerp(r, pink[0], haloWideCov);
+    g = lerp(g, pink[1], haloWideCov);
+    b = lerp(b, pink[2], haloWideCov);
+    r = lerp(r, violet[0], haloMidCov);
+    g = lerp(g, violet[1], haloMidCov);
+    b = lerp(b, violet[2], haloMidCov);
+    // Cœur : blanc-violet très lumineux (effet tube néon allumé)
+    r = lerp(r, 255, coreCov * 0.85);
+    g = lerp(g, 255, coreCov * 0.85);
+    b = lerp(b, 255, coreCov * 0.92);
+
+    pixels[idx]     = Math.round(r);
     pixels[idx + 1] = Math.round(g);
     pixels[idx + 2] = Math.round(b);
-    pixels[idx + 3] = Math.round(255 * maskCov);
+    pixels[idx + 3] = Math.round(255 * mask);
   }
 }
 
@@ -189,4 +220,4 @@ const icoEntries = sizes.map(size => {
 const ico = buildIco(icoEntries);
 fs.writeFileSync(path.join(OUT_DIR, 'icon.ico'), ico);
 
-console.log('✅ assets/icon.png (' + SIZE + 'x' + SIZE + ') et assets/icon.ico (' + sizes.join(',') + ') générés — symbole double-play, sans lettre');
+console.log('✅ assets/icon.png (' + SIZE + 'x' + SIZE + ') et assets/icon.ico (' + sizes.join(',') + ') générés — fond sombre, flèche néon qui se divise en deux');
