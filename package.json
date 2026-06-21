@@ -31,7 +31,11 @@
       "fonts/**/*",
       "assets/**/*",
       "vendor/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/ffprobe-static/index.js",
+      "node_modules/ffprobe-static/package.json",
+      "!node_modules/ffprobe-static/bin/**/*"
     ],
     "directories": {
       "output": "dist_electron",
@@ -40,6 +44,9 @@
     "win": {
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false,
+      "files": [
+        "node_modules/ffprobe-static/bin/win32/x64/**/*"
+      ],
       "target": [
         {
           "target": "nsis",
@@ -69,15 +76,25 @@
     "mac": {
       "icon": "assets/icon.png",
       "category": "public.app-category.video",
+      "files": [
+        "node_modules/ffprobe-static/bin/darwin/**/*"
+      ],
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
     "dmg": {
       "artifactName": "NorysReels-Mac.dmg"
     }
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0"
   }
 }

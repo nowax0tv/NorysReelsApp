@@ -12,6 +12,26 @@ const https  = require('https');
 
 const PORT = 3333;
 
+// ── FFMPEG / FFPROBE EMBARQUÉS ──────────────────────────────────
+// L'app supposait que ffmpeg/ffprobe étaient déjà installés et sur le PATH
+// système — ce qui n'est jamais le cas chez un utilisateur normal (pas un
+// dev). On embarque les binaires via ffmpeg-static/ffprobe-static, avec un
+// repli sur le PATH système uniquement si jamais les binaires embarqués
+// sont introuvables (ex: build cassé).
+function resolveBinary(staticPkgPath, fallbackName){
+  try {
+    if(staticPkgPath && fs.existsSync(staticPkgPath)) return staticPkgPath;
+  } catch {}
+  return fallbackName;
+}
+const FFMPEG_BIN  = resolveBinary(require('ffmpeg-static'), 'ffmpeg');
+const FFPROBE_BIN = resolveBinary(require('ffprobe-static').path, 'ffprobe');
+// Pour les commandes construites en string (besoin de guillemets si chemin avec espaces)
+const FFMPEG_CMD  = '"' + FFMPEG_BIN  + '"';
+const FFPROBE_CMD = '"' + FFPROBE_BIN + '"';
+console.log('🎬 ffmpeg :', FFMPEG_BIN);
+console.log('🎬 ffprobe:', FFPROBE_BIN);
+
 const DEVICES = [
   { make:'Apple',   model:'iPhone 15 Pro Max', software:'17.4.0' },
   { make:'Apple',   model:'iPhone 15 Pro',     software:'17.3.1' },
@@ -167,7 +187,7 @@ function downloadMontserrat(){
 function getVideoDuration(filePath){
   try {
     const out = execSync(
-      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`,
+      `${FFPROBE_CMD} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`,
       { stdio:'pipe' }
     ).toString().trim();
     return parseFloat(out) || 30;
@@ -377,7 +397,7 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
       const segPath = path.join(os.tmpdir(), 'norys_seg_'+Date.now()+'_'+i+'.mp4');
       const start   = +(i * segDur).toFixed(3);
       const dur     = +(segDur).toFixed(3);
-      const segCmd  = 'ffmpeg -y -ss '+start+' -t '+dur+' -i "'+inputFile+'" '+
+      const segCmd  = FFMPEG_CMD+' -y -ss '+start+' -t '+dur+' -i "'+inputFile+'" '+
         (vfStr ? '-vf "'+vfStr+'"' : '')+
         ' -c:v libx264 -profile:v high -level 4.0 -crf 21 -preset fast -maxrate 6M -bufsize 12M'+
         ' -c:a aac -ar 48000 -b:a 192k "'+segPath+'"';
@@ -397,7 +417,7 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
     fs.writeFileSync(listFile, listContent, 'utf8');
 
     // Concatener
-    const concatCmd = 'ffmpeg -y -f concat -safe 0 -i "'+listFile+'" -c copy "'+outputFile+'"';
+    const concatCmd = FFMPEG_CMD+' -y -f concat -safe 0 -i "'+listFile+'" -c copy "'+outputFile+'"';
     execSync(concatCmd, {stdio:'pipe', timeout:300000});
 
     // Cleanup
@@ -598,9 +618,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     // → évite tous les problèmes d'échappement Windows avec [ ] ; etc.
     const { execFileSync } = require('child_process');
     console.log('=== CMD COMPLÈTE ===');
-    console.log('ffmpeg', args.join(' '));
+    console.log(FFMPEG_BIN, args.join(' '));
     console.log('===================');
-    execFileSync('ffmpeg', args, { stdio:'pipe', timeout:600000 });
+    execFileSync(FFMPEG_BIN, args, { stdio:'pipe', timeout:600000 });
     if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
     return true;
   } catch(e){
@@ -657,7 +677,7 @@ const server = http.createServer((req, res) => {
 
   if(req.url === '/check-ffmpeg'){
     try {
-      const out = execSync('ffmpeg -version', {stdio:'pipe'}).toString();
+      const out = execSync(FFMPEG_CMD+' -version', {stdio:'pipe'}).toString();
       const v   = (out.match(/ffmpeg version ([^\s]+)/)||[])[1]||'?';
       res.writeHead(200,{'Content-Type':'application/json'});
       res.end(JSON.stringify({ok:true,version:v}));
@@ -690,7 +710,7 @@ const server = http.createServer((req, res) => {
             const outPath = path.join(outDir,outName);
             send(res,{type:'start',file:outName});
             try {
-              const cmd = 'ffmpeg -y -i "'+tmp+'" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p" -c:v libx264 -profile:v high -level 4.0 -crf 21 -preset slow -maxrate 6M -bufsize 12M -r 30 -c:a aac -ar 48000 -b:a 192k -movflags +faststart "'+outPath+'"';
+              const cmd = FFMPEG_CMD+' -y -i "'+tmp+'" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p" -c:v libx264 -profile:v high -level 4.0 -crf 21 -preset slow -maxrate 6M -bufsize 12M -r 30 -c:a aac -ar 48000 -b:a 192k -movflags +faststart "'+outPath+'"';
               execSync(cmd,{stdio:'pipe',timeout:300000});
               const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
               send(res,{type:'done',file:outName,size,path:outPath});
