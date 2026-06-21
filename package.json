@@ -1,7 +1,7 @@
 {
   "name": "norys-reels",
   "productName": "Norys Reels",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Duplicateur vidéo Instagram — Electron + FFmpeg",
   "main": "main.js",
   "private": true,
@@ -106,13 +106,13 @@
       ]
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Norys Reels",
-      "artifactName": "Norys_Reels.exe"
+      "artifactName": "Norys_Reels.exe",
+      "runAfterFinish": true
     },
     "portable": {
       "artifactName": "NorysReels-Portable.exe"

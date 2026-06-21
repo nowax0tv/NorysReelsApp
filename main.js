@@ -118,7 +118,11 @@ function setupAutoUpdater() {
 }
 
 ipcMain.on('restart-and-install-update', () => {
-  autoUpdater.quitAndInstall();
+  // (isSilent, isForceRunAfter) : sans ça, l'installeur NSIS rouvrait son
+  // assistant complet (choix du dossier, etc.) à chaque mise à jour — on
+  // dirait que ça réinstalle une toute nouvelle app au lieu de juste
+  // remplacer les fichiers et relancer.
+  autoUpdater.quitAndInstall(true, true);
 });
 
 ipcMain.on('window-minimize', () => mainWindow && mainWindow.minimize());
