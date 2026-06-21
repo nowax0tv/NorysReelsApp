@@ -9,10 +9,10 @@
   "scripts": {
     "start": "electron .",
     "icon": "node build/generate-icon.js",
-    "dist": "electron-builder --win nsis portable",
-    "dist:nsis": "electron-builder --win nsis",
-    "dist:portable": "electron-builder --win portable",
-    "dist:mac": "electron-builder --mac dmg"
+    "dist": "electron-builder --win nsis portable --publish never",
+    "dist:nsis": "electron-builder --win nsis --publish never",
+    "dist:portable": "electron-builder --win portable --publish never",
+    "dist:mac": "electron-builder --mac dmg --publish never"
   },
   "devDependencies": {
     "electron": "^31.7.7",
