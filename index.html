@@ -890,7 +890,7 @@
     .size-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple2); width: 34px; text-align: right; flex-shrink: 0; }
 
     .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text2); }
-    .toggle-sw { position:relative;width:34px;height:19px;flex-shrink:0; }
+    .toggle-sw { display:inline-block;position:relative;width:34px;height:19px;flex-shrink:0; }
     .toggle-sw input { opacity:0;width:0;height:0; }
     .toggle-sl {
       position:absolute;inset:0;
@@ -2212,7 +2212,11 @@ function startSplashParticles(opts){
   }
 
   function updateParticle(p){
-    const angle = (Math.cos(p.x * 0.005) + Math.sin(p.y * 0.005)) * Math.PI;
+    // Le champ doit légèrement évoluer dans le temps, sinon les particules
+    // finissent toutes par suivre les mêmes lignes de flux fixes et le fond
+    // se transforme en stries figées après quelques minutes d'utilisation.
+    const t = performance.now() * 0.00008;
+    const angle = (Math.cos(p.x * 0.005 + t) + Math.sin(p.y * 0.005 + t)) * Math.PI;
     p.vx += Math.cos(angle) * 0.2 * speed;
     p.vy += Math.sin(angle) * 0.2 * speed;
 
@@ -4016,15 +4020,36 @@ function renderFiles(){
 }
 
 // ── SYNC SLIDER/INPUT ─────────────────────────────────────
+// La barre colorée des <input type=range> dépend de la variable CSS --pct
+// (voir règle "input[type=range]"), mais rien ne la mettait à jour — elle
+// restait figée à son fallback de 2% peu importe la valeur réelle.
+function updateRangeFill(el){
+  const min = parseFloat(el.min) || 0;
+  const max = parseFloat(el.max) || 100;
+  const val = parseFloat(el.value) || 0;
+  const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+  el.style.setProperty('--pct', pct + '%');
+}
+document.addEventListener('input', (e) => {
+  if(e.target.matches && e.target.matches('input[type=range]')) updateRangeFill(e.target);
+});
+function initRangeFills(){
+  document.querySelectorAll('input[type=range]').forEach(updateRangeFill);
+}
+document.addEventListener('DOMContentLoaded', initRangeFills);
+
 function syncSlider(el){
   const n = Math.min(Math.max(parseInt(el.value) || 1, 1), 500);
   document.getElementById('variants-input').value = n;
   document.getElementById('variants-display').textContent = n;
+  updateRangeFill(el);
 }
 function syncInput(el){
   const n = Math.min(Math.max(parseInt(el.value) || 1, 1), 500);
-  document.getElementById('variants-slider').value = n;
+  const slider = document.getElementById('variants-slider');
+  slider.value = n;
   document.getElementById('variants-display').textContent = n;
+  updateRangeFill(slider);
 }
 
 // ── GENERATE ──────────────────────────────────────────────
