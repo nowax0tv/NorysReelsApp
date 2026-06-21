@@ -2167,9 +2167,12 @@ function nextPage(){ if(currentPage < PAGES.length - 1) goPage(PAGES[currentPage
 function prevPage(){ if(currentPage > 0) goPage(PAGES[currentPage - 1]); }
 
 
-// ── SPLASH PARTICLE FLOW FIELD ─────────────────────────────────
-// Porté en JS vanilla depuis un composant React (canvas + classe Particle).
-// Champ de flux + particules violettes qui réagissent à la souris, en fond du splash.
+// ── NEURAL BACKGROUND (identique au site web) ──────────────────
+// Port fidèle de src/components/shared/neural-background.tsx (NorysTracking
+// React) : même champ de bruit, même effacement complet à chaque frame (pas
+// de traînées), mêmes particules en cercle avec fade basé sur leur durée de
+// vie. L'ancienne version ("flow field" avec traînées) avait un algorithme
+// totalement différent du site — fond pas du tout identique malgré le nom.
 function startSplashParticles(opts){
   const canvasId    = (opts && opts.canvasId) || 'splash-particles';
   const containerId = (opts && opts.containerId) || 'splash';
@@ -2179,76 +2182,58 @@ function startSplashParticles(opts){
   const ctx = canvas.getContext('2d');
   if(!ctx) return null;
 
-  const color           = (opts && opts.color) || '#7c3aed';
-  const trailOpacity    = (opts && opts.trailOpacity !== undefined) ? opts.trailOpacity : 0.12;
-  const particleCount   = (opts && opts.particleCount) || 350;
-  const speed           = (opts && opts.speed) || 0.8;
-  const maxAlpha        = (opts && opts.maxAlpha !== undefined) ? opts.maxAlpha : 1;
-  const mouseInteraction = (opts && opts.mouseInteraction !== undefined) ? opts.mouseInteraction : true;
+  const color         = (opts && opts.color) || '#8B5CF6';
+  const opacity       = (opts && opts.maxAlpha !== undefined) ? opts.maxAlpha : 0.6;
+  const particleCount = (opts && opts.particleCount) || 140;
+
+  const hexMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+  const rgb = hexMatch
+    ? { r: parseInt(hexMatch[1],16), g: parseInt(hexMatch[2],16), b: parseInt(hexMatch[3],16) }
+    : { r:139, g:92, b:246 };
 
   let width = container.clientWidth;
   let height = container.clientHeight;
   let particles = [];
   let animationFrameId = null;
   let running = true;
-  const mouse = { x: -1000, y: -1000 };
+  let t = 0;
+
+  function noise(x, y, tt){
+    return Math.sin(x * 0.0025 + tt) * Math.cos(y * 0.0025 - tt)
+         + Math.sin((x + y) * 0.0015 + tt * 0.5);
+  }
 
   function makeParticle(){
     return {
       x: Math.random() * width,
       y: Math.random() * height,
       vx: 0, vy: 0,
-      age: 0,
-      life: Math.random() * 200 + 100,
+      life: 0,
+      maxLife: 200 + Math.random() * 200,
     };
   }
 
-  function resetParticle(p){
-    p.x = Math.random() * width;
-    p.y = Math.random() * height;
-    p.vx = 0; p.vy = 0;
-    p.age = 0;
-    p.life = Math.random() * 200 + 100;
-  }
-
   function updateParticle(p){
-    // Le champ doit légèrement évoluer dans le temps, sinon les particules
-    // finissent toutes par suivre les mêmes lignes de flux fixes et le fond
-    // se transforme en stries figées après quelques minutes d'utilisation.
-    const t = performance.now() * 0.00008;
-    const angle = (Math.cos(p.x * 0.005 + t) + Math.sin(p.y * 0.005 + t)) * Math.PI;
-    p.vx += Math.cos(angle) * 0.2 * speed;
-    p.vy += Math.sin(angle) * 0.2 * speed;
-
-    const dx = mouse.x - p.x;
-    const dy = mouse.y - p.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const interactionRadius = 150;
-    if(distance < interactionRadius){
-      const force = (interactionRadius - distance) / interactionRadius;
-      p.vx -= dx * force * 0.05;
-      p.vy -= dy * force * 0.05;
-    }
-
+    const angle = noise(p.x, p.y, t) * Math.PI * 2;
+    p.vx += Math.cos(angle) * 0.05;
+    p.vy += Math.sin(angle) * 0.05;
+    p.vx *= 0.94;
+    p.vy *= 0.94;
     p.x += p.vx;
     p.y += p.vy;
-    p.vx *= 0.95;
-    p.vy *= 0.95;
+    p.life += 1;
 
-    p.age++;
-    if(p.age > p.life) resetParticle(p);
-
-    if(p.x < 0) p.x = width;
-    if(p.x > width) p.x = 0;
-    if(p.y < 0) p.y = height;
-    if(p.y > height) p.y = 0;
+    if(p.x < 0 || p.x > width || p.y < 0 || p.y > height || p.life > p.maxLife){
+      Object.assign(p, makeParticle());
+    }
   }
 
   function drawParticle(p){
-    ctx.fillStyle = color;
-    const alpha = 1 - Math.abs((p.age / p.life) - 0.5) * 2;
-    ctx.globalAlpha = Math.max(0, alpha) * maxAlpha;
-    ctx.fillRect(p.x, p.y, 1.5, 1.5);
+    const fade = 1 - p.life / p.maxLife;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba('+rgb.r+','+rgb.g+','+rgb.b+','+(fade * opacity)+')';
+    ctx.fill();
   }
 
   function init(){
@@ -2266,8 +2251,8 @@ function startSplashParticles(opts){
 
   function animate(){
     if(!running) return;
-    ctx.fillStyle = 'rgba(10, 10, 15, ' + trailOpacity + ')';
-    ctx.fillRect(0, 0, width, height);
+    t += 0.0025;
+    ctx.clearRect(0, 0, width, height);
     for(const p of particles){ updateParticle(p); drawParticle(p); }
     animationFrameId = requestAnimationFrame(animate);
   }
@@ -2277,32 +2262,14 @@ function startSplashParticles(opts){
     height = container.clientHeight;
     init();
   }
-  function handleMouseMove(e){
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-  }
-  function handleMouseLeave(){
-    mouse.x = -1000;
-    mouse.y = -1000;
-  }
-
   init();
   animate();
   window.addEventListener('resize', handleResize);
-  if(mouseInteraction){
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
-  }
 
   return function stop(){
     running = false;
     if(animationFrameId) cancelAnimationFrame(animationFrameId);
     window.removeEventListener('resize', handleResize);
-    if(mouseInteraction){
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-    }
   };
 }
 
@@ -2542,7 +2509,7 @@ function runSplash(){
   const bar = document.getElementById('splash-bar');
   const status = document.getElementById('splash-status');
   const splash = document.getElementById('splash');
-  const stopParticles = startSplashParticles({ color: '#7c3aed', trailOpacity: 0.12, particleCount: 350, speed: 0.8 });
+  const stopParticles = startSplashParticles({ color: '#8B5CF6', particleCount: 160 });
   const pct = [0,20,50,75,95];
   const labels = t('splashSteps');
   const steps = pct.map((p,idx) => [p, labels[idx]]);
@@ -2937,15 +2904,13 @@ async function enterAppOrLogin(){
     showWelcomeToast();
     if(!window.__mainParticlesStarted){
       window.__mainParticlesStarted = true;
+      // Mêmes valeurs que la page Reels du site (NeuralBackground opacity=0.3 particleCount=100)
       startSplashParticles({
         canvasId: 'main-particles',
         containerId: 'main-particles-container',
-        color: '#7c3aed',
-        trailOpacity: 0.04,
-        particleCount: 55,
-        speed: 0.18,
-        maxAlpha: 0.09,
-        mouseInteraction: false,
+        color: '#8B5CF6',
+        particleCount: 100,
+        maxAlpha: 0.3,
       });
     }
   } else {
