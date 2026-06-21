@@ -450,7 +450,12 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   // pour un gain de qualité invisible une fois recompressé par Instagram à l'upload.
   // CRF 21 reste excellent visuellement et réduit le poids de ~50-60%.
   const CRF    = 21;
-  const PRESET = 'slow';
+  // "slow" donnait une qualité excellente mais rendait la génération de
+  // beaucoup de variantes interminable (preset = le plus gros levier de
+  // vitesse x264). "medium" encode 2 à 3x plus vite pour une qualité
+  // quasi identique au même CRF — le vrai gain qualité de "slow" se voit
+  // surtout en dessous de CRF 18, pas ici.
+  const PRESET = 'medium';
   const AUDIO  = '192k';
 
   // Durée connue à l'avance pour calculer une vraie progression en direct
@@ -628,7 +633,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     console.log('===================');
 
     const proc = spawn(FFMPEG_BIN, fullArgs, { windowsHide: true });
-    let stderrTail = '';
+    let stderrFull = '';
     let buf = '';
     const timeoutMs = 600000;
     const killTimer = setTimeout(() => { try{ proc.kill('SIGKILL'); }catch{} }, timeoutMs);
@@ -646,22 +651,37 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
       }
     });
     proc.stderr.on('data', (chunk) => {
-      stderrTail = (stderrTail + chunk.toString()).slice(-500);
+      // Pas de slice ici : un message d'erreur ffmpeg utile peut largement
+      // dépasser 500 caractères (filtres complexes, chemins longs...) — le
+      // tronquer à la volée masquait la vraie cause de l'échec dans les logs.
+      stderrFull += chunk.toString();
     });
-    proc.on('error', (e) => {
+    const cleanup = () => {
       clearTimeout(killTimer);
       if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
+    };
+    // Si l'encodage échoue, ffmpeg a pu écrire un fichier de sortie partiel
+    // (en-tête présent mais frames manquantes) — un fichier au nom normal
+    // qui semble correct mais ne s'ouvre dans aucun lecteur. Le supprimer
+    // pour ne jamais laisser un fichier corrompu se faire passer pour une
+    // variante réussie.
+    const removeBrokenOutput = () => {
+      try{ if(fs.existsSync(outputFile)) fs.unlinkSync(outputFile); }catch{}
+    };
+    proc.on('error', (e) => {
+      cleanup();
+      removeBrokenOutput();
       console.error('FFmpeg spawn error:', e.message);
       resolve(false);
     });
     proc.on('close', (code) => {
-      clearTimeout(killTimer);
-      if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
+      cleanup();
       if(code === 0){
         if(onProgress) onProgress(1);
         resolve(true);
       } else {
-        console.error('FFmpeg error (code '+code+'):', stderrTail.slice(0,300));
+        removeBrokenOutput();
+        console.error('FFmpeg error (code '+code+'):', stderrFull.slice(-1500));
         resolve(false);
       }
     });
