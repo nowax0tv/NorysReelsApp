@@ -10,6 +10,7 @@ const path = require('path');
 const http = require('http');
 const { spawn } = require('child_process');
 const treeKill = require('tree-kill');
+const { autoUpdater } = require('electron-updater');
 
 const PORT = 3333;
 const SERVER_URL = `http://localhost:${PORT}`;
@@ -89,6 +90,37 @@ function createMainWindow() {
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 }
 
+// ── AUTO-UPDATE ──────────────────────────────────────────────
+// Avant ça, une mise à jour voulait dire retélécharger et réinstaller
+// manuellement depuis le site à chaque fois. electron-updater vérifie
+// la dernière release GitHub (latest.yml, déjà généré par electron-builder),
+// télécharge la mise à jour en arrière-plan, puis prévient l'UI une fois
+// prête — l'utilisateur n'a qu'à cliquer "Redémarrer pour installer".
+// Ne s'applique qu'à l'installeur NSIS : le portable n'a pas de mécanisme
+// de remplacement automatique, donc on ignore silencieusement les erreurs
+// dans ce cas (checkForUpdates() échoue proprement, sans planter l'app).
+function setupAutoUpdater() {
+  if (!app.isPackaged) return; // inutile en dev (electron .), pas de release à comparer
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version });
+  });
+  autoUpdater.on('error', (err) => {
+    console.log('[Norys Reels] auto-update:', err.message);
+  });
+
+  autoUpdater.checkForUpdates().catch((e) => {
+    console.log('[Norys Reels] checkForUpdates:', e.message);
+  });
+}
+
+ipcMain.on('restart-and-install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
 ipcMain.on('window-minimize', () => mainWindow && mainWindow.minimize());
 ipcMain.on('window-maximize', () => {
   if (!mainWindow) return;
@@ -132,6 +164,7 @@ if (!gotLock) {
       console.error('[Norys Reels]', e.message);
     }
     createMainWindow();
+    setupAutoUpdater();
   });
 
   app.on('window-all-closed', () => {

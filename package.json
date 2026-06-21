@@ -1,7 +1,7 @@
 {
   "name": "norys-reels",
   "productName": "Norys Reels",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Duplicateur vidéo Instagram — Electron + FFmpeg",
   "main": "main.js",
   "private": true,
@@ -22,6 +22,12 @@
     "appId": "com.norys.reels",
     "productName": "Norys Reels",
     "asar": false,
+    "publish": {
+      "provider": "github",
+      "owner": "nowax0tv",
+      "repo": "NorysReelsApp",
+      "releaseType": "release"
+    },
     "files": [
       "main.js",
       "preload.js",
@@ -36,12 +42,34 @@
       "node_modules/ffprobe-static/index.js",
       "node_modules/ffprobe-static/package.json",
       "!node_modules/ffprobe-static/bin/**/*",
-      "node_modules/tree-kill/**/*"
+      "node_modules/tree-kill/**/*",
+      "node_modules/electron-updater/**/*",
+      "node_modules/builder-util-runtime/**/*",
+      "node_modules/fs-extra/**/*",
+      "node_modules/js-yaml/**/*",
+      "node_modules/lazy-val/**/*",
+      "node_modules/lodash.escaperegexp/**/*",
+      "node_modules/lodash.isequal/**/*",
+      "node_modules/semver/**/*",
+      "node_modules/tiny-typed-emitter/**/*",
+      "node_modules/debug/**/*",
+      "node_modules/sax/**/*",
+      "node_modules/ms/**/*",
+      "node_modules/graceful-fs/**/*",
+      "node_modules/jsonfile/**/*",
+      "node_modules/universalify/**/*",
+      "node_modules/argparse/**/*"
     ],
     "directories": {
       "output": "dist_electron",
       "buildResources": "build"
     },
+    "extraResources": [
+      { "from": "node_modules/builder-util-runtime", "to": "app/node_modules/builder-util-runtime" },
+      { "from": "node_modules/fs-extra", "to": "app/node_modules/fs-extra" },
+      { "from": "node_modules/semver", "to": "app/node_modules/semver" },
+      { "from": "node_modules/jsonfile", "to": "app/node_modules/jsonfile" }
+    ],
     "win": {
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false,
@@ -96,6 +124,7 @@
     }
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "ffmpeg-static": "^5.3.0",
     "ffprobe-static": "^3.1.0",
     "tree-kill": "^1.2.2"

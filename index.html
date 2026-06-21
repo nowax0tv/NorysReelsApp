@@ -37,6 +37,25 @@
 
     html, body { height: 100%; overflow: hidden; }
 
+    #update-banner {
+      display: none;
+      align-items: center; gap: 10px;
+      position: fixed; top: var(--titlebar-h); left: 0; right: 0; z-index: 9998;
+      padding: 8px 16px;
+      background: linear-gradient(90deg, #7c3aed, #c026d3);
+      color: #fff; font-size: 12px; font-weight: 600;
+      box-shadow: 0 2px 12px rgba(124,58,237,.4);
+    }
+    #update-banner.visible { display: flex; }
+    #update-banner-btn {
+      margin-left: auto;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+      color: #fff; font-size: 11px; font-weight: 700;
+      padding: 4px 12px; border-radius: 999px; cursor: pointer;
+      transition: background .15s;
+    }
+    #update-banner-btn:hover { background: rgba(255,255,255,.3); }
+
     body {
       background: var(--bg);
       color: var(--text);
@@ -1522,6 +1541,12 @@
   </style>
 </head>
 <body>
+
+<div id="update-banner">
+  <span data-icon="sparkles"></span>
+  <span id="update-banner-text">Une mise à jour est prête.</span>
+  <button id="update-banner-btn" onclick="restartAndInstallUpdate()">Redémarrer pour installer</button>
+</div>
 
 <div id="titlebar">
   <div id="titlebar-name"><span class="dot"></span>Norys Reels</div>
@@ -4011,6 +4036,24 @@ function initRangeFills(){
   document.querySelectorAll('input[type=range]').forEach(updateRangeFill);
 }
 document.addEventListener('DOMContentLoaded', initRangeFills);
+
+// ── AUTO-UPDATE (UI) ────────────────────────────────────────────
+// Avant ça, une mise à jour voulait dire retélécharger et réinstaller
+// manuellement depuis le site — main.js télécharge maintenant la mise
+// à jour en arrière-plan et prévient ici une fois prête à installer.
+function restartAndInstallUpdate(){
+  if(window.electronAPI && window.electronAPI.restartAndInstallUpdate){
+    window.electronAPI.restartAndInstallUpdate();
+  }
+}
+if(window.electronAPI && window.electronAPI.onUpdateReady){
+  window.electronAPI.onUpdateReady((info) => {
+    const banner = document.getElementById('update-banner');
+    const text   = document.getElementById('update-banner-text');
+    if(text) text.textContent = `Norys Reels ${info.version} est prêt à installer.`;
+    if(banner) banner.classList.add('visible');
+  });
+}
 
 function syncSlider(el){
   const n = Math.min(Math.max(parseInt(el.value) || 1, 1), 500);
