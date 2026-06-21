@@ -2095,24 +2095,6 @@
           </button>
           <button class="btn-xs" id="open-folder-btn" onclick="openOutputFolder()" style="flex-shrink:0;padding:0 18px;"><span data-icon="folderOpen"></span> <span data-i18n="openFolderBtn">Ouvrir dossier</span></button>
         </div>
-
-        <div class="modal-overlay" id="progress-card">
-          <div class="modal-inner" style="width:min(92vw,480px);">
-            <div class="card" style="margin-bottom:0;">
-              <div class="modal-close" id="progress-close-btn" onclick="closeProgressModal()" style="display:none;">✕</div>
-              <div class="prog-head">
-                <div class="prog-lbl" id="prog-lbl" data-i18n="generatingInProgress">Génération en cours…</div>
-                <div class="prog-pct" id="progress-pct">0%</div>
-              </div>
-              <div class="prog-bar-wrap"><div class="prog-bar" id="progress-bar"></div></div>
-              <div class="log-box" id="log-box"></div>
-              <div class="done-box" id="done-banner">
-                <div class="done-title" id="done-title">✅ Génération terminée !</div>
-                <div class="done-sub" id="done-sub"></div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -2130,6 +2112,30 @@
   </div><!-- /app-content -->
 
 </div><!-- /app -->
+
+<!-- MODAL PROGRESSION GÉNÉRATION -->
+<!-- En dehors de tout .page : staggerReveal() anime les enfants directs de
+     la page active à chaque navigation, et son animation se termine à
+     opacity:1 de façon permanente (animation-fill-mode:forwards) — ça
+     rendait ce modal visible juste en arrivant sur l'onglet "Générer",
+     sans jamais cliquer sur le bouton. -->
+<div class="modal-overlay" id="progress-card">
+  <div class="modal-inner" style="width:min(92vw,480px);">
+    <div class="card" style="margin-bottom:0;">
+      <div class="modal-close" id="progress-close-btn" onclick="closeProgressModal()" style="display:none;">✕</div>
+      <div class="prog-head">
+        <div class="prog-lbl" id="prog-lbl" data-i18n="generatingInProgress">Génération en cours…</div>
+        <div class="prog-pct" id="progress-pct">0%</div>
+      </div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="progress-bar"></div></div>
+      <div class="log-box" id="log-box"></div>
+      <div class="done-box" id="done-banner">
+        <div class="done-title" id="done-title">✅ Génération terminée !</div>
+        <div class="done-sub" id="done-sub"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL CAPTIONS -->
 <div class="modal-overlay" id="preview-modal">
