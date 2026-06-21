@@ -4017,11 +4017,11 @@ function rmFile(name){ files=files.filter(f=>f.name!==name); renderFiles(); }
 function renderFiles(){
   const list = document.getElementById('file-list');
   list.innerHTML = files.map(f=>`
-    <div class="file-item">
-      <div class="file-ext">MP4</div>
-      <span class="file-name">${f.name}</span>
-      <span class="file-size">${(f.size/1024/1024).toFixed(1)}MB</span>
-      <span class="file-del" onclick="rmFile('${f.name}')">✕</span>
+    <div class="file-pill">
+      <span class="file-pill-icon">🎬</span>
+      <span class="file-pill-name">${f.name}</span>
+      <span class="file-pill-size">${(f.size/1024/1024).toFixed(1)} MB</span>
+      <span class="file-pill-rm" onclick="rmFile('${f.name}')">✕</span>
     </div>`).join('');
 }
 
