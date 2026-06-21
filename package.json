@@ -69,7 +69,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Norys Reels"
+      "shortcutName": "Norys Reels",
+      "artifactName": "Norys_Reels.exe"
     },
     "portable": {
       "artifactName": "NorysReels-Portable.exe"
