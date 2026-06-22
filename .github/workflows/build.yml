@@ -31,10 +31,12 @@ jobs:
 
       - run: npm run ${{ matrix.script }}
         env:
-          # Pas de certificat de signature Apple : on construit un .dmg non
-          # signé. Les utilisateurs verront un avertissement Gatekeeper
-          # ("développeur non identifié") à la première ouverture — clic
-          # droit puis "Ouvrir" pour passer outre.
+          # Pas de certificat de signature Apple (compte développeur payant
+          # requis) : on ne peut pas faire de vraie signature Developer ID +
+          # notarisation. build/after-pack-icon.js applique une signature
+          # ad-hoc (gratuite) au .app — sans ça, macOS affichait "est
+          # endommagé" (pas juste "développeur non identifié") et aucun
+          # clic droit > Ouvrir ne permettait de le contourner.
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - uses: softprops/action-gh-release@v2
