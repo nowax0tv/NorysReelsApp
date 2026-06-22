@@ -543,9 +543,14 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
            + '[rot]scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
       } else {
+        // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
+        // déjà plus grande que ça (1080x1920 typique), le facteur de
+        // rétrécissement (0.70-0.85) s'applique à SA résolution d'origine
+        // et reste plus grand que le canevas : le fond flouté ne se voit
+        // alors jamais (bordure invisible, bug constaté en testant).
         const mid = cleanFilter ? cleanFilter+',' : '';
         fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=25:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=iw*'+sf+':ih*'+sf+'[small];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black,scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
       }
       args = ['-y', ...trimArgs, '-i', inputFile,
@@ -564,14 +569,25 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
             + ':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+')'
             + ',scale=w=540:h=960:force_original_aspect_ratio=decrease'
             + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];'
-            + '[bg2][rot2]overlay=(W-w)/2:(H-h)/2'
+            // shortest=1 : sans ça, color= est une source infinie (pas de
+            // durée propre) et overlay répète sa dernière frame indéfiniment
+            // une fois la vidéo terminée — l'encodage tournait à l'infini
+            // (testé : toujours en cours après 10 min, fichier final corrompu
+            // car tué par le timeout serveur).
+            + '[bg2][rot2]overlay=(W-w)/2:(H-h)/2:shortest=1'
             + ',scale=iw*'+sf+':ih*'+sf
             + ',pad=iw*'+inv+':ih*'+inv+':(ow-iw)/2:(oh-ih)/2:0x'+bgHex
             + ',format=yuv420p[out2]';
       } else {
+        // Même correction que pour le fond flouté : normaliser à 540:960
+        // avant d'appliquer le facteur de rétrécissement.
+        // shortest=1 : sans ça, color= est une source infinie et overlay
+        // tourne indéfiniment une fois la vidéo terminée (voir commentaire
+        // plus haut, même bug, vérifié en testant — ffmpeg ne s'arrêtait
+        // jamais tout seul).
         fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
-            + '[0:v]'+mid2+'scale=iw*'+sf+':ih*'+sf+'[sm2];'
-            + '[bg2][sm2]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out2]';
+            + '[0:v]'+mid2+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+',scale=iw*'+sf+':ih*'+sf+'[sm2];'
+            + '[bg2][sm2]overlay=(W-w)/2:(H-h)/2:shortest=1,format=yuv420p[out2]';
       }
       args = ['-y', ...trimArgs, '-i', inputFile,
         '-filter_complex', fc2,
@@ -579,9 +595,19 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         ...encodeArgs, ...meta, outputFile];
     }
   } else if(rotateAngle){
+    // Même bug que le rétrécir : [fg] doit être ramené à 540:960 avant le
+    // pad*1.2/rotate/crop, sinon il reste à la résolution d'origine (ex.
+    // 1080x1920), recouvre entièrement le canevas de fond flouté, et la
+    // bordure n'apparaît jamais.
+    // fillcolor=black@0 (transparent) ne sert à rien sans canal alpha sur
+    // le flux — yuv420p n'en a pas, donc "transparent" devenait du noir
+    // opaque (le fond flouté ne pouvait jamais apparaître dans les coins).
+    // format=yuva420p avant le pad/rotate donne ce canal alpha, et le pad
+    // d'origine passe aussi en transparent (au lieu d'opaque) pour ne pas
+    // lui-même cacher le fond.
     const mid = cleanFilter ? cleanFilter+',' : '';
     const fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+mid+'pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
+      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black,format=yuva420p,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
       + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
