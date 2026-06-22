@@ -901,9 +901,13 @@ const server = http.createServer((req, res) => {
             tplId = 'all'+filters.length+'f';
 
             const ext = outputFormat === 'mov' ? '.mov' : '.mp4';
+            // Séquentielle : littéralement "variant_001.mp4" comme affiché dans
+            // l'aperçu — numérotation GLOBALE (attemptIndex, pas i) pour éviter
+            // que deux vidéos sources écrasent les mêmes noms (chacune repartait
+            // de 001 avant ce correctif).
             const outName = namingMode === 'random'
               ? base+'_'+Math.random().toString(16).slice(2,10)+ext
-              : base+'_v'+String(i+1).padStart(3,'0')+'_'+tplId+ext;
+              : 'variant_'+String(attemptIndex+1).padStart(3,'0')+ext;
             const outPath = path.join(outputDir, outName);
             console.log('['+(i+1)+'/'+numVariants+'] '+tplId+' → '+outName);
 
