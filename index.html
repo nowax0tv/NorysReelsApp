@@ -1137,6 +1137,26 @@
     }
     .modal-close:hover { background:var(--error);border-color:var(--error);color:#fff; }
 
+    /* Widget de progression flottant — pas un vrai modal : pas de fond
+       plein écran qui bloque la navigation, juste une carte ancrée en bas
+       à droite. On peut continuer à cliquer dans les menus pendant que ça
+       génère, tout en gardant l'avancement visible. */
+    .modal-overlay.floating-progress {
+      inset:auto;bottom:20px;right:20px;left:auto;top:auto;
+      background:none;backdrop-filter:none;
+      align-items:flex-end;justify-content:flex-end;
+      width:auto;height:auto;
+    }
+    .modal-overlay.floating-progress .modal-inner {
+      transform:translateY(16px) scale(.96);
+    }
+    .modal-overlay.floating-progress.open .modal-inner {
+      transform:translateY(0) scale(1);
+    }
+    .modal-overlay.floating-progress .card {
+      box-shadow:0 16px 48px rgba(0,0,0,.55), 0 0 0 1px var(--border2);
+    }
+
     /* Emoji */
     .emoji-picker { position:absolute;z-index:50;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-s);padding:12px;box-shadow:0 16px 48px rgba(0,0,0,.6);width:260px;animation:slideIn .2s ease; }
     .emoji-cats { display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap; }
@@ -2209,8 +2229,8 @@
      opacity:1 de façon permanente (animation-fill-mode:forwards) — ça
      rendait ce modal visible juste en arrivant sur l'onglet "Générer",
      sans jamais cliquer sur le bouton. -->
-<div class="modal-overlay" id="progress-card">
-  <div class="modal-inner" style="width:min(92vw,480px);">
+<div class="modal-overlay floating-progress" id="progress-card">
+  <div class="modal-inner" style="width:min(90vw,360px);">
     <div class="card" style="margin-bottom:0;">
       <div class="modal-close" id="progress-close-btn" onclick="closeProgressModal()" style="display:none;">✕</div>
       <div class="prog-head">
