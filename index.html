@@ -2884,12 +2884,23 @@ async function loadProfileData(session){
   let agencyName = '', plan = 'free', createdAt = null;
   if(supabaseClient){
     try {
-      const { data, error } = await supabaseClient.from('profiles').select('agency_name, plan, created_at, workspace').eq('id', userId).single();
+      const { data, error } = await supabaseClient.from('profiles').select('agency_name, role, created_at, workspace').eq('id', userId).single();
       if(!error && data){
         agencyName = data.agency_name || '';
-        plan = (data.plan || 'free').toString().toLowerCase();
         createdAt = data.created_at;
         currentWorkspace = data.workspace || '';
+
+        // Le plan réel vit dans `subscriptions` (par workspace), pas sur
+        // `profiles` — c'est la même source que le site NorysTracking.
+        if(data.role === 'admin'){
+          plan = 'admin';
+        } else if(currentWorkspace){
+          try {
+            const { data: sub } = await supabaseClient.from('subscriptions')
+              .select('plan, status').eq('tenant', currentWorkspace).maybeSingle();
+            if(sub && sub.status === 'active') plan = (sub.plan || 'free').toString().toLowerCase();
+          } catch(e){}
+        }
       }
     } catch(e){}
   }
