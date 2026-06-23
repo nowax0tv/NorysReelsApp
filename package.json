@@ -1,7 +1,7 @@
 {
   "name": "norys-reels",
   "productName": "Norys Reels",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "Duplicateur vidéo Instagram — Electron + FFmpeg",
   "main": "main.js",
   "private": true,
