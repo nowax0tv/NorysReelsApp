@@ -321,6 +321,15 @@
 
     .nav-step-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
 
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text3);
+      padding: 14px 12px 4px;
+    }
+
     .nav-step-badge {
       margin-left: auto;
       font-size: 9px;
@@ -1093,42 +1102,6 @@
     .done-title { font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--success);margin-bottom:4px; }
     .done-sub   { font-size:12px;color:var(--text2); }
 
-    /* ── BOTTOM BAR ─────────────────────────── */
-    .bottombar {
-      height: 48px;
-      background: rgba(10,10,22,.95);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-shrink: 0;
-      padding: 0 20px;
-    }
-
-    .nav-btn {
-      padding: 8px 20px;
-      border-radius: var(--r-s);
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.04);
-      color: var(--text2);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .15s;
-      font-family: 'Inter', sans-serif;
-    }
-    .nav-btn:hover { border-color: var(--border2); color: var(--text); }
-    .nav-btn.primary {
-      background: linear-gradient(135deg, var(--purple), var(--pink));
-      border-color: transparent;
-      color: #fff;
-      box-shadow: 0 4px 16px rgba(124,58,237,.4);
-    }
-    .nav-btn.primary:hover { opacity: .9; transform: translateY(-1px); }
-
-    .bottombar-spacer { flex: 1; }
-
     /* ── MODAL ──────────────────────────────── */
     .modal-overlay {
       position:fixed;inset:0;
@@ -1768,23 +1741,27 @@
     <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.0</div>
 
     <nav class="sidebar-nav">
-      <div class="nav-step active" id="nav-filters" onclick="goPage('filters')">
-        <span class="nav-step-icon" data-icon="sliders"></span> <span data-i18n="navFilters">Filtres</span>
+      <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
+        <span class="nav-step-icon" data-icon="zap"></span> <span data-i18n="navGenerate">Générer</span>
       </div>
+
+      <div class="sidebar-section-label" data-i18n="navOptionalTools">Outils optionnels</div>
+
       <div class="nav-step" id="nav-captions" onclick="goPage('captions')">
         <span class="nav-step-icon" data-icon="captions"></span> <span data-i18n="navCaptions">Captions</span>
         <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
       </div>
       <div class="nav-step" id="nav-music" onclick="goPage('music')">
         <span class="nav-step-icon" data-icon="music"></span> <span data-i18n="navMusic">Musique</span>
+        <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
       </div>
       <div class="nav-step" id="nav-videos" onclick="goPage('videos')">
         <span class="nav-step-icon" data-icon="repeat"></span> <span data-i18n="navConverter">Convertisseur</span>
         <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
       </div>
-      <div class="nav-step" id="nav-generate" onclick="goPage('generate')">
-        <span class="nav-step-icon" data-icon="zap"></span> <span data-i18n="navGenerate">Générer</span>
-      </div>
+
+      <div class="sidebar-section-label" data-i18n="navAccount">Compte</div>
+
       <div class="nav-step" id="nav-billing" onclick="goPage('billing')">
         <span class="nav-step-icon" data-icon="creditCard"></span> <span data-i18n="navBilling">Billing</span>
       </div>
@@ -1811,12 +1788,12 @@
     <canvas id="main-particles"></canvas>
 
     <!-- PAGE : VIDÉOS (Convertisseur) -->
-    <div class="page active" id="page-videos">
+    <div class="page" id="page-videos">
       <div class="page-inner">
         <div class="section-head">
           <div class="section-title">🔁 <span data-i18n="videosTitle">Convertisseur</span></div>
           <div class="section-desc" data-i18n="videosDesc">Convertis tes fichiers .MOV (iPhone) en .MP4 compatible</div>
-          <div class="optional-note" data-i18n="videosOptionalNote">Étape optionnelle — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Sinon, passe directement à la suite.</div>
+          <div class="optional-note" data-i18n="videosOptionalNote">Outil optionnel — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Pas besoin sinon.</div>
         </div>
 
         <div class="card">
@@ -1833,65 +1810,13 @@
       </div>
     </div>
 
-    <!-- PAGE : FILTRES -->
-    <div class="page" id="page-filters">
-      <div class="page-inner">
-        <div class="section-head">
-          <div class="section-title">🎨 <span data-i18n="filtersTitle">Filtres visuels</span></div>
-          <div class="section-desc" data-i18n="filtersDesc">Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques</div>
-        </div>
-
-        <div class="card">
-          <div class="filter-top">
-            <div class="card-label" style="margin-bottom:0;" data-i18n="selectionLabel">Sélection</div>
-            <div class="filter-badge" id="filter-count">0 / 0</div>
-          </div>
-
-          <div class="shrink-card" id="shrink-bg-option" style="display:none;">
-            <div class="shrink-label" data-i18n="shrinkBgLabel">Fond du rétrécir</div>
-            <div class="bg-row">
-              <div class="bg-btn active" id="shrink-bg-blur" onclick="setShrinkBg('blur')">🌫️ <span data-i18n="shrinkBgBlur">Flou vidéo</span></div>
-              <div class="bg-btn" id="shrink-bg-color" onclick="setShrinkBg('color')">🎨 <span data-i18n="shrinkBgColor">Couleur unie</span></div>
-            </div>
-            <div id="shrink-color-picker" style="display:none;">
-              <div class="swatches">
-                <div class="swatch" style="background:#000" onclick="setShrinkColor('#000000')"></div>
-                <div class="swatch active" style="background:#fff" onclick="setShrinkColor('#ffffff')"></div>
-                <div class="swatch" style="background:#ff69b4" onclick="setShrinkColor('#ff69b4')"></div>
-                <div class="swatch" style="background:#9b59b6" onclick="setShrinkColor('#9b59b6')"></div>
-                <div class="swatch" style="background:#3498db" onclick="setShrinkColor('#3498db')"></div>
-                <div class="swatch" style="background:#e74c3c" onclick="setShrinkColor('#e74c3c')"></div>
-                <div class="swatch" style="background:#2ecc71" onclick="setShrinkColor('#2ecc71')"></div>
-                <div class="swatch" style="background:#f39c12" onclick="setShrinkColor('#f39c12')"></div>
-                <input type="color" id="shrink-custom-color" value="#ffffff" oninput="setShrinkColor(this.value)"/>
-              </div>
-            </div>
-          </div>
-
-          <div id="t-grid" class="filter-grid"></div>
-
-          <div class="filter-actions">
-            <button class="btn-xs" onclick="setAll(true)" data-i18n="enableAll">Tout activer</button>
-            <button class="btn-xs" onclick="setAll(false)" data-i18n="disableAll">Tout désactiver</button>
-            <div class="filter-hint">⚡ <strong data-i18n="allActiveFilters">Tous les filtres actifs</strong> <span data-i18n="randomValuesPerVariant">+ valeurs aléatoires par variante</span></div>
-          </div>
-
-          <div class="preset-row">
-            <input class="preset-input" id="preset-name-input" type="text" placeholder="Nom du preset…" data-i18n-ph="presetNamePh" maxlength="40"/>
-            <button class="preset-save-btn" onclick="savePreset()">💾 <span data-i18n="save">Sauvegarder</span></button>
-          </div>
-          <div class="preset-tags-row" id="preset-tags" style="display:none;"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- PAGE : CAPTIONS -->
     <div class="page" id="page-captions">
       <div class="page-inner">
         <div class="section-head">
           <div class="section-title">📝 <span data-i18n="captionsTitle">Sous-titres</span></div>
           <div class="section-desc" data-i18n="captionsDesc">Texte gravé directement dans la vidéo · drag &amp; drop la position</div>
-          <div class="optional-note" data-i18n="captionsOptionalNote">Étape optionnelle — ajoute des sous-titres si tu veux, ou passe directement à la musique.</div>
+          <div class="optional-note" data-i18n="captionsOptionalNote">Outil optionnel — ajoute des sous-titres si tu veux, sinon ignore cet onglet.</div>
         </div>
 
         <div class="extract-mode-grid">
@@ -2101,7 +2026,7 @@
     </div>
 
     <!-- PAGE : GÉNÉRER -->
-    <div class="page" id="page-generate">
+    <div class="page active" id="page-generate">
       <div class="page-inner">
         <div class="section-head">
           <div class="section-title">⚡ <span data-i18n="generateTitle">Générer</span></div>
@@ -2115,6 +2040,49 @@
           <input type="file" id="file-input" accept="video/*" multiple style="display:none" onchange="addFiles(this.files)"/>
         </div>
         <div class="file-list" id="file-list"></div>
+
+        <div class="card">
+          <div class="filter-top">
+            <div class="card-label" style="margin-bottom:0;" data-i18n="filtersTitle">Filtres visuels</div>
+            <div class="filter-badge" id="filter-count">0 / 0</div>
+          </div>
+          <div class="section-desc" style="margin-bottom:14px;" data-i18n="filtersDesc">Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques</div>
+
+          <div class="shrink-card" id="shrink-bg-option" style="display:none;">
+            <div class="shrink-label" data-i18n="shrinkBgLabel">Fond du rétrécir</div>
+            <div class="bg-row">
+              <div class="bg-btn active" id="shrink-bg-blur" onclick="setShrinkBg('blur')">🌫️ <span data-i18n="shrinkBgBlur">Flou vidéo</span></div>
+              <div class="bg-btn" id="shrink-bg-color" onclick="setShrinkBg('color')">🎨 <span data-i18n="shrinkBgColor">Couleur unie</span></div>
+            </div>
+            <div id="shrink-color-picker" style="display:none;">
+              <div class="swatches">
+                <div class="swatch" style="background:#000" onclick="setShrinkColor('#000000')"></div>
+                <div class="swatch active" style="background:#fff" onclick="setShrinkColor('#ffffff')"></div>
+                <div class="swatch" style="background:#ff69b4" onclick="setShrinkColor('#ff69b4')"></div>
+                <div class="swatch" style="background:#9b59b6" onclick="setShrinkColor('#9b59b6')"></div>
+                <div class="swatch" style="background:#3498db" onclick="setShrinkColor('#3498db')"></div>
+                <div class="swatch" style="background:#e74c3c" onclick="setShrinkColor('#e74c3c')"></div>
+                <div class="swatch" style="background:#2ecc71" onclick="setShrinkColor('#2ecc71')"></div>
+                <div class="swatch" style="background:#f39c12" onclick="setShrinkColor('#f39c12')"></div>
+                <input type="color" id="shrink-custom-color" value="#ffffff" oninput="setShrinkColor(this.value)"/>
+              </div>
+            </div>
+          </div>
+
+          <div id="t-grid" class="filter-grid"></div>
+
+          <div class="filter-actions">
+            <button class="btn-xs" onclick="setAll(true)" data-i18n="enableAll">Tout activer</button>
+            <button class="btn-xs" onclick="setAll(false)" data-i18n="disableAll">Tout désactiver</button>
+            <div class="filter-hint">⚡ <strong data-i18n="allActiveFilters">Tous les filtres actifs</strong> <span data-i18n="randomValuesPerVariant">+ valeurs aléatoires par variante</span></div>
+          </div>
+
+          <div class="preset-row">
+            <input class="preset-input" id="preset-name-input" type="text" placeholder="Nom du preset…" data-i18n-ph="presetNamePh" maxlength="40"/>
+            <button class="preset-save-btn" onclick="savePreset()">💾 <span data-i18n="save">Sauvegarder</span></button>
+          </div>
+          <div class="preset-tags-row" id="preset-tags" style="display:none;"></div>
+        </div>
 
         <div class="card">
           <div class="card-label" data-i18n="numVariantsLabel">Nombre de variantes</div>
@@ -2243,15 +2211,6 @@
 
   </div><!-- /main -->
 
-  <!-- BOTTOM NAV -->
-  <div class="bottombar">
-    <button class="nav-btn" id="btn-prev" onclick="prevPage()" style="display:none;">← <span data-i18n="prevBtn">Précédent</span></button>
-    <div class="bottombar-spacer"></div>
-    <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;" id="bottombar-info"></div>
-    <div class="bottombar-spacer"></div>
-    <button class="nav-btn primary" id="btn-next" onclick="nextPage()"><span data-i18n="nextBtn">Suivant</span> →</button>
-  </div>
-
   </div><!-- /app-content -->
 
 </div><!-- /app -->
@@ -2296,11 +2255,10 @@
 
 <script>
 
-// "billing" n'est pas une étape de l'assistant (pas de Suivant/Précédent
-// vers/depuis elle) — accessible seulement via son propre item de nav.
-const WIZARD_PAGES = ['filters','captions','music','videos','generate'];
-const PAGES = [...WIZARD_PAGES, 'billing'];
-let currentPage = 0;
+// Plus de séquence imposée : "Générer" est l'onglet principal (tout ce
+// qu'il faut pour lancer une génération y est regroupé), les autres sont
+// des outils optionnels indépendants accessibles à tout moment.
+const PAGES = ['generate','captions','music','videos','billing'];
 
 function staggerReveal(pg){
   if(!pg) return;
@@ -2319,39 +2277,15 @@ function staggerReveal(pg){
 function goPage(name){
   const idx = PAGES.indexOf(name);
   if(idx === -1) return;
-  if(idx !== currentPage) NorysSound.nav();
-  currentPage = idx;
+  const pgAlready = document.getElementById('page-'+name);
+  if(pgAlready && !pgAlready.classList.contains('active')) NorysSound.nav();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pg = document.getElementById('page-'+name);
   if(pg){ pg.classList.add('active'); staggerReveal(pg); }
   document.querySelectorAll('.nav-step').forEach((s,i) => {
-    s.classList.remove('active','done');
-    if(i === idx) s.classList.add('active');
-    else if(i < idx) s.classList.add('done');
+    s.classList.toggle('active', i === idx);
   });
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
-  const inWizard = WIZARD_PAGES.includes(name);
-  if(btnPrev) btnPrev.style.display = (inWizard && idx > 0) ? 'block' : 'none';
-  if(btnNext){
-    if(!inWizard || idx === WIZARD_PAGES.length - 1){ btnNext.style.display = 'none'; }
-    else {
-      btnNext.style.display = 'block';
-      const isOptionalStep = name === 'captions' || name === 'videos';
-      btnNext.textContent = idx === WIZARD_PAGES.length - 2
-        ? t('generateBtnLabel') + ' →'
-        : (isOptionalStep ? t('skipBtn') : t('nextBtn')) + ' →';
-    }
-  }
-  const info = document.getElementById('bottombar-info');
-  if(info){
-    const labels = t('stepLabels');
-    info.textContent = labels[idx] || '';
-  }
 }
-
-function nextPage(){ if(currentPage < PAGES.length - 1) goPage(PAGES[currentPage + 1]); }
-function prevPage(){ if(currentPage > 0) goPage(PAGES[currentPage - 1]); }
 
 
 // ── NEURAL BACKGROUND (identique au site web) ──────────────────
@@ -2579,9 +2513,8 @@ document.addEventListener('DOMContentLoaded', syncSoundButton);
 const I18N = {
   fr: {
     videosTitle: 'Convertisseur', videosDesc: 'Convertis tes fichiers .MOV (iPhone) en .MP4 compatible',
-    optionalBadge: 'optionnel', videosOptionalNote: "Étape optionnelle — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Sinon, passe directement à la suite.",
-    captionsOptionalNote: "Étape optionnelle — ajoute des sous-titres si tu veux, ou passe directement à la musique.",
-    skipBtn: 'Passer cette étape',
+    optionalBadge: 'optionnel', videosOptionalNote: "Outil optionnel — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Pas besoin sinon.",
+    captionsOptionalNote: "Outil optionnel — ajoute des sous-titres si tu veux, sinon ignore cet onglet.",
     dropTitle: 'Glisse tes vidéos ici', dropSub: 'MP4 · MOV · AVI · MKV — clic pour parcourir',
     convCardLabel: 'Convertisseur MOV → MP4', convDropTitle: "Dépose un fichier .MOV (iPhone)", convDropSub: 'Conversion automatique en MP4 compatible',
     filtersTitle: 'Filtres visuels', filtersDesc: 'Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques',
@@ -2597,8 +2530,8 @@ const I18N = {
     generateTitle: 'Générer', generateDesc: 'Lance la génération de tes variantes uniques', numVariantsLabel: 'Nombre de variantes',
     destinationLabel: 'Destination', destDesktop: 'Bureau', driveNotConnected: 'Non connecté', driveConnectBtn: 'Connecter Google Drive',
     connected: 'Connecté', disconnect: 'Déconnecter', generateBtnLabel: '⚡ Générer les variantes', generatingInProgress: 'Génération en cours…',
-    prevBtn: 'Précédent', nextBtn: 'Suivant',
-    navConverter: 'Convertisseur', navFilters: 'Filtres', navCaptions: 'Captions', navMusic: 'Musique', navGenerate: 'Générer', navBilling: 'Billing', logout: 'Déconnexion',
+    navConverter: 'Convertisseur', navCaptions: 'Captions', navMusic: 'Musique', navGenerate: 'Générer', navBilling: 'Billing', logout: 'Déconnexion',
+    navOptionalTools: 'Outils optionnels', navAccount: 'Compte',
     billingTitle: 'Billing', billingDesc: "Ton quota de variantes et tes options d'abonnement Reels",
     billingUsageLabel: 'Usage cette semaine', billingCurrentTier: 'Palier actuel :', billingResetNote: 'Réinitialisé chaque lundi à 00:00.',
     billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Inclus', billingPlanAgencyDesc: '50 variantes / semaine, inclus avec ton plan Agency NorysTracking.',
@@ -2616,7 +2549,6 @@ const I18N = {
     splashSteps: ['Initialisation…', 'Chargement des modules…', 'Vérification de FFmpeg…', 'Préparation de l’interface…', 'Presque prêt…'],
     splashReady: 'Prêt !',
     needVideo: 'Ajoute au moins une vidéo.', needFilter: 'Active au moins un filtre.',
-    stepLabels: ['Étape 1/5 · Filtres', 'Étape 2/5 · Captions (optionnel)', 'Étape 3/5 · Musique', 'Étape 4/5 · Convertisseur (optionnel)', 'Étape 5/5 · Générer'],
     ffmpegNotDetected: 'FFmpeg non détecté',
     groupSafe: 'Invisibles — hash unique garanti', groupBoost: 'Subtils — améliore le reach', groupCreative: 'Créatifs — effet visible',
     levelLabel: 'Niveau', statTotal: 'Reels générés', statMember: 'Membre depuis',
@@ -2631,9 +2563,8 @@ const I18N = {
   },
   en: {
     videosTitle: 'Converter', videosDesc: 'Convert your .MOV (iPhone) files to compatible .MP4',
-    optionalBadge: 'optional', videosOptionalNote: "Optional step — only needed if you have .MOV (iPhone) files to convert before using them. Otherwise, skip straight to the next step.",
-    captionsOptionalNote: "Optional step — add captions if you want, or skip straight to music.",
-    skipBtn: 'Skip this step',
+    optionalBadge: 'optional', videosOptionalNote: "Optional tool — only needed if you have .MOV (iPhone) files to convert before using them. No need otherwise.",
+    captionsOptionalNote: "Optional tool — add captions if you want, otherwise just ignore this tab.",
     dropTitle: 'Drop your videos here', dropSub: 'MP4 · MOV · AVI · MKV — click to browse',
     convCardLabel: 'MOV → MP4 converter', convDropTitle: 'Drop a .MOV file (iPhone)', convDropSub: 'Automatic conversion to compatible MP4',
     filtersTitle: 'Visual filters', filtersDesc: 'Each variant applies every active filter with unique randomized values',
@@ -2649,8 +2580,8 @@ const I18N = {
     generateTitle: 'Generate', generateDesc: 'Start generating your unique variants', numVariantsLabel: 'Number of variants',
     destinationLabel: 'Destination', destDesktop: 'Desktop', driveNotConnected: 'Not connected', driveConnectBtn: 'Connect Google Drive',
     connected: 'Connected', disconnect: 'Disconnect', generateBtnLabel: '⚡ Generate variants', generatingInProgress: 'Generating…',
-    prevBtn: 'Previous', nextBtn: 'Next',
-    navConverter: 'Converter', navFilters: 'Filters', navCaptions: 'Captions', navMusic: 'Music', navGenerate: 'Generate', navBilling: 'Billing', logout: 'Log out',
+    navConverter: 'Converter', navCaptions: 'Captions', navMusic: 'Music', navGenerate: 'Generate', navBilling: 'Billing', logout: 'Log out',
+    navOptionalTools: 'Optional tools', navAccount: 'Account',
     billingTitle: 'Billing', billingDesc: "Your variant quota and Reels subscription options",
     billingUsageLabel: 'Usage this week', billingCurrentTier: 'Current tier:', billingResetNote: 'Resets every Monday at 00:00.',
     billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Included', billingPlanAgencyDesc: '50 variants / week, included with your NorysTracking Agency plan.',
@@ -2668,7 +2599,6 @@ const I18N = {
     splashSteps: ['Starting up…', 'Loading modules…', 'Checking FFmpeg…', 'Preparing the interface…', 'Almost there…'],
     splashReady: 'Ready!',
     needVideo: 'Add at least one video.', needFilter: 'Enable at least one filter.',
-    stepLabels: ['Step 1/5 · Filters', 'Step 2/5 · Captions (optional)', 'Step 3/5 · Music', 'Step 4/5 · Converter (optional)', 'Step 5/5 · Generate'],
     ffmpegNotDetected: 'FFmpeg not detected',
     groupSafe: 'Invisible — guaranteed unique hash', groupBoost: 'Subtle — improves reach', groupCreative: 'Creative — visible effect',
     levelLabel: 'Level', statTotal: 'Reels generated', statMember: 'Member since',
@@ -3225,7 +3155,7 @@ async function enterAppOrLogin(){
     await applySessionToUI(session);
     login.classList.remove('visible');
     app.classList.add('visible');
-    goPage('filters');
+    goPage('generate');
     checkFFmpeg();
     renderPresetTags();
     renderCaptionTemplateTags();
