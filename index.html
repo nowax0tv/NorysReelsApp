@@ -321,6 +321,20 @@
 
     .nav-step-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
 
+    .nav-step-badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--warn);
+      background: rgba(245,158,11,.12);
+      border: 1px solid rgba(245,158,11,.3);
+      border-radius: 999px;
+      padding: 2px 7px;
+      flex-shrink: 0;
+    }
+
     /* ── SIDEBAR FOOTER ────────────────────── */
     .sidebar-footer {
       display: flex;
@@ -465,6 +479,21 @@
       font-size: 12px;
       color: var(--text2);
     }
+
+    .optional-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: var(--r-s);
+      background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.25);
+      color: var(--warn);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .optional-note::before { content: '💡'; flex-shrink: 0; }
 
     /* ── CARD ──────────────────────────────── */
     .card {
@@ -1744,12 +1773,14 @@
       </div>
       <div class="nav-step" id="nav-captions" onclick="goPage('captions')">
         <span class="nav-step-icon" data-icon="captions"></span> <span data-i18n="navCaptions">Captions</span>
+        <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
       </div>
       <div class="nav-step" id="nav-music" onclick="goPage('music')">
         <span class="nav-step-icon" data-icon="music"></span> <span data-i18n="navMusic">Musique</span>
       </div>
       <div class="nav-step" id="nav-videos" onclick="goPage('videos')">
         <span class="nav-step-icon" data-icon="repeat"></span> <span data-i18n="navConverter">Convertisseur</span>
+        <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
       </div>
       <div class="nav-step" id="nav-generate" onclick="goPage('generate')">
         <span class="nav-step-icon" data-icon="zap"></span> <span data-i18n="navGenerate">Générer</span>
@@ -1785,6 +1816,7 @@
         <div class="section-head">
           <div class="section-title">🔁 <span data-i18n="videosTitle">Convertisseur</span></div>
           <div class="section-desc" data-i18n="videosDesc">Convertis tes fichiers .MOV (iPhone) en .MP4 compatible</div>
+          <div class="optional-note" data-i18n="videosOptionalNote">Étape optionnelle — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Sinon, passe directement à la suite.</div>
         </div>
 
         <div class="card">
@@ -1859,6 +1891,7 @@
         <div class="section-head">
           <div class="section-title">📝 <span data-i18n="captionsTitle">Sous-titres</span></div>
           <div class="section-desc" data-i18n="captionsDesc">Texte gravé directement dans la vidéo · drag &amp; drop la position</div>
+          <div class="optional-note" data-i18n="captionsOptionalNote">Étape optionnelle — ajoute des sous-titres si tu veux, ou passe directement à la musique.</div>
         </div>
 
         <div class="extract-mode-grid">
@@ -2302,7 +2335,13 @@ function goPage(name){
   if(btnPrev) btnPrev.style.display = (inWizard && idx > 0) ? 'block' : 'none';
   if(btnNext){
     if(!inWizard || idx === WIZARD_PAGES.length - 1){ btnNext.style.display = 'none'; }
-    else { btnNext.style.display = 'block'; btnNext.textContent = idx === WIZARD_PAGES.length - 2 ? t('generateBtnLabel') + ' →' : t('nextBtn') + ' →'; }
+    else {
+      btnNext.style.display = 'block';
+      const isOptionalStep = name === 'captions' || name === 'videos';
+      btnNext.textContent = idx === WIZARD_PAGES.length - 2
+        ? t('generateBtnLabel') + ' →'
+        : (isOptionalStep ? t('skipBtn') : t('nextBtn')) + ' →';
+    }
   }
   const info = document.getElementById('bottombar-info');
   if(info){
@@ -2540,6 +2579,9 @@ document.addEventListener('DOMContentLoaded', syncSoundButton);
 const I18N = {
   fr: {
     videosTitle: 'Convertisseur', videosDesc: 'Convertis tes fichiers .MOV (iPhone) en .MP4 compatible',
+    optionalBadge: 'optionnel', videosOptionalNote: "Étape optionnelle — utile seulement si tu as des vidéos .MOV (iPhone) à convertir avant de les utiliser. Sinon, passe directement à la suite.",
+    captionsOptionalNote: "Étape optionnelle — ajoute des sous-titres si tu veux, ou passe directement à la musique.",
+    skipBtn: 'Passer cette étape',
     dropTitle: 'Glisse tes vidéos ici', dropSub: 'MP4 · MOV · AVI · MKV — clic pour parcourir',
     convCardLabel: 'Convertisseur MOV → MP4', convDropTitle: "Dépose un fichier .MOV (iPhone)", convDropSub: 'Conversion automatique en MP4 compatible',
     filtersTitle: 'Filtres visuels', filtersDesc: 'Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques',
@@ -2574,7 +2616,7 @@ const I18N = {
     splashSteps: ['Initialisation…', 'Chargement des modules…', 'Vérification de FFmpeg…', 'Préparation de l’interface…', 'Presque prêt…'],
     splashReady: 'Prêt !',
     needVideo: 'Ajoute au moins une vidéo.', needFilter: 'Active au moins un filtre.',
-    stepLabels: ['Étape 1/5 · Filtres', 'Étape 2/5 · Captions', 'Étape 3/5 · Musique', 'Étape 4/5 · Convertisseur', 'Étape 5/5 · Générer'],
+    stepLabels: ['Étape 1/5 · Filtres', 'Étape 2/5 · Captions (optionnel)', 'Étape 3/5 · Musique', 'Étape 4/5 · Convertisseur (optionnel)', 'Étape 5/5 · Générer'],
     ffmpegNotDetected: 'FFmpeg non détecté',
     groupSafe: 'Invisibles — hash unique garanti', groupBoost: 'Subtils — améliore le reach', groupCreative: 'Créatifs — effet visible',
     levelLabel: 'Niveau', statTotal: 'Reels générés', statMember: 'Membre depuis',
@@ -2589,6 +2631,9 @@ const I18N = {
   },
   en: {
     videosTitle: 'Converter', videosDesc: 'Convert your .MOV (iPhone) files to compatible .MP4',
+    optionalBadge: 'optional', videosOptionalNote: "Optional step — only needed if you have .MOV (iPhone) files to convert before using them. Otherwise, skip straight to the next step.",
+    captionsOptionalNote: "Optional step — add captions if you want, or skip straight to music.",
+    skipBtn: 'Skip this step',
     dropTitle: 'Drop your videos here', dropSub: 'MP4 · MOV · AVI · MKV — click to browse',
     convCardLabel: 'MOV → MP4 converter', convDropTitle: 'Drop a .MOV file (iPhone)', convDropSub: 'Automatic conversion to compatible MP4',
     filtersTitle: 'Visual filters', filtersDesc: 'Each variant applies every active filter with unique randomized values',
@@ -2623,7 +2668,7 @@ const I18N = {
     splashSteps: ['Starting up…', 'Loading modules…', 'Checking FFmpeg…', 'Preparing the interface…', 'Almost there…'],
     splashReady: 'Ready!',
     needVideo: 'Add at least one video.', needFilter: 'Enable at least one filter.',
-    stepLabels: ['Step 1/5 · Filters', 'Step 2/5 · Captions', 'Step 3/5 · Music', 'Step 4/5 · Converter', 'Step 5/5 · Generate'],
+    stepLabels: ['Step 1/5 · Filters', 'Step 2/5 · Captions (optional)', 'Step 3/5 · Music', 'Step 4/5 · Converter (optional)', 'Step 5/5 · Generate'],
     ffmpegNotDetected: 'FFmpeg not detected',
     groupSafe: 'Invisible — guaranteed unique hash', groupBoost: 'Subtle — improves reach', groupCreative: 'Creative — visible effect',
     levelLabel: 'Level', statTotal: 'Reels generated', statMember: 'Member since',
