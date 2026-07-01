@@ -575,6 +575,7 @@
     }
 
     @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
 
     .file-pill-icon { font-size: 16px; flex-shrink: 0; }
     .file-pill-name { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -955,12 +956,12 @@
     .cap-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     /* ── CAPTIONS PAGE v2 (bibliothèque de templates) ──────────── */
-    .cap-page-grid { display: grid; grid-template-columns: 1fr 120px; gap: 14px; align-items: start; }
-    .cap-lib-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .cap-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
-    .cap-tpl-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 16px; gap:6px; border:1.5px dashed var(--border); border-radius:var(--r); color:var(--text3); font-size:11px; text-align:center; }
-    .cap-tpl-card { border:1px solid var(--border); border-radius:var(--r); overflow:hidden; transition:border-color .15s,box-shadow .15s; background:rgba(255,255,255,.015); }
-    .cap-tpl-card:hover { border-color:var(--border2); }
+    .cap-page-grid { display: grid; grid-template-columns: 1fr 230px; gap: 16px; align-items: start; }
+    .cap-lib-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .cap-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; min-height:60px; }
+    .cap-tpl-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 16px; gap:8px; border:1.5px dashed var(--border); border-radius:var(--r); color:var(--text3); font-size:11px; text-align:center; }
+    .cap-tpl-card { border:1px solid var(--border); border-radius:var(--r); overflow:hidden; transition:border-color .15s,box-shadow .15s,transform .15s; background:rgba(255,255,255,.015); }
+    .cap-tpl-card:hover { border-color:var(--border2); transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.35); }
     .cap-tpl-card.cap-sel { border-color:var(--purple2); box-shadow:0 0 0 2px rgba(124,58,237,.22); background:rgba(124,58,237,.05); }
     .cap-tpl-prev { aspect-ratio:4/3; background:#08081a; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:8px; cursor:pointer; position:relative; }
     .cap-tpl-tick { position:absolute; top:5px; right:5px; width:18px; height:18px; border-radius:50%; border:1.5px solid rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff; transition:all .15s; background:transparent; }
@@ -972,17 +973,31 @@
     .cap-ic { background:none; border:1px solid transparent; border-radius:5px; cursor:pointer; padding:3px 5px; font-size:10px; transition:all .15s; }
     .cap-ic:hover { background:rgba(255,255,255,.06); border-color:var(--border); }
     .cap-ic.del:hover { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.25); }
-    .cap-right-col { display:flex; flex-direction:column; gap:8px; }
+    .cap-right-col { display:flex; flex-direction:column; gap:10px; }
     .cap-vidrop { aspect-ratio:9/16; border:1.5px dashed var(--border2); border-radius:var(--r); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; position:relative; background:rgba(124,58,237,.03); transition:border-color .15s,background .15s; flex-shrink:0; }
     .cap-vidrop:hover { border-color:var(--purple2); background:rgba(124,58,237,.06); }
-    .cap-sel-pill { padding:6px 10px; border-radius:var(--r-s); background:var(--dim); border:1px solid var(--border2); font-size:11px; font-weight:700; color:var(--purple2); text-align:center; }
-    .cap-editor-panel { margin-top:14px; border:1px solid var(--border2); border-radius:var(--r); padding:14px; background:rgba(10,10,20,.65); animation:slideIn .2s ease; }
-    .cap-editor-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-    .cap-editor-cols { display:grid; grid-template-columns:170px 1fr; gap:14px; align-items:start; }
-    .cap-editor-lcol { display:flex; flex-direction:column; gap:7px; }
-    .cap-editor-rcol { display:flex; flex-direction:column; gap:10px; }
+    .cap-sel-pill { padding:7px 10px; border-radius:var(--r-s); background:var(--dim); border:1px solid var(--border2); font-size:11px; font-weight:700; color:var(--purple2); text-align:center; }
     .cap-gen-results { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
     .cap-res-row { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.2); border-radius:var(--r-s); font-size:11px; color:var(--success); }
+    /* Modal éditeur */
+    .cap-modal-bd { position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:4000; display:none; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(6px); }
+    .cap-modal-bd.open { display:flex; animation:fadeIn .15s ease; }
+    .cap-modal { background:#0d0d1c; border:1px solid var(--border2); border-radius:16px; width:100%; max-width:720px; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 32px 96px rgba(0,0,0,.8); overflow:hidden; }
+    .cap-modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .cap-modal-title { font-size:15px; font-weight:800; color:var(--text); }
+    .cap-modal-close { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text2); border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; transition:all .15s; }
+    .cap-modal-close:hover { background:rgba(255,255,255,.1); color:var(--text); }
+    .cap-modal-body { display:grid; grid-template-columns:180px 1fr; gap:18px; padding:18px 20px; overflow-y:auto; flex:1; min-height:0; }
+    .cap-modal-lcol { display:flex; flex-direction:column; gap:10px; }
+    .cap-modal-rcol { display:flex; flex-direction:column; gap:14px; overflow-y:auto; padding-right:2px; }
+    .cap-phone-wrap { position:relative; width:180px; aspect-ratio:9/16; background:#04040c; border-radius:10px; overflow:hidden; border:1px solid var(--border2); flex-shrink:0; }
+    .cap-phone-wrap video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .cap-modal-foot { padding:12px 20px; border-top:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; background:rgba(255,255,255,.015); }
+    .cap-name-input { flex:1; padding:10px 12px; background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:var(--r-s); color:var(--text); font-family:'Inter',sans-serif; font-size:13px; outline:none; transition:border-color .15s; }
+    .cap-name-input:focus { border-color:var(--purple2); box-shadow:0 0 0 3px rgba(124,58,237,.15); }
+    .cap-name-input::placeholder { color:var(--text3); }
+    .cap-save-btn { padding:10px 20px; border-radius:var(--r-s); background:linear-gradient(135deg,var(--purple),var(--pink)); border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; transition:opacity .15s; }
+    .cap-save-btn:hover { opacity:.88; }
 
     .select-s {
       background: rgba(255,255,255,.04);
@@ -1768,7 +1783,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.3.9</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.0</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1888,115 +1903,128 @@
           </div>
         </div>
 
-        <!-- Editor panel (hidden by default) -->
-        <div class="cap-editor-panel" id="cap-editor-panel" style="display:none;">
-          <div class="cap-editor-top">
-            <div class="ctrl-lbl" style="margin:0;" id="cap-editor-ttl">Nouveau template</div>
-            <button class="btn-xs" onclick="closeCapEditor()">✕ Fermer</button>
-          </div>
-          <div class="cap-editor-cols">
+        <!-- Modal éditeur de template -->
+        <div class="cap-modal-bd" id="cap-modal-bd" onclick="if(event.target===this)closeCapEditor()">
+          <div class="cap-modal">
 
-            <!-- Left: preview + position + name/save -->
-            <div class="cap-editor-lcol">
-              <div class="cap-preview-wrap" id="cap-edit-wrap" style="width:170px;">
-                <video id="cap-edit-vid" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
-                <div id="cap-edit-zone" style="cursor:grab;">
-                  <span id="cap-edit-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:pre-line;text-align:center;">Texte ici</span>
-                </div>
-              </div>
-              <div style="display:flex;gap:5px;">
-                <div class="pos-btn" data-epv="top"    onclick="editSnapV('top')"    style="flex:1;font-size:10px;padding:5px;">↑</div>
-                <div class="pos-btn" data-epv="center" onclick="editSnapV('center')" style="flex:1;font-size:10px;padding:5px;">·</div>
-                <div class="pos-btn active" data-epv="bottom" onclick="editSnapV('bottom')" style="flex:1;font-size:10px;padding:5px;">↓</div>
-              </div>
-              <div style="display:flex;gap:5px;">
-                <div class="pos-btn" data-eph="left"   onclick="editSnapH('left')"   style="flex:1;font-size:10px;padding:5px;">⇤</div>
-                <div class="pos-btn active" data-eph="center" onclick="editSnapH('center')" style="flex:1;font-size:10px;padding:5px;">·C</div>
-                <div class="pos-btn" data-eph="right"  onclick="editSnapH('right')"  style="flex:1;font-size:10px;padding:5px;">⇥</div>
-              </div>
-              <input class="preset-input" id="cap-edit-name" type="text" placeholder="Nom du template…" maxlength="40" style="width:100%;"/>
-              <button class="export-btn" onclick="saveCapTemplate()" style="padding:10px;font-size:12px;">💾 Sauvegarder</button>
+            <!-- Header -->
+            <div class="cap-modal-head">
+              <div class="cap-modal-title" id="cap-editor-ttl">Nouveau template</div>
+              <button class="cap-modal-close" onclick="closeCapEditor()">✕</button>
             </div>
 
-            <!-- Right: style + text controls -->
-            <div class="cap-editor-rcol">
+            <!-- Body: preview (left) + controls (right) -->
+            <div class="cap-modal-body">
 
-              <!-- Quick presets -->
-              <div>
-                <div class="ctrl-lbl">Style rapide</div>
-                <div class="style-pills">
-                  <div class="style-pill active" data-ep="classic" onclick="applyEditPreset('classic')">Classic</div>
-                  <div class="style-pill" data-ep="tiktok"  onclick="applyEditPreset('tiktok')">TikTok</div>
-                  <div class="style-pill" data-ep="yellow"  onclick="applyEditPreset('yellow')">Jaune</div>
-                  <div class="style-pill" data-ep="minimal" onclick="applyEditPreset('minimal')">Minimal</div>
-                  <div class="style-pill" data-ep="neon"    onclick="applyEditPreset('neon')">Neon</div>
-                  <div class="style-pill" data-ep="bold"    onclick="applyEditPreset('bold')">Bold</div>
+              <!-- Left: phone preview + position snaps -->
+              <div class="cap-modal-lcol">
+                <div class="cap-phone-wrap" id="cap-edit-wrap">
+                  <video id="cap-edit-vid" playsinline muted loop style="display:none;"></video>
+                  <div id="cap-edit-zone" style="position:absolute;cursor:grab;transform:translate(-50%,-50%);">
+                    <span id="cap-edit-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:pre-line;text-align:center;">Texte ici</span>
+                  </div>
+                </div>
+                <div class="ctrl-lbl" style="margin:4px 0 4px;">Position verticale</div>
+                <div style="display:flex;gap:5px;">
+                  <div class="pos-btn" data-epv="top"    onclick="editSnapV('top')"    style="flex:1;font-size:11px;padding:6px;">↑ Haut</div>
+                  <div class="pos-btn" data-epv="center" onclick="editSnapV('center')" style="flex:1;font-size:11px;padding:6px;">· Centre</div>
+                  <div class="pos-btn active" data-epv="bottom" onclick="editSnapV('bottom')" style="flex:1;font-size:11px;padding:6px;">↓ Bas</div>
+                </div>
+                <div class="ctrl-lbl" style="margin:4px 0 4px;">Position horizontale</div>
+                <div style="display:flex;gap:5px;">
+                  <div class="pos-btn" data-eph="left"   onclick="editSnapH('left')"   style="flex:1;font-size:11px;padding:6px;">⇤ G</div>
+                  <div class="pos-btn active" data-eph="center" onclick="editSnapH('center')" style="flex:1;font-size:11px;padding:6px;">· C</div>
+                  <div class="pos-btn" data-eph="right"  onclick="editSnapH('right')"  style="flex:1;font-size:11px;padding:6px;">D ⇥</div>
                 </div>
               </div>
 
-              <!-- Text -->
-              <div>
-                <div class="ctrl-lbl">Texte</div>
-                <textarea class="cap-textarea" id="cap-edit-text" placeholder="Une ligne = un sous-titre&#10;Écris ton texte ici…" oninput="renderEditPreview()" style="min-height:70px;"></textarea>
-              </div>
+              <!-- Right: style controls -->
+              <div class="cap-modal-rcol">
 
-              <!-- Style grid -->
-              <div class="cap-grid-2">
+                <!-- Presets rapides -->
                 <div>
-                  <div class="ctrl-lbl">Couleur texte</div>
-                  <div class="swatches">
-                    <div class="swatch active" data-ec="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setEditSwatch('#ffffff',this)"></div>
-                    <div class="swatch" data-ec="#FFD700" style="background:#FFD700;" onclick="setEditSwatch('#FFD700',this)"></div>
-                    <div class="swatch" data-ec="#000000" style="background:#000;" onclick="setEditSwatch('#000000',this)"></div>
-                    <div class="swatch" data-ec="#EF4444" style="background:#EF4444;" onclick="setEditSwatch('#EF4444',this)"></div>
-                    <input type="color" id="cap-edit-color" value="#ffffff" oninput="setEditColor(this.value)"/>
+                  <div class="ctrl-lbl">Style rapide</div>
+                  <div class="style-pills">
+                    <div class="style-pill active" data-ep="classic" onclick="applyEditPreset('classic')">Classic</div>
+                    <div class="style-pill" data-ep="tiktok"  onclick="applyEditPreset('tiktok')">TikTok</div>
+                    <div class="style-pill" data-ep="yellow"  onclick="applyEditPreset('yellow')">Jaune</div>
+                    <div class="style-pill" data-ep="minimal" onclick="applyEditPreset('minimal')">Minimal</div>
+                    <div class="style-pill" data-ep="neon"    onclick="applyEditPreset('neon')">Neon</div>
+                    <div class="style-pill" data-ep="bold"    onclick="applyEditPreset('bold')">Bold</div>
                   </div>
                 </div>
+
+                <!-- Texte -->
                 <div>
-                  <div class="ctrl-lbl">Fond</div>
-                  <select class="select-s" id="cap-edit-bg" onchange="editState.bg=this.value;clearEditPresets();renderEditPreview();">
-                    <option value="none">Aucun</option>
-                    <option value="black_semi">Semi-transparent</option>
-                    <option value="black_full">Noir plein</option>
-                    <option value="white_full">Blanc</option>
-                    <option value="yellow_full">Jaune</option>
-                  </select>
+                  <div class="ctrl-lbl">Texte de la caption</div>
+                  <textarea class="cap-textarea" id="cap-edit-text" placeholder="Une ligne = une caption&#10;Exemple : ligne 1&#10;ligne 2…" oninput="renderEditPreview()" style="min-height:80px;"></textarea>
                 </div>
-                <div>
-                  <div class="ctrl-lbl">Taille</div>
-                  <div class="size-row">
-                    <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
-                    <span class="size-val" id="cap-edit-sz-val">38px</span>
-                  </div>
-                </div>
-                <div>
-                  <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
-                  <div class="size-row">
-                    <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
-                    <div class="swatches" style="gap:4px;">
-                      <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
-                      <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
-                      <input type="color" id="cap-edit-sc" value="#000000" oninput="setEditStrokeColor(this.value)" style="width:20px;height:20px;"/>
+
+                <!-- Style -->
+                <div class="cap-grid-2">
+                  <div>
+                    <div class="ctrl-lbl">Couleur texte</div>
+                    <div class="swatches">
+                      <div class="swatch active" data-ec="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setEditSwatch('#ffffff',this)"></div>
+                      <div class="swatch" data-ec="#FFD700" style="background:#FFD700;" onclick="setEditSwatch('#FFD700',this)"></div>
+                      <div class="swatch" data-ec="#000000" style="background:#000;" onclick="setEditSwatch('#000000',this)"></div>
+                      <div class="swatch" data-ec="#EF4444" style="background:#EF4444;" onclick="setEditSwatch('#EF4444',this)"></div>
+                      <input type="color" id="cap-edit-color" value="#ffffff" oninput="setEditColor(this.value)"/>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <div class="ctrl-lbl">Style</div>
-                  <div class="toggle-row">
-                    <span>Gras</span>
-                    <label class="toggle-sw"><input type="checkbox" id="cap-edit-bold" checked onchange="editState.bold=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+                  <div>
+                    <div class="ctrl-lbl">Fond</div>
+                    <select class="select-s" id="cap-edit-bg" onchange="editState.bg=this.value;clearEditPresets();renderEditPreview();">
+                      <option value="none">Aucun</option>
+                      <option value="black_semi">Noir semi</option>
+                      <option value="black_full">Noir plein</option>
+                      <option value="white_full">Blanc</option>
+                      <option value="yellow_full">Jaune</option>
+                    </select>
                   </div>
-                  <div class="toggle-row" style="margin-top:6px;">
-                    <span>MAJUSCULES</span>
-                    <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+                  <div>
+                    <div class="ctrl-lbl">Taille</div>
+                    <div class="size-row">
+                      <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+                      <span class="size-val" id="cap-edit-sz-val">38px</span>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
-                  <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
+                  <div>
+                    <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
+                    <div class="size-row">
+                      <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+                      <div class="swatches" style="gap:4px;">
+                        <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
+                        <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
+                        <input type="color" id="cap-edit-sc" value="#000000" oninput="setEditStrokeColor(this.value)" style="width:20px;height:20px;"/>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="ctrl-lbl">Style</div>
+                    <div class="toggle-row">
+                      <span>Gras</span>
+                      <label class="toggle-sw"><input type="checkbox" id="cap-edit-bold" checked onchange="editState.bold=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+                    </div>
+                    <div class="toggle-row" style="margin-top:8px;">
+                      <span>MAJUSCULES</span>
+                      <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
+                    <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- Footer: nom + sauvegarder -->
+            <div class="cap-modal-foot">
+              <input class="cap-name-input" id="cap-edit-name" type="text" placeholder="Nom du template…" maxlength="40"/>
+              <button class="cap-save-btn" onclick="saveCapTemplate()">💾 Sauvegarder</button>
+            </div>
+
           </div>
         </div>
 
@@ -3389,13 +3417,13 @@ function openCapEditor(id){
     const edVid = document.getElementById('cap-edit-vid');
     if(edVid){ edVid.src = URL.createObjectURL(capGenFile); edVid.style.display = 'block'; edVid.play().catch(()=>{}); }
   }
-  const panel = document.getElementById('cap-editor-panel');
-  if(panel){ panel.style.display = 'block'; panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  const bd = document.getElementById('cap-modal-bd');
+  if(bd) bd.classList.add('open');
   initEditDrag();
 }
 function closeCapEditor(){
-  const panel = document.getElementById('cap-editor-panel');
-  if(panel) panel.style.display = 'none';
+  const bd = document.getElementById('cap-modal-bd');
+  if(bd) bd.classList.remove('open');
   capEditId = null;
 }
 function syncEditControls(){
