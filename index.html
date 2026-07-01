@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.6</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.7</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3625,6 +3625,55 @@ async function checkFFmpeg(){
     if(dot) dot.className = 'status-dot err';
     if(txt){ txt.style.color = 'var(--error)'; txt.textContent = t('ffmpegNotDetected'); }
   }
+}
+
+// ── DONNÉES FILTRES ────────────────────────────────────────
+const TEMPLATES = [
+  { id:'clean',    icon:'✨', name:'Re-encode propre',   filter:'', tag:'safe' },
+  { id:'sharpen',  icon:'🔍', name:'Sharpen',            filter:'unsharp=5:5:0.6:5:5:0.0', tag:'safe' },
+  { id:'zoom',     icon:'🔭', name:'Zoom',               filter:'scale=iw*1.03:ih*1.03,crop=iw/1.03:ih/1.03', tag:'safe' },
+  { id:'grain',    icon:'🎞️', name:'Grain',              filter:'noise=alls=3:allf=t', tag:'safe' },
+  { id:'vignette', icon:'🔲', name:'Vignette',           filter:'vignette=0.1', tag:'safe' },
+  { id:'bright',   icon:'☀️', name:'Bright',             filter:'eq=brightness=0.05', tag:'safe' },
+  { id:'sat',      icon:'🎨', name:'Saturation',         filter:'eq=saturation=1.05', tag:'safe' },
+  { id:'contrast', icon:'⚡', name:'Contraste',          filter:'eq=contrast=1.05', tag:'safe' },
+  { id:'pop',      icon:'💥', name:'Pop (contraste+sat)',filter:'eq=contrast=1.05:saturation=1.08:brightness=0.01', tag:'boost' },
+  { id:'warm',     icon:'🌅', name:'Warm skin',          filter:'colorbalance=rs=0.03:gs=-0.01:bs=-0.02:rm=0.02:gm=-0.01:bm=-0.01', tag:'boost' },
+  { id:'cine',     icon:'🎬', name:'Ciné',               filter:'eq=saturation=0.90:contrast=1.04', tag:'boost' },
+];
+const SPECIAL_TEMPLATES = [
+  { id:'flip_h',   icon:'🪞', name:'Miroir horizontal',       filter:'hflip',                                    tag:'creative' },
+  { id:'flip_v',   icon:'🙃', name:'Miroir vertical',         filter:'vflip',                                    tag:'creative' },
+  { id:'rotate',   icon:'🔄', name:'Rotation',                filter:'rotate=0.1745:fillcolor=black',            tag:'creative' },
+  { id:'shrink',   icon:'🔳', name:'Rétrécir',                special:'shrink',                                  tag:'creative' },
+  { id:'hue',      icon:'🎨', name:'Hue shift',               filter:'hue=h=30',                                 tag:'creative' },
+  { id:'bleach',   icon:'🌫️', name:'Bleach bypass',           filter:'eq=saturation=0.3:contrast=1.3',           tag:'creative' },
+  { id:'randcut',  icon:'✂️', name:'Random cuts',             special:'randcut',                                 tag:'creative' },
+  { id:'speed',    icon:'⏱️', name:'Vitesse aléatoire ±10%',  special:'speed',                                   tag:'creative' },
+];
+const active = new Set(TEMPLATES.filter(t => t.tag === 'safe' || t.tag === 'boost').map(t => t.id));
+let files = [];
+let combineMode = false;
+
+// ── SHRINK BG ──────────────────────────────────────────────
+let shrinkBgMode  = 'blur';
+let shrinkBgColor = '#ff69b4';
+function setShrinkBg(mode){
+  shrinkBgMode = mode;
+  document.getElementById('shrink-bg-blur').classList.toggle('active', mode === 'blur');
+  document.getElementById('shrink-bg-color').classList.toggle('active', mode === 'color');
+  const picker = document.getElementById('shrink-color-picker');
+  if(picker) picker.style.display = mode === 'color' ? 'flex' : 'none';
+}
+function setShrinkColor(hex){
+  shrinkBgColor = hex;
+  const el = document.getElementById('shrink-custom-color');
+  if(el) el.value = hex;
+  document.querySelectorAll('#shrink-color-picker .swatch').forEach(s => s.classList.remove('active'));
+}
+function updateShrinkOption(){
+  const opt = document.getElementById('shrink-bg-option');
+  if(opt) opt.style.display = active.has('shrink') ? 'block' : 'none';
 }
 
 // ── TEMPLATES ─────────────────────────────────────────────
