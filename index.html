@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.8</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.9</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3723,6 +3723,72 @@ function setAll(on){
 function updateCount(){
   const total = TEMPLATES.length + SPECIAL_TEMPLATES.length;
   document.getElementById('filter-count').textContent = `${active.size} / ${total} actifs`;
+}
+
+// ── FILTER PRESETS ─────────────────────────────────────────
+function loadPresetsFromStorage(){
+  try { return JSON.parse(localStorage.getItem('norys_filter_presets') || '[]'); }
+  catch { return []; }
+}
+function savePresetsToStorage(presets){
+  localStorage.setItem('norys_filter_presets', JSON.stringify(presets));
+}
+function renderPresetTags(){
+  const presets = loadPresetsFromStorage();
+  const tags = document.getElementById('preset-tags');
+  if(!tags) return;
+  if(!presets.length){ tags.style.display = 'none'; return; }
+  tags.style.display = 'flex';
+  tags.innerHTML = presets.map((p,i) =>
+    `<div class="preset-tag" onclick="applyFilterPreset(${i})">${p.name}<span class="del" onclick="deletePreset(event,${i})">✕</span></div>`
+  ).join('');
+}
+function savePreset(){
+  const input = document.getElementById('preset-name-input');
+  const name  = (input.value || '').trim();
+  if(!name){ input.focus(); return; }
+  const presets = loadPresetsFromStorage();
+  if(presets.find(p => p.name.toLowerCase() === name.toLowerCase())){
+    input.style.borderColor = '#ff4466';
+    setTimeout(() => input.style.borderColor = '', 1500);
+    return;
+  }
+  presets.push({ name, filters: [...active] });
+  savePresetsToStorage(presets);
+  input.value = '';
+  renderPresetTags();
+  updateShrinkOption();
+  const btn = document.querySelector('.preset-save-btn');
+  if(!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = '✅ Sauvegardé !';
+  btn.style.background = 'rgba(34,217,122,.2)';
+  btn.style.borderColor = '#22D97A';
+  btn.style.color = '#22D97A';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = ''; }, 1500);
+}
+function applyFilterPreset(idx){
+  const presets = loadPresetsFromStorage();
+  const p = presets[idx];
+  if(!p) return;
+  active.clear();
+  p.filters.forEach(id => active.add(id));
+  renderTemplates();
+  updateShrinkOption();
+}
+function deletePreset(e, idx){
+  e.stopPropagation();
+  const presets = loadPresetsFromStorage();
+  presets.splice(idx, 1);
+  savePresetsToStorage(presets);
+  renderPresetTags();
+}
+
+// ── PREVIEW MODAL (close) ───────────────────────────────────
+function closePreviewModal(){
+  const modal = document.getElementById('preview-modal');
+  if(modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ── DROP & FILES ───────────────────────────────────────────
