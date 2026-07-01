@@ -1783,7 +1783,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.1</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.2</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1903,130 +1903,6 @@
           </div>
         </div>
 
-        <!-- Modal éditeur de template -->
-        <div class="cap-modal-bd" id="cap-modal-bd">
-          <div class="cap-modal">
-
-            <!-- Header -->
-            <div class="cap-modal-head">
-              <div class="cap-modal-title" id="cap-editor-ttl">Nouveau template</div>
-              <button class="cap-modal-close" onclick="closeCapEditor()">✕</button>
-            </div>
-
-            <!-- Body: preview (left) + controls (right) -->
-            <div class="cap-modal-body">
-
-              <!-- Left: phone preview + position snaps -->
-              <div class="cap-modal-lcol">
-                <div class="cap-phone-wrap" id="cap-edit-wrap">
-                  <video id="cap-edit-vid" playsinline muted loop style="display:none;"></video>
-                  <div id="cap-edit-zone" style="position:absolute;cursor:grab;transform:translate(-50%,-50%);">
-                    <span id="cap-edit-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:pre-line;text-align:center;">Texte ici</span>
-                  </div>
-                </div>
-                <div class="ctrl-lbl" style="margin:4px 0 4px;">Position verticale</div>
-                <div style="display:flex;gap:5px;">
-                  <div class="pos-btn" data-epv="top"    onclick="editSnapV('top')"    style="flex:1;font-size:11px;padding:6px;">↑ Haut</div>
-                  <div class="pos-btn" data-epv="center" onclick="editSnapV('center')" style="flex:1;font-size:11px;padding:6px;">· Centre</div>
-                  <div class="pos-btn active" data-epv="bottom" onclick="editSnapV('bottom')" style="flex:1;font-size:11px;padding:6px;">↓ Bas</div>
-                </div>
-                <div class="ctrl-lbl" style="margin:4px 0 4px;">Position horizontale</div>
-                <div style="display:flex;gap:5px;">
-                  <div class="pos-btn" data-eph="left"   onclick="editSnapH('left')"   style="flex:1;font-size:11px;padding:6px;">⇤ G</div>
-                  <div class="pos-btn active" data-eph="center" onclick="editSnapH('center')" style="flex:1;font-size:11px;padding:6px;">· C</div>
-                  <div class="pos-btn" data-eph="right"  onclick="editSnapH('right')"  style="flex:1;font-size:11px;padding:6px;">D ⇥</div>
-                </div>
-              </div>
-
-              <!-- Right: style controls -->
-              <div class="cap-modal-rcol">
-
-                <!-- Presets rapides -->
-                <div>
-                  <div class="ctrl-lbl">Style rapide</div>
-                  <div class="style-pills">
-                    <div class="style-pill active" data-ep="classic" onclick="applyEditPreset('classic')">Classic</div>
-                    <div class="style-pill" data-ep="tiktok"  onclick="applyEditPreset('tiktok')">TikTok</div>
-                    <div class="style-pill" data-ep="yellow"  onclick="applyEditPreset('yellow')">Jaune</div>
-                    <div class="style-pill" data-ep="minimal" onclick="applyEditPreset('minimal')">Minimal</div>
-                    <div class="style-pill" data-ep="neon"    onclick="applyEditPreset('neon')">Neon</div>
-                    <div class="style-pill" data-ep="bold"    onclick="applyEditPreset('bold')">Bold</div>
-                  </div>
-                </div>
-
-                <!-- Texte -->
-                <div>
-                  <div class="ctrl-lbl">Texte de la caption</div>
-                  <textarea class="cap-textarea" id="cap-edit-text" placeholder="Une ligne = une caption&#10;Exemple : ligne 1&#10;ligne 2…" oninput="renderEditPreview()" style="min-height:80px;"></textarea>
-                </div>
-
-                <!-- Style -->
-                <div class="cap-grid-2">
-                  <div>
-                    <div class="ctrl-lbl">Couleur texte</div>
-                    <div class="swatches">
-                      <div class="swatch active" data-ec="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setEditSwatch('#ffffff',this)"></div>
-                      <div class="swatch" data-ec="#FFD700" style="background:#FFD700;" onclick="setEditSwatch('#FFD700',this)"></div>
-                      <div class="swatch" data-ec="#000000" style="background:#000;" onclick="setEditSwatch('#000000',this)"></div>
-                      <div class="swatch" data-ec="#EF4444" style="background:#EF4444;" onclick="setEditSwatch('#EF4444',this)"></div>
-                      <input type="color" id="cap-edit-color" value="#ffffff" oninput="setEditColor(this.value)"/>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="ctrl-lbl">Fond</div>
-                    <select class="select-s" id="cap-edit-bg" onchange="editState.bg=this.value;clearEditPresets();renderEditPreview();">
-                      <option value="none">Aucun</option>
-                      <option value="black_semi">Noir semi</option>
-                      <option value="black_full">Noir plein</option>
-                      <option value="white_full">Blanc</option>
-                      <option value="yellow_full">Jaune</option>
-                    </select>
-                  </div>
-                  <div>
-                    <div class="ctrl-lbl">Taille</div>
-                    <div class="size-row">
-                      <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
-                      <span class="size-val" id="cap-edit-sz-val">38px</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
-                    <div class="size-row">
-                      <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
-                      <div class="swatches" style="gap:4px;">
-                        <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
-                        <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
-                        <input type="color" id="cap-edit-sc" value="#000000" oninput="setEditStrokeColor(this.value)" style="width:20px;height:20px;"/>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="ctrl-lbl">Style</div>
-                    <div class="toggle-row">
-                      <span>Gras</span>
-                      <label class="toggle-sw"><input type="checkbox" id="cap-edit-bold" checked onchange="editState.bold=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
-                    </div>
-                    <div class="toggle-row" style="margin-top:8px;">
-                      <span>MAJUSCULES</span>
-                      <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
-                    <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer: nom + sauvegarder -->
-            <div class="cap-modal-foot">
-              <input class="cap-name-input" id="cap-edit-name" type="text" placeholder="Nom du template…" maxlength="40"/>
-              <button class="cap-save-btn" onclick="saveCapTemplate()">💾 Sauvegarder</button>
-            </div>
-
-          </div>
-        </div>
 
       </div>
     </div>
@@ -3956,5 +3832,114 @@ async function convertFile(input){
 
 
 </script>
+
+<!-- ═══ MODAL ÉDITEUR CAPTIONS (hors de tout container transformé) ═══ -->
+<div class="cap-modal-bd" id="cap-modal-bd">
+  <div class="cap-modal">
+    <div class="cap-modal-head">
+      <div class="cap-modal-title" id="cap-editor-ttl">Nouveau template</div>
+      <button class="cap-modal-close" onclick="closeCapEditor()">✕</button>
+    </div>
+    <div class="cap-modal-body">
+      <div class="cap-modal-lcol">
+        <div class="cap-phone-wrap" id="cap-edit-wrap">
+          <video id="cap-edit-vid" playsinline muted loop style="display:none;"></video>
+          <div id="cap-edit-zone" style="position:absolute;cursor:grab;transform:translate(-50%,-50%);">
+            <span id="cap-edit-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:pre-line;text-align:center;">Texte ici</span>
+          </div>
+        </div>
+        <div class="ctrl-lbl" style="margin:6px 0 4px;">Position verticale</div>
+        <div style="display:flex;gap:5px;">
+          <div class="pos-btn" data-epv="top"    onclick="editSnapV('top')"    style="flex:1;font-size:11px;padding:6px;">↑ Haut</div>
+          <div class="pos-btn" data-epv="center" onclick="editSnapV('center')" style="flex:1;font-size:11px;padding:6px;">· Centre</div>
+          <div class="pos-btn active" data-epv="bottom" onclick="editSnapV('bottom')" style="flex:1;font-size:11px;padding:6px;">↓ Bas</div>
+        </div>
+        <div class="ctrl-lbl" style="margin:6px 0 4px;">Position horizontale</div>
+        <div style="display:flex;gap:5px;">
+          <div class="pos-btn" data-eph="left"   onclick="editSnapH('left')"   style="flex:1;font-size:11px;padding:6px;">⇤ G</div>
+          <div class="pos-btn active" data-eph="center" onclick="editSnapH('center')" style="flex:1;font-size:11px;padding:6px;">· C</div>
+          <div class="pos-btn" data-eph="right"  onclick="editSnapH('right')"  style="flex:1;font-size:11px;padding:6px;">D ⇥</div>
+        </div>
+      </div>
+      <div class="cap-modal-rcol">
+        <div>
+          <div class="ctrl-lbl">Style rapide</div>
+          <div class="style-pills">
+            <div class="style-pill active" data-ep="classic" onclick="applyEditPreset('classic')">Classic</div>
+            <div class="style-pill" data-ep="tiktok"  onclick="applyEditPreset('tiktok')">TikTok</div>
+            <div class="style-pill" data-ep="yellow"  onclick="applyEditPreset('yellow')">Jaune</div>
+            <div class="style-pill" data-ep="minimal" onclick="applyEditPreset('minimal')">Minimal</div>
+            <div class="style-pill" data-ep="neon"    onclick="applyEditPreset('neon')">Neon</div>
+            <div class="style-pill" data-ep="bold"    onclick="applyEditPreset('bold')">Bold</div>
+          </div>
+        </div>
+        <div>
+          <div class="ctrl-lbl">Texte de la caption</div>
+          <textarea class="cap-textarea" id="cap-edit-text" placeholder="Une ligne = une caption&#10;Exemple :&#10;ligne 1&#10;ligne 2…" oninput="renderEditPreview()" style="min-height:80px;"></textarea>
+        </div>
+        <div class="cap-grid-2">
+          <div>
+            <div class="ctrl-lbl">Couleur texte</div>
+            <div class="swatches">
+              <div class="swatch active" data-ec="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setEditSwatch('#ffffff',this)"></div>
+              <div class="swatch" data-ec="#FFD700" style="background:#FFD700;" onclick="setEditSwatch('#FFD700',this)"></div>
+              <div class="swatch" data-ec="#000000" style="background:#000;" onclick="setEditSwatch('#000000',this)"></div>
+              <div class="swatch" data-ec="#EF4444" style="background:#EF4444;" onclick="setEditSwatch('#EF4444',this)"></div>
+              <input type="color" id="cap-edit-color" value="#ffffff" oninput="setEditColor(this.value)"/>
+            </div>
+          </div>
+          <div>
+            <div class="ctrl-lbl">Fond</div>
+            <select class="select-s" id="cap-edit-bg" onchange="editState.bg=this.value;clearEditPresets();renderEditPreview();">
+              <option value="none">Aucun</option>
+              <option value="black_semi">Noir semi</option>
+              <option value="black_full">Noir plein</option>
+              <option value="white_full">Blanc</option>
+              <option value="yellow_full">Jaune</option>
+            </select>
+          </div>
+          <div>
+            <div class="ctrl-lbl">Taille</div>
+            <div class="size-row">
+              <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+              <span class="size-val" id="cap-edit-sz-val">38px</span>
+            </div>
+          </div>
+          <div>
+            <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
+            <div class="size-row">
+              <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+              <div class="swatches" style="gap:4px;">
+                <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
+                <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
+                <input type="color" id="cap-edit-sc" value="#000000" oninput="setEditStrokeColor(this.value)" style="width:20px;height:20px;"/>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="ctrl-lbl">Style</div>
+            <div class="toggle-row">
+              <span>Gras</span>
+              <label class="toggle-sw"><input type="checkbox" id="cap-edit-bold" checked onchange="editState.bold=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+            </div>
+            <div class="toggle-row" style="margin-top:8px;">
+              <span>MAJUSCULES</span>
+              <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
+            </div>
+          </div>
+          <div>
+            <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
+            <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cap-modal-foot">
+      <input class="cap-name-input" id="cap-edit-name" type="text" placeholder="Nom du template…" maxlength="40"/>
+      <button class="cap-save-btn" onclick="saveCapTemplate()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
