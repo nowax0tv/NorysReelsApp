@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Norys Reels</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@700;800;900&family=Anton&family=Oswald:wght@700&family=Pacifico&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
   <script src="vendor/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -998,6 +998,13 @@
     .cap-name-input::placeholder { color:var(--text3); }
     .cap-save-btn { padding:10px 20px; border-radius:var(--r-s); background:linear-gradient(135deg,var(--purple),var(--pink)); border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap; transition:opacity .15s; }
     .cap-save-btn:hover { opacity:.88; }
+    .cap-font-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+    .cap-font-pill { padding:9px 6px; background:rgba(255,255,255,.04); border:1.5px solid var(--border); border-radius:8px; cursor:pointer; text-align:center; font-size:16px; color:var(--text2); transition:all .15s; user-select:none; }
+    .cap-font-pill:hover { border-color:var(--border2); color:var(--text); background:rgba(255,255,255,.07); }
+    .cap-font-pill.active { border-color:var(--purple2); background:rgba(124,58,237,.13); color:#fff; }
+    .cap-font-import { display:flex; align-items:center; gap:6px; margin-top:6px; }
+    .cap-font-import-btn { flex:1; padding:7px 10px; background:rgba(255,255,255,.04); border:1.5px dashed var(--border2); border-radius:8px; color:var(--text3); font-size:11px; cursor:pointer; text-align:center; transition:all .15s; }
+    .cap-font-import-btn:hover { border-color:var(--purple2); color:var(--purple2); }
 
     .select-s {
       background: rgba(255,255,255,.04);
@@ -1783,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.2</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.3</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3151,7 +3158,59 @@ function handleConvDrop(e){
 // ── CAPTIONS LIBRARY ──────────────────────────────────────────
 
 const CAP_LIB_KEY = 'norys_cap_lib_v2';
-const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, lineHeight:140 };
+const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, lineHeight:140, font:'montserrat' };
+const FONT_CSS_MAP = {
+  montserrat: "'Montserrat',Arial,sans-serif",
+  anton:      "'Anton','Anton-Regular',Impact,sans-serif",
+  oswald:     "'Oswald','Oswald-Bold',Arial,sans-serif",
+  pacifico:   "'Pacifico','Pacifico-Regular',cursive",
+  spacemono:  "'Space Mono','SpaceMono-Bold',monospace",
+};
+const FONT_LABELS = [
+  { key:'montserrat', label:'Aa',    name:'Montserrat' },
+  { key:'anton',      label:'AA',    name:'Anton' },
+  { key:'oswald',     label:'Aa',    name:'Oswald' },
+  { key:'pacifico',   label:'Aa',    name:'Pacifico' },
+  { key:'spacemono',  label:'Aa',    name:'Space Mono' },
+];
+function setEditFont(key){
+  editState.font = key;
+  document.querySelectorAll('.cap-font-pill').forEach(p => p.classList.toggle('active', p.dataset.fontKey === key));
+  renderEditPreview();
+}
+async function importCustomFont(input){
+  const file = input && input.files ? input.files[0] : null;
+  if(!file) return;
+  const btn = document.querySelector('.cap-font-import-btn');
+  const origText = btn ? btn.textContent : '';
+  if(btn) btn.textContent = 'Envoi…';
+  try {
+    const fd = new FormData(); fd.append('font', file);
+    const r = await fetch('http://localhost:3333/upload-font', { method:'POST', body: fd });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || 'Erreur upload');
+    // Register in FONT_CSS_MAP dynamically
+    FONT_CSS_MAP[j.key] = `'${j.assName}',sans-serif`;
+    // Add pill to grid
+    const grid = document.getElementById('cap-font-grid');
+    if(grid){
+      const pill = document.createElement('div');
+      pill.className = 'cap-font-pill';
+      pill.dataset.fontKey = j.key;
+      pill.textContent = j.assName.split('-')[0];
+      pill.onclick = () => setEditFont(j.key);
+      grid.appendChild(pill);
+    }
+    setEditFont(j.key);
+    if(btn) btn.textContent = '✓ ' + j.assName;
+    setTimeout(() => { if(btn) btn.textContent = origText; }, 2500);
+  } catch(e){
+    if(btn) btn.textContent = '✗ Erreur';
+    setTimeout(() => { if(btn) btn.textContent = origText; }, 2000);
+    console.error('[importCustomFont]', e);
+  }
+  input.value = '';
+}
 const PRESETS = {
   classic: { color:'#FFFFFF', bg:'none',        size:52, bold:true  },
   tiktok:  { color:'#FFFFFF', bg:'black_full',  size:48, bold:true  },
@@ -3204,7 +3263,7 @@ function buildTplCard(tpl){
   card.innerHTML = `
     <div class="cap-tpl-prev" onclick="toggleTplSel('${tpl.id}')">
       <div class="cap-tpl-tick">${isSel ? '✓' : ''}</div>
-      <span style="font-family:Montserrat,Arial,sans-serif;font-size:${Math.min(s.size*0.27,15)}px;font-weight:${s.bold?'800':'400'};color:${textColor};background:${bgVal};text-shadow:${shadow};padding:${s.bg!=='none'?'2px 5px':'0'};border-radius:3px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${preview.replace(/</g,'&lt;')}</span>
+      <span style="font-family:${FONT_CSS_MAP[s.font||'montserrat']||FONT_CSS_MAP.montserrat};font-size:${Math.min(s.size*0.27,15)}px;font-weight:${s.bold?'800':'400'};color:${textColor};background:${bgVal};text-shadow:${shadow};padding:${s.bg!=='none'?'2px 5px':'0'};border-radius:3px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${preview.replace(/</g,'&lt;')}</span>
     </div>
     <div class="cap-tpl-foot">
       <div style="min-width:0;flex:1;">
@@ -3331,6 +3390,7 @@ function syncEditControls(){
   const hPos = s.xPct < 30 ? 'left' : s.xPct > 70 ? 'right' : 'center';
   document.querySelectorAll('[data-epv]').forEach(b => b.classList.toggle('active', b.dataset.epv === vPos));
   document.querySelectorAll('[data-eph]').forEach(b => b.classList.toggle('active', b.dataset.eph === hPos));
+  document.querySelectorAll('.cap-font-pill').forEach(p => p.classList.toggle('active', p.dataset.fontKey === (s.font || 'montserrat')));
 }
 function renderEditPreview(){
   const zone  = document.getElementById('cap-edit-zone');
@@ -3342,7 +3402,8 @@ function renderEditPreview(){
   if(!lines.length) lines = ['Texte ici'];
   if(s.uppercase) lines = lines.map(l => l.toUpperCase());
   const lh = (s.lineHeight||140)/100;
-  inner.innerHTML = lines.map(l => `<span style="display:block;white-space:nowrap;text-align:center;font-family:Montserrat,Arial,sans-serif;line-height:${lh};">${l.replace(/</g,'&lt;')}</span>`).join('');
+  const fontFamily = FONT_CSS_MAP[s.font || 'montserrat'] || FONT_CSS_MAP.montserrat;
+  inner.innerHTML = lines.map(l => `<span style="display:block;white-space:nowrap;text-align:center;font-family:${fontFamily};line-height:${lh};">${l.replace(/</g,'&lt;')}</span>`).join('');
   inner.style.fontSize   = Math.round(s.size*0.28)+'px';
   inner.style.fontWeight = s.bold ? '800' : '400';
   inner.style.color      = s.color;
@@ -3862,6 +3923,20 @@ async function convertFile(input){
         </div>
       </div>
       <div class="cap-modal-rcol">
+        <div>
+          <div class="ctrl-lbl">Police</div>
+          <div class="cap-font-grid" id="cap-font-grid">
+            <div class="cap-font-pill active" data-font-key="montserrat" onclick="setEditFont('montserrat')" style="font-family:'Montserrat',sans-serif;font-weight:800;">Montserrat</div>
+            <div class="cap-font-pill" data-font-key="anton" onclick="setEditFont('anton')" style="font-family:'Anton',sans-serif;">ANTON</div>
+            <div class="cap-font-pill" data-font-key="oswald" onclick="setEditFont('oswald')" style="font-family:'Oswald',sans-serif;font-weight:700;">Oswald</div>
+            <div class="cap-font-pill" data-font-key="pacifico" onclick="setEditFont('pacifico')" style="font-family:'Pacifico',cursive;">Pacifico</div>
+            <div class="cap-font-pill" data-font-key="spacemono" onclick="setEditFont('spacemono')" style="font-family:'Space Mono',monospace;font-weight:700;">Mono</div>
+          </div>
+          <div class="cap-font-import">
+            <input type="file" id="cap-font-file" accept=".ttf,.otf" style="display:none;" onchange="importCustomFont(this)"/>
+            <div class="cap-font-import-btn" onclick="document.getElementById('cap-font-file').click()">＋ Importer une police .ttf</div>
+          </div>
+        </div>
         <div>
           <div class="ctrl-lbl">Style rapide</div>
           <div class="style-pills">

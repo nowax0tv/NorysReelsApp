@@ -124,6 +124,21 @@ const FONT_URL        = 'https://github.com/googlefonts/noto-emoji/raw/main/font
 const MONTSERRAT_PATH = path.join(FONT_DIR, 'Montserrat-Bold.ttf');
 const MONTSERRAT_URL  = 'https://github.com/JulietaUla/Montserrat/raw/master/fonts/ttf/Montserrat-Bold.ttf';
 
+const EXTRA_FONTS = [
+  { key:'anton',     file:'Anton-Regular.ttf',    url:'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf' },
+  { key:'oswald',    file:'Oswald-Bold.ttf',       url:'https://github.com/google/fonts/raw/main/ofl/oswald/static/Oswald-Bold.ttf' },
+  { key:'pacifico',  file:'Pacifico-Regular.ttf',  url:'https://github.com/google/fonts/raw/main/ofl/pacifico/Pacifico-Regular.ttf' },
+  { key:'spacemono', file:'SpaceMono-Bold.ttf',    url:'https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Bold.ttf' },
+];
+
+const FONT_FILES = {
+  montserrat: { assName:'Montserrat-Bold',  path: MONTSERRAT_PATH },
+  anton:      { assName:'Anton-Regular',    path: path.join(FONT_DIR,'Anton-Regular.ttf') },
+  oswald:     { assName:'Oswald-Bold',      path: path.join(FONT_DIR,'Oswald-Bold.ttf') },
+  pacifico:   { assName:'Pacifico-Regular', path: path.join(FONT_DIR,'Pacifico-Regular.ttf') },
+  spacemono:  { assName:'SpaceMono-Bold',   path: path.join(FONT_DIR,'SpaceMono-Bold.ttf') },
+};
+
 let notoFontReady = false;
 
 function downloadFont(){
@@ -163,23 +178,27 @@ function downloadFont(){
   });
 }
 
-function downloadMontserrat(){
+function downloadFontFile(label, destPath, url){
   return new Promise((resolve) => {
-    if(fs.existsSync(MONTSERRAT_PATH)) return resolve();
+    if(fs.existsSync(destPath)) return resolve();
     if(!fs.existsSync(FONT_DIR)) fs.mkdirSync(FONT_DIR,{recursive:true});
-    console.log('⬇️  Téléchargement de Montserrat-Bold.ttf...');
-    const file = fs.createWriteStream(MONTSERRAT_PATH);
-    const request = (url, depth=0) => {
+    console.log('⬇️  Téléchargement de '+label+'...');
+    const file = fs.createWriteStream(destPath);
+    const request = (u, depth=0) => {
       if(depth > 5) return resolve();
-      https.get(url, (res) => {
+      https.get(u, (res) => {
         if(res.statusCode === 301 || res.statusCode === 302) return request(res.headers.location, depth+1);
-        if(res.statusCode !== 200){ console.error('❌ Erreur Montserrat:', res.statusCode); return resolve(); }
+        if(res.statusCode !== 200){ console.error('❌ Erreur '+label+':', res.statusCode); return resolve(); }
         res.pipe(file);
-        file.on('finish', () => { file.close(); console.log('✅ Montserrat-Bold.ttf téléchargée'); resolve(); });
+        file.on('finish', () => { file.close(); console.log('✅ '+label+' téléchargée'); resolve(); });
       }).on('error', () => resolve());
     };
-    request(MONTSERRAT_URL);
+    request(url);
   });
+}
+function downloadMontserrat(){ return downloadFontFile('Montserrat-Bold.ttf', MONTSERRAT_PATH, MONTSERRAT_URL); }
+function downloadExtraFonts(){
+  return Promise.all(EXTRA_FONTS.map(f => downloadFontFile(f.file, path.join(FONT_DIR, f.file), f.url)));
 }
 
 // ── CAPTION UTILS ─────────────────────────────────────────────
@@ -254,8 +273,11 @@ function buildCaptionFilter(srtPath, cs){
     ? path.dirname(FONT_PATH).replace(/\\/g,'/').replace(/:/g,'\\:')
     : null;
 
-  // Utiliser Montserrat si dispo (style Instagram), sinon Arial fallback
-  const fontName = fs.existsSync(MONTSERRAT_PATH) ? 'Montserrat-Bold' : 'Arial';
+  // Police sélectionnée par l'utilisateur, avec fallback Montserrat → Arial
+  const fontKey  = cs.font || 'montserrat';
+  const fontInfo = FONT_FILES[fontKey] || FONT_FILES.montserrat;
+  const fontName = fs.existsSync(fontInfo.path) ? fontInfo.assName
+    : fs.existsSync(MONTSERRAT_PATH) ? 'Montserrat-Bold' : 'Arial';
 
   const styleStr = [
     'FontName='+fontName, 'FontSize='+size,
@@ -977,6 +999,31 @@ const server = http.createServer((req, res) => {
   }
 
 
+  // ── Import police custom ─────────────────────────────────────
+  if(req.url === '/upload-font' && req.method === 'POST'){
+    const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks);
+        const ct   = req.headers['content-type'] || '';
+        const bMatch = ct.match(/boundary=([^\s;]+)/);
+        if(!bMatch){ res.writeHead(400); res.end('no boundary'); return; }
+        const parts = parseMultipart(body, bMatch[1]);
+        const filePart = parts.find(p => p.name === 'font');
+        if(!filePart || !filePart.filename){ res.writeHead(400); res.end('no font file'); return; }
+        const ext = path.extname(filePart.filename).toLowerCase();
+        if(!['.ttf','.otf'].includes(ext)){ res.writeHead(400); res.end('format invalide'); return; }
+        const safeName = filePart.filename.replace(/[^a-zA-Z0-9._-]/g,'_');
+        const destPath = path.join(FONT_DIR, safeName);
+        if(!fs.existsSync(FONT_DIR)) fs.mkdirSync(FONT_DIR, {recursive:true});
+        fs.writeFileSync(destPath, filePart.data);
+        const assName = path.basename(safeName, ext);
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ ok:true, key:'custom_'+assName, assName, file:safeName }));
+      } catch(e){ res.writeHead(500); res.end(e.message); }
+    });
+    return;
+  }
+
   // ── Export vidéo avec sous-titres uniquement (sans duplication) ──
   if(req.url === '/export-captions' && req.method === 'POST'){
     res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});
@@ -1061,6 +1108,7 @@ function send(res,obj){ try{ res.write(JSON.stringify(obj)+'\n'); }catch{} }
 // Télécharger les fonts au démarrage (async, non-bloquant)
 downloadFont();
 downloadMontserrat();
+downloadExtraFonts();
 
 server.on('error', (e) => {
   if(e.code === 'EADDRINUSE'){
