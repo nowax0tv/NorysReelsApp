@@ -543,9 +543,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // contenu rétréci. Sans alpha, black@0 devient du noir opaque et cache
         // le blur — c'est le bug "y'a du flou mais y'a du noir".
         const mid = cleanFilter ? cleanFilter+',' : '';
-        fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=25:5,crop=540:960[blurred];'
+        fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
            + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2,scale=iw*'+sf+':ih*'+sf+'[small];'
-           + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
+           + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       } else {
         // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
         // déjà plus grande que ça (1080x1920 typique), le facteur de
@@ -553,9 +553,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // et reste plus grand que le canevas : le fond flouté ne se voit
         // alors jamais (bordure invisible, bug constaté en testant).
         const mid = cleanFilter ? cleanFilter+',' : '';
-        fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=25:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,scale=iw*'+sf+':ih*'+sf+'[small];'
-           + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
+        fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,scale=iw*'+sf+':ih*'+sf+',format=yuv420p[small];'
+           + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       }
       args = ['-y', ...trimArgs, '-i', inputFile,
         '-filter_complex', fc,
@@ -610,9 +610,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     // d'origine passe aussi en transparent (au lieu d'opaque) pour ne pas
     // lui-même cacher le fond.
     const mid = cleanFilter ? cleanFilter+',' : '';
-    const fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=20:5,crop=540:960[blurred];'
+    const fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
       + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
-      + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2[out]';
+      + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
       '-map', '[out]', '-map', '0:a?',
