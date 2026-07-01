@@ -167,8 +167,8 @@ async function checkForMacUpdateManual() {
 
 ipcMain.on('restart-and-install-update', () => {
   if (process.platform === 'darwin') {
-    // Ouvre la page releases pour que l'utilisateur télécharge le nouveau DMG
-    shell.openExternal('https://github.com/nowax0tv/NorysReelsApp/releases');
+    // Téléchargement direct du DMG — évite que l'utilisateur clique sur une vieille release
+    shell.openExternal('https://github.com/nowax0tv/NorysReelsApp/releases/download/Soft/NorysReels-Mac.dmg');
   } else {
     // (isSilent, isForceRunAfter) : sans ça, l'installeur NSIS rouvrait son
     // assistant complet à chaque mise à jour.
