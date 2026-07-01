@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.3</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.4</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3158,7 +3158,10 @@ function handleConvDrop(e){
 // ── CAPTIONS LIBRARY ──────────────────────────────────────────
 
 const CAP_LIB_KEY = 'norys_cap_lib_v2';
-const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, lineHeight:140, font:'montserrat' };
+const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, font:'montserrat' };
+// Preview scale: libass renders SRT at PlayResY=288, video is 1920px tall, preview is 320px tall
+// → scale = 320/288 ≈ 1.111
+const ASS_PREVIEW_SCALE = 320 / 288;
 const FONT_CSS_MAP = {
   montserrat: "'Montserrat',Arial,sans-serif",
   anton:      "'Anton','Anton-Regular',Impact,sans-serif",
@@ -3381,7 +3384,6 @@ function syncEditControls(){
   const bg  = document.getElementById('cap-edit-bg');      if(bg) bg.value = s.bg || 'none';
   const bld = document.getElementById('cap-edit-bold');    if(bld) bld.checked = !!s.bold;
   const upr = document.getElementById('cap-edit-upper');   if(upr) upr.checked = !!s.uppercase;
-  const lh  = document.getElementById('cap-edit-lh');      if(lh){ lh.value = s.lineHeight; document.getElementById('cap-edit-lh-val').textContent = s.lineHeight+'%'; }
   document.querySelectorAll('[data-ec]').forEach(el => el.classList.toggle('active', el.dataset.ec === s.color));
   const cp = document.getElementById('cap-edit-color'); if(cp) cp.value = s.color;
   document.querySelectorAll('[data-esc]').forEach(el => el.classList.toggle('active', el.dataset.esc === s.strokeColor));
@@ -3401,18 +3403,21 @@ function renderEditPreview(){
   let lines = (ta ? ta.value : '').split('\n').map(l=>l.trim()).filter(Boolean);
   if(!lines.length) lines = ['Texte ici'];
   if(s.uppercase) lines = lines.map(l => l.toUpperCase());
-  const lh = (s.lineHeight||140)/100;
   const fontFamily = FONT_CSS_MAP[s.font || 'montserrat'] || FONT_CSS_MAP.montserrat;
-  inner.innerHTML = lines.map(l => `<span style="display:block;white-space:nowrap;text-align:center;font-family:${fontFamily};line-height:${lh};">${l.replace(/</g,'&lt;')}</span>`).join('');
-  inner.style.fontSize   = Math.round(s.size*0.28)+'px';
+  const fsPx = Math.round(s.size * ASS_PREVIEW_SCALE);
+  inner.innerHTML = lines.map(l => `<span style="display:block;white-space:nowrap;text-align:center;font-family:${fontFamily};line-height:1.1;">${l.replace(/</g,'&lt;')}</span>`).join('');
+  inner.style.fontSize   = fsPx+'px';
   inner.style.fontWeight = s.bold ? '800' : '400';
   inner.style.color      = s.color;
   const bgMap = { none:['transparent','0','0'], black_semi:['rgba(0,0,0,.55)','3px 8px','4px'], black_full:['rgba(0,0,0,.92)','3px 8px','4px'], white_full:['rgba(255,255,255,.95)','3px 8px','4px'], yellow_full:['#FFE600','3px 8px','4px'] };
   const bgC = bgMap[s.bg] || bgMap.none;
   inner.style.background = bgC[0]; inner.style.padding = bgC[1]; inner.style.borderRadius = bgC[2];
   const sc = s.strokeColor || '#000';
-  const sw = s.bg==='none' && s.strokeWidth>0 ? Math.max(1, Math.round(s.strokeWidth*0.28)) : 0;
-  inner.style.textShadow = sw>0 ? `-${sw}px -${sw}px 0 ${sc},${sw}px -${sw}px 0 ${sc},-${sw}px ${sw}px 0 ${sc},${sw}px ${sw}px 0 ${sc}` : 'none';
+  const sw = s.bg==='none' && s.strokeWidth>0 ? (s.strokeWidth * ASS_PREVIEW_SCALE) : 0;
+  // -webkit-text-stroke matches ASS Outline rendering much better than text-shadow
+  inner.style.webkitTextStroke = sw > 0 ? sw+'px '+sc : '0';
+  inner.style.paintOrder = 'stroke fill';
+  inner.style.textShadow = 'none';
   zone.style.left = (s.xPct||50)+'%'; zone.style.top = (s.yPct||85)+'%';
   zone.style.bottom = 'auto'; zone.style.transform = 'translate(-50%,-50%)';
 }
@@ -4001,10 +4006,6 @@ async function convertFile(input){
               <span>MAJUSCULES</span>
               <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
             </div>
-          </div>
-          <div>
-            <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
-            <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
           </div>
         </div>
       </div>
