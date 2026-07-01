@@ -128,15 +128,17 @@ const EXTRA_FONTS = [
   { key:'anton',     file:'Anton-Regular.ttf',    url:'https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf' },
   { key:'oswald',    file:'Oswald-Bold.ttf',       url:'https://github.com/google/fonts/raw/main/ofl/oswald/static/Oswald-Bold.ttf' },
   { key:'pacifico',  file:'Pacifico-Regular.ttf',  url:'https://github.com/google/fonts/raw/main/ofl/pacifico/Pacifico-Regular.ttf' },
-  { key:'spacemono', file:'SpaceMono-Bold.ttf',    url:'https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Bold.ttf' },
+  { key:'spacemono', file:'SpaceMono-Bold.ttf',         url:'https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Bold.ttf' },
+  { key:'barlow',    file:'BarlowCondensed-Black.ttf',  url:'https://github.com/google/fonts/raw/main/ofl/barlowcondensed/BarlowCondensed-Black.ttf' },
 ];
 
 const FONT_FILES = {
-  montserrat: { assName:'Montserrat-Bold',  path: MONTSERRAT_PATH },
-  anton:      { assName:'Anton-Regular',    path: path.join(FONT_DIR,'Anton-Regular.ttf') },
-  oswald:     { assName:'Oswald-Bold',      path: path.join(FONT_DIR,'Oswald-Bold.ttf') },
-  pacifico:   { assName:'Pacifico-Regular', path: path.join(FONT_DIR,'Pacifico-Regular.ttf') },
-  spacemono:  { assName:'SpaceMono-Bold',   path: path.join(FONT_DIR,'SpaceMono-Bold.ttf') },
+  montserrat: { assName:'Montserrat-Bold',       path: MONTSERRAT_PATH },
+  anton:      { assName:'Anton-Regular',         path: path.join(FONT_DIR,'Anton-Regular.ttf') },
+  oswald:     { assName:'Oswald-Bold',           path: path.join(FONT_DIR,'Oswald-Bold.ttf') },
+  pacifico:   { assName:'Pacifico-Regular',      path: path.join(FONT_DIR,'Pacifico-Regular.ttf') },
+  spacemono:  { assName:'SpaceMono-Bold',        path: path.join(FONT_DIR,'SpaceMono-Bold.ttf') },
+  barlow:     { assName:'BarlowCondensed-Black', path: path.join(FONT_DIR,'BarlowCondensed-Black.ttf') },
 };
 
 let notoFontReady = false;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Norys Reels</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@700;800;900&family=Anton&family=Oswald:wght@700&family=Pacifico&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@700;800;900&family=Anton&family=Oswald:wght@700&family=Pacifico&family=Space+Mono:wght@700&family=Barlow+Condensed:wght@900&display=swap" rel="stylesheet"/>
   <script src="vendor/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.4</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.5</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3168,6 +3168,7 @@ const FONT_CSS_MAP = {
   oswald:     "'Oswald','Oswald-Bold',Arial,sans-serif",
   pacifico:   "'Pacifico','Pacifico-Regular',cursive",
   spacemono:  "'Space Mono','SpaceMono-Bold',monospace",
+  barlow:     "'Barlow Condensed','BarlowCondensed-Black',Arial,sans-serif",
 };
 const FONT_LABELS = [
   { key:'montserrat', label:'Aa',    name:'Montserrat' },
@@ -3936,6 +3937,7 @@ async function convertFile(input){
             <div class="cap-font-pill" data-font-key="oswald" onclick="setEditFont('oswald')" style="font-family:'Oswald',sans-serif;font-weight:700;">Oswald</div>
             <div class="cap-font-pill" data-font-key="pacifico" onclick="setEditFont('pacifico')" style="font-family:'Pacifico',cursive;">Pacifico</div>
             <div class="cap-font-pill" data-font-key="spacemono" onclick="setEditFont('spacemono')" style="font-family:'Space Mono',monospace;font-weight:700;">Mono</div>
+            <div class="cap-font-pill" data-font-key="barlow" onclick="setEditFont('barlow')" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;">Barlow</div>
           </div>
           <div class="cap-font-import">
             <input type="file" id="cap-font-file" accept=".ttf,.otf" style="display:none;" onchange="importCustomFont(this)"/>
