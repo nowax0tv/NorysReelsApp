@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.5</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.6</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3096,6 +3096,7 @@ async function enterAppOrLogin(){
     checkFFmpeg();
     renderPresetTags();
     renderCapLibrary();
+    syncCapLibFromSupabase().catch(() => {});
     showWelcomeToast();
     if(!window.__mainParticlesStarted){
       window.__mainParticlesStarted = true;
@@ -3460,20 +3461,51 @@ function saveCapTemplate(){
   const name = (nameIn ? nameIn.value : '').trim();
   if(!name){ if(nameIn){ nameIn.focus(); nameIn.style.borderColor='#ef4444'; setTimeout(()=>nameIn.style.borderColor='',1500); } return; }
   const text = ((document.getElementById('cap-edit-text')||{}).value || '').trim();
+  let savedTpl;
   if(capEditId){
     const idx = capLib.findIndex(t => t.id === capEditId);
-    if(idx >= 0) capLib[idx] = { ...capLib[idx], name, text, state: Object.assign({}, editState) };
+    if(idx >= 0){ capLib[idx] = { ...capLib[idx], name, text, state: Object.assign({}, editState) }; savedTpl = capLib[idx]; }
   } else {
-    capLib.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2), name, text, state: Object.assign({}, editState), createdAt: Date.now() });
+    savedTpl = { id: Date.now().toString(36)+Math.random().toString(36).slice(2), name, text, state: Object.assign({}, editState), createdAt: Date.now() };
+    capLib.push(savedTpl);
   }
   saveCapLib(); renderCapLibrary(); closeCapEditor();
   if(typeof NorysSound !== 'undefined') NorysSound.success();
+  if(savedTpl && supabaseClient && currentUserId){
+    supabaseClient.from('caption_templates').upsert({
+      id: savedTpl.id, user_id: currentUserId,
+      name: savedTpl.name, text: savedTpl.text,
+      state: savedTpl.state,
+      created_at: new Date(savedTpl.createdAt).toISOString(),
+    }, { onConflict: 'id' }).then(({ error }) => { if(error) console.error('[capLib] upsert:', error); });
+  }
 }
 function deleteCapTpl(id){
   if(!confirm('Supprimer ce template ?')) return;
   capLib = capLib.filter(t => t.id !== id);
   capSelIds.delete(id);
   saveCapLib(); renderCapLibrary();
+  if(supabaseClient && currentUserId){
+    supabaseClient.from('caption_templates').delete().eq('id', id).eq('user_id', currentUserId)
+      .then(({ error }) => { if(error) console.error('[capLib] delete:', error); });
+  }
+}
+async function syncCapLibFromSupabase(){
+  if(!supabaseClient || !currentUserId) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('caption_templates')
+      .select('id, name, text, state, created_at')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: true });
+    if(error) throw error;
+    capLib = (data || []).map(r => ({
+      id: r.id, name: r.name, text: r.text || '',
+      state: r.state || {}, createdAt: new Date(r.created_at).getTime(),
+    }));
+    localStorage.setItem(CAP_LIB_KEY, JSON.stringify(capLib));
+    renderCapLibrary();
+  } catch(e){ console.error('[capLib] sync:', e); }
 }
 
 function initEditDrag(){
