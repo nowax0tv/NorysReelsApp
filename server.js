@@ -537,10 +537,14 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     let fc;
     if(bgMode(shrinkBgMode) === 'blur'){
       if(rotateAngle){
+        // Même technique que le rotate seul (lignes ~609) : on ajoute un canal
+        // alpha (yuva420p) AVANT le pad/rotate pour que fillcolor=black@0 soit
+        // vraiment transparent et que le fond flouté reste visible derrière le
+        // contenu rétréci. Sans alpha, black@0 devient du noir opaque et cache
+        // le blur — c'est le bug "y'a du flou mais y'a du noir".
         const mid = cleanFilter ? cleanFilter+',' : '';
-        fc = 'split=2[bg][fg];[bg]scale=540:960,boxblur=20:5[blurred];'
-           + '[fg]'+mid+'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black[rot];'
-           + '[rot]scale=iw*'+sf+':ih*'+sf+'[small];'
+        fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=25:5,crop=540:960[blurred];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2,scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
       } else {
         // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
@@ -550,7 +554,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // alors jamais (bordure invisible, bug constaté en testant).
         const mid = cleanFilter ? cleanFilter+',' : '';
         fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=25:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black,scale=iw*'+sf+':ih*'+sf+'[small];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2[out]';
       }
       args = ['-y', ...trimArgs, '-i', inputFile,
@@ -607,7 +611,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     // lui-même cacher le fond.
     const mid = cleanFilter ? cleanFilter+',' : '';
     const fc = 'split=2[bg][fg];[bg]scale=700:1100,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black,format=yuva420p,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
+      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
       + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
@@ -879,16 +883,18 @@ const server = http.createServer((req, res) => {
           ? captionText.split('\n').map(l=>l.trim()).filter(Boolean).map(text=>({text}))
           : [];
 
-        const total = tmpFiles.length * numVariants;
+        // Chaque variante produit 3 fichiers : original, miroir horizontal (_mh), miroir vertical (_mv)
+        const MIRROR_VARIANTS = [['', null], ['_mh', 'hflip'], ['_mv', 'vflip']];
+        const total = tmpFiles.length * numVariants * 3;
         send(res,{type:'start',total});
-        console.log('Generating '+total+' variants → '+outputDir);
+        console.log('Generating '+total+' files ('+numVariants+' variants × 3 mirrors) → '+outputDir);
 
         let success = 0;
-        let attempted = 0;
+        let seqIdx   = 0;  // numéro de variante de base (sans les miroirs)
+        let globalIdx = 0; // index global sur tous les fichiers (pour la progression)
         for(const vf of tmpFiles){
           const base = path.basename(vf.name, path.extname(vf.name));
           for(let i=0; i<numVariants; i++){
-            const attemptIndex = attempted++;
             let tplId, combinedFilter, combinedSpecial;
 
             // ── NOUVEAU MODE : chaque variante combine TOUS les filtres actifs ──
@@ -923,34 +929,37 @@ const server = http.createServer((req, res) => {
             // Ajouter __rotate__ dans le filter string pour que generateVariant le détecte
             if(rotateAngle) normalParts.push('__rotate__' + rotateAngle);
             combinedFilter  = normalParts.join(',');
+            // Retirer hflip/vflip explicites — désormais gérés comme multiplicateurs
+            combinedFilter  = combinedFilter.replace(/,?(hflip|vflip),?/g, ',').replace(/^,|,$/g,'');
             combinedSpecial = specialsFound[0] || '';
             tplId = 'all'+filters.length+'f';
 
-            const ext = outputFormat === 'mov' ? '.mov' : '.mp4';
-            // Séquentielle : littéralement "variant_001.mp4" comme affiché dans
-            // l'aperçu — numérotation GLOBALE (attemptIndex, pas i) pour éviter
-            // que deux vidéos sources écrasent les mêmes noms (chacune repartait
-            // de 001 avant ce correctif).
-            const outName = namingMode === 'random'
-              ? base+'_'+Math.random().toString(16).slice(2,10)+ext
-              : 'variant_'+String(attemptIndex+1).padStart(3,'0')+ext;
-            const outPath = path.join(outputDir, outName);
-            console.log('['+(i+1)+'/'+numVariants+'] '+tplId+' → '+outName);
-
+            const ext     = outputFormat === 'mov' ? '.mov' : '.mp4';
+            const seqNum  = String(seqIdx+1).padStart(3,'0');
+            const randBase = Math.random().toString(16).slice(2,10);
             const metaOpts = { injectMetadata, deviceModelId, gpsCountry };
-            let lastSentPct = -1;
-            const ok = await generateVariant(vf.tmp, outPath, combinedFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
-              const pct = Math.round(((attemptIndex + fraction) / total) * 100);
-              if(pct !== lastSentPct){
-                lastSentPct = pct;
-                send(res,{type:'subprogress',pct});
-              }
-            });
-            if(ok){
-              success++;
-              send(res,{type:'progress',file:outName});
+
+            // Générer l'original + miroir horizontal + miroir vertical
+            for(const [suffix, mirrorFilter] of MIRROR_VARIANTS){
+              const thisAttemptIndex = globalIdx++;
+              const outName = namingMode === 'random'
+                ? base+'_'+randBase+suffix+ext
+                : 'variant_'+seqNum+suffix+ext;
+              const outPath = path.join(outputDir, outName);
+              const thisFilter = mirrorFilter
+                ? (combinedFilter ? combinedFilter+','+mirrorFilter : mirrorFilter)
+                : combinedFilter;
+              console.log('['+(i+1)+'/'+numVariants+']'+suffix+' '+tplId+' → '+outName);
+
+              let lastSentPct = -1;
+              const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
+                const pct = Math.round(((thisAttemptIndex + fraction) / total) * 100);
+                if(pct !== lastSentPct){ lastSentPct = pct; send(res,{type:'subprogress',pct}); }
+              });
+              if(ok){ success++; send(res,{type:'progress',file:outName}); }
+              else { send(res,{type:'error',file:outName,msg:'FFmpeg error'}); }
             }
-            else { send(res,{type:'error',file:outName,msg:'FFmpeg error'}); }
+            seqIdx++;
           }
           try{ fs.unlinkSync(vf.tmp); }catch{}
         }

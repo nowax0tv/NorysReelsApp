@@ -1653,7 +1653,7 @@
 
   <div class="profile-panel-billing" onclick="closeProfilePanel();goPage('billing');">
     <span data-icon="creditCard"></span>
-    <span id="panel-reels-quota">0 / 50 cette semaine</span>
+    <span id="panel-reels-quota">0 / 50 ces 2 semaines</span>
     <span class="profile-panel-billing-arrow">→</span>
   </div>
 
@@ -2172,26 +2172,26 @@
         </div>
 
         <div class="card">
-          <div class="card-label" data-i18n="billingUsageLabel">Usage cette semaine</div>
+          <div class="card-label" data-i18n="billingUsageLabel">Usage sur 2 semaines</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <span style="font-size:13px;color:var(--text2);"><span data-i18n="billingCurrentTier">Palier actuel :</span> <strong id="billing-tier-label" style="color:var(--purple2);">Agency (inclus)</strong></span>
             <span id="billing-usage-text" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);">0 / 50</span>
           </div>
           <div class="prog-bar-wrap"><div class="prog-bar" id="billing-usage-bar" style="width:0%;"></div></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px;" data-i18n="billingResetNote">Réinitialisé chaque lundi à 00:00.</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;" data-i18n="billingResetNote">Réinitialisé toutes les 2 semaines.</div>
         </div>
 
         <div class="billing-plans-grid">
           <div class="billing-plan-card current" data-tier="agency_included">
             <div class="billing-plan-name"><span data-i18n="billingPlanAgencyName">Agency</span> <span class="billing-plan-current-badge" data-i18n="billingPlanIncluded">Inclus</span></div>
             <div class="billing-plan-price">0€<span data-i18n="billingPerMonth">/mois</span></div>
-            <div class="billing-plan-desc" data-i18n="billingPlanAgencyDesc">50 variantes / semaine, inclus avec ton plan Agency NorysTracking.</div>
+            <div class="billing-plan-desc" data-i18n="billingPlanAgencyDesc">50 variantes / 2 semaines, inclus avec ton plan Agency NorysTracking.</div>
           </div>
 
           <div class="billing-plan-card" data-tier="standard">
             <div class="billing-plan-name"><span data-i18n="billingPlanStandardName">Standard</span> <span class="billing-plan-current-badge" data-i18n="billingPlanCurrentBadge">Palier actuel</span></div>
             <div class="billing-plan-price">50€<span data-i18n="billingPerMonth">/mois</span></div>
-            <div class="billing-plan-desc" data-i18n="billingPlanStandardDesc">200 variantes / semaine.</div>
+            <div class="billing-plan-desc" data-i18n="billingPlanStandardDesc">200 variantes / 2 semaines.</div>
             <button class="bg-btn billing-upgrade-btn" onclick="upgradeReelsPlan('reels_standard', 50)" data-i18n="billingUpgradeStandard">Passer à Standard</button>
           </div>
 
@@ -2533,13 +2533,13 @@ const I18N = {
     navConverter: 'Convertisseur', navCaptions: 'Captions', navMusic: 'Musique', navGenerate: 'Générer', navBilling: 'Billing', logout: 'Déconnexion',
     navOptionalTools: 'Outils optionnels', navAccount: 'Compte',
     billingTitle: 'Billing', billingDesc: "Ton quota de variantes et tes options d'abonnement Reels",
-    billingUsageLabel: 'Usage cette semaine', billingCurrentTier: 'Palier actuel :', billingResetNote: 'Réinitialisé chaque lundi à 00:00.',
-    billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Inclus', billingPlanAgencyDesc: '50 variantes / semaine, inclus avec ton plan Agency NorysTracking.',
-    billingPlanStandardName: 'Standard', billingPlanCurrentBadge: 'Palier actuel', billingPlanStandardDesc: '200 variantes / semaine.', billingUpgradeStandard: 'Passer à Standard',
+    billingUsageLabel: 'Usage sur 2 semaines', billingCurrentTier: 'Palier actuel :', billingResetNote: 'Réinitialisé toutes les 2 semaines.',
+    billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Inclus', billingPlanAgencyDesc: '50 variantes / 2 semaines, inclus avec ton plan Agency NorysTracking.',
+    billingPlanStandardName: 'Standard', billingPlanCurrentBadge: 'Palier actuel', billingPlanStandardDesc: '200 variantes / 2 semaines.', billingUpgradeStandard: 'Passer à Standard',
     billingPlanUnlimitedName: 'Illimité', billingPlanUnlimitedDesc: 'Variantes illimitées, aucune limite hebdomadaire.', billingUpgradeUnlimited: 'Passer à Illimité',
     billingPerMonth: '/mois', billingCheckoutNote: "Le paiement s'ouvre dans ton navigateur (norystracking.com) — connecte-toi avec le même compte que dans l'app.",
-    quotaExhausted: 'Quota hebdomadaire épuisé ({used}/{limit}). Passe à un palier supérieur dans Billing pour continuer.',
-    quotaExceeded: 'Cette demande de {requested} variantes dépasse ce qu\'il te reste cette semaine ({remaining} restantes sur {limit}). Réduis le nombre de variantes ou passe à un palier supérieur dans Billing.',
+    quotaExhausted: 'Quota des 2 dernières semaines épuisé ({used}/{limit}). Passe à un palier supérieur dans Billing pour continuer.',
+    quotaExceeded: 'Cette demande de {requested} variantes dépasse ce qu\'il te reste sur ces 2 semaines ({remaining} restantes sur {limit}). Réduis le nombre de variantes ou passe à un palier supérieur dans Billing.',
     checkoutOpened: 'Page de paiement ouverte dans ton navigateur.', checkoutOpenFailed: "Impossible d'ouvrir le navigateur depuis cette fenêtre.",
     splashSub: 'Duplicate · Filter · Distribute', emailLabel: 'Email', passwordLabel: 'Mot de passe',
     loginSigninSub: 'Connecte-toi pour continuer', loginSignupSub: 'Crée ton compte Norys',
@@ -2583,13 +2583,13 @@ const I18N = {
     navConverter: 'Converter', navCaptions: 'Captions', navMusic: 'Music', navGenerate: 'Generate', navBilling: 'Billing', logout: 'Log out',
     navOptionalTools: 'Optional tools', navAccount: 'Account',
     billingTitle: 'Billing', billingDesc: "Your variant quota and Reels subscription options",
-    billingUsageLabel: 'Usage this week', billingCurrentTier: 'Current tier:', billingResetNote: 'Resets every Monday at 00:00.',
-    billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Included', billingPlanAgencyDesc: '50 variants / week, included with your NorysTracking Agency plan.',
-    billingPlanStandardName: 'Standard', billingPlanCurrentBadge: 'Current tier', billingPlanStandardDesc: '200 variants / week.', billingUpgradeStandard: 'Switch to Standard',
+    billingUsageLabel: 'Usage over 2 weeks', billingCurrentTier: 'Current tier:', billingResetNote: 'Resets every 2 weeks.',
+    billingPlanAgencyName: 'Agency', billingPlanIncluded: 'Included', billingPlanAgencyDesc: '50 variants / 2 weeks, included with your NorysTracking Agency plan.',
+    billingPlanStandardName: 'Standard', billingPlanCurrentBadge: 'Current tier', billingPlanStandardDesc: '200 variants / 2 weeks.', billingUpgradeStandard: 'Switch to Standard',
     billingPlanUnlimitedName: 'Unlimited', billingPlanUnlimitedDesc: 'Unlimited variants, no weekly limit.', billingUpgradeUnlimited: 'Switch to Unlimited',
     billingPerMonth: '/month', billingCheckoutNote: 'Payment opens in your browser (norystracking.com) — sign in with the same account as in the app.',
-    quotaExhausted: 'Weekly quota exhausted ({used}/{limit}). Upgrade to a higher tier in Billing to continue.',
-    quotaExceeded: 'This request for {requested} variants exceeds what you have left this week ({remaining} left out of {limit}). Reduce the number of variants or upgrade in Billing.',
+    quotaExhausted: 'Biweekly quota exhausted ({used}/{limit}). Upgrade to a higher tier in Billing to continue.',
+    quotaExceeded: 'This request for {requested} variants exceeds what you have left this period ({remaining} left out of {limit}). Reduce the number of variants or upgrade in Billing.',
     checkoutOpened: 'Payment page opened in your browser.', checkoutOpenFailed: 'Could not open the browser from this window.',
     splashSub: 'Duplicate · Filter · Distribute', emailLabel: 'Email', passwordLabel: 'Password',
     loginSigninSub: 'Sign in to continue', loginSignupSub: 'Create your Norys account',
@@ -2940,8 +2940,13 @@ async function loadReelsQuota(sitePlan){
   }
 
   try {
-    const { data } = await supabaseClient.rpc('get_reels_weekly_usage');
-    reelsUsed = typeof data === 'number' ? data : 0;
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabaseClient
+      .from('reels_generation_log')
+      .select('count')
+      .eq('user_id', currentUserId)
+      .gte('created_at', twoWeeksAgo);
+    reelsUsed = Array.isArray(data) ? data.reduce((s, r) => s + (r.count || 0), 0) : 0;
   } catch(e){
     reelsUsed = 0;
   }
@@ -2977,7 +2982,7 @@ function renderReelsQuotaUI(){
   });
 
   const panelQuotaEl = document.getElementById('panel-reels-quota');
-  if(panelQuotaEl) panelQuotaEl.textContent = usedText + ' cette semaine';
+  if(panelQuotaEl) panelQuotaEl.textContent = usedText + ' ces 2 semaines';
 }
 
 // Ouvre le checkout Stripe du site (norystracking) dans le navigateur
@@ -3328,9 +3333,7 @@ const TEMPLATES = [
 
 // Templates créatifs — impact visuel fort
 const SPECIAL_TEMPLATES = [
-  // Retournements
-  { id:'flip_h',    icon:'🪞', name:'Miroir horizontal',  filter:'hflip',                                           tag:'creative' },
-  { id:'flip_v',    icon:'🙃', name:'Miroir vertical',    filter:'vflip',                                           tag:'creative' },
+  // Miroirs horizontal et vertical appliqués automatiquement sur chaque variante (multiplicateur)
   { id:'rotate',    icon:'🔄', name:'Rotation',           filter:'rotate=0.1745:fillcolor=black',                   tag:'creative' },
   { id:'shrink',    icon:'🔳', name:'Rétrécir',           special:'shrink',                                         tag:'creative' },
   { id:'hue',       icon:'🎨', name:'Hue shift',          filter:'hue=h=30',                                        tag:'creative' },
