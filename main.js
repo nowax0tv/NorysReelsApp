@@ -92,42 +92,82 @@ function createMainWindow() {
 
 // ── AUTO-UPDATE ──────────────────────────────────────────────
 // Windows (NSIS) : electron-updater télécharge en arrière-plan et installe
-// silencieusement → on attend update-downloaded avant d'afficher le bandeau.
+// silencieusement via quitAndInstall().
 //
-// macOS : l'installation automatique d'un .dmg requiert une signature
-// Apple Developer ID qu'on n'a pas. On écoute update-available à la place :
-// dès qu'une version plus récente existe sur GitHub, le bandeau s'affiche
-// avec un bouton "Télécharger" qui ouvre la page releases — l'utilisateur
-// remplace le DMG manuellement (même procédure que la première installation).
+// macOS : electron-updater exige une signature Apple Developer ID pour
+// fonctionner — même pour le simple checkForUpdates(). Sans certificat,
+// tout le module échoue silencieusement. On contourne complètement
+// electron-updater sur Mac : on télécharge latest-mac.yml depuis la release
+// GitHub, on compare les versions, et on affiche le bandeau si une version
+// plus récente existe. L'utilisateur télécharge et remplace le DMG lui-même.
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
 
-  const isMac = process.platform === 'darwin';
-  autoUpdater.autoDownload = !isMac;
-  autoUpdater.autoInstallOnAppQuit = false;
-
-  if (isMac) {
-    autoUpdater.on('update-available', (info) => {
-      if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version, macManual: true });
-    });
+  if (process.platform === 'darwin') {
+    checkForMacUpdateManual();
   } else {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.on('update-downloaded', (info) => {
       if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version });
     });
+    autoUpdater.on('error', (err) => {
+      console.log('[Norys Reels] auto-update:', err.message);
+    });
+    autoUpdater.checkForUpdates().catch((e) => {
+      console.log('[Norys Reels] checkForUpdates:', e.message);
+    });
   }
+}
 
-  autoUpdater.on('error', (err) => {
-    console.log('[Norys Reels] auto-update:', err.message);
+// Récupère latest-mac.yml depuis la release GitHub "Soft" et compare
+// avec la version courante. Suit les redirects HTTP 301/302.
+function fetchUrlText(url, redirectsLeft) {
+  const https = require('https');
+  redirectsLeft = redirectsLeft !== undefined ? redirectsLeft : 5;
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { timeout: 8000 }, (res) => {
+      if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location && redirectsLeft > 0) {
+        resolve(fetchUrlText(res.headers.location, redirectsLeft - 1));
+        return;
+      }
+      if (res.statusCode !== 200) { reject(new Error('HTTP ' + res.statusCode)); return; }
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => resolve(data));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
   });
+}
 
-  autoUpdater.checkForUpdates().catch((e) => {
-    console.log('[Norys Reels] checkForUpdates:', e.message);
-  });
+function isNewerVersion(latest, current) {
+  const parse = v => (v || '').split('.').map(n => parseInt(n, 10) || 0);
+  const [la, lb, lc] = parse(latest);
+  const [ca, cb, cc] = parse(current);
+  return la > ca || (la === ca && lb > cb) || (la === ca && lb === cb && lc > cc);
+}
+
+async function checkForMacUpdateManual() {
+  try {
+    const yaml = await fetchUrlText(
+      'https://github.com/nowax0tv/NorysReelsApp/releases/download/Soft/latest-mac.yml'
+    );
+    const match = yaml.match(/^version:\s*['"]?([^\s'"]+)['"]?/m);
+    if (!match) return;
+    const latest = match[1];
+    const current = app.getVersion();
+    if (isNewerVersion(latest, current)) {
+      if (mainWindow) mainWindow.webContents.send('update-ready', { version: latest, macManual: true });
+    }
+  } catch (e) {
+    console.log('[Norys Reels] Mac update check:', e.message);
+  }
 }
 
 ipcMain.on('restart-and-install-update', () => {
   if (process.platform === 'darwin') {
-    // Ouvre la page releases GitHub pour que l'utilisateur télécharge le DMG
+    // Ouvre la page releases pour que l'utilisateur télécharge le nouveau DMG
     shell.openExternal('https://github.com/nowax0tv/NorysReelsApp/releases');
   } else {
     // (isSilent, isForceRunAfter) : sans ça, l'installeur NSIS rouvrait son
