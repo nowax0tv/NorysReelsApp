@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.7</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.8</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3753,6 +3753,69 @@ function renderFiles(){
       <span class="file-pill-size">${(f.size/1024/1024).toFixed(1)} MB</span>
       <span class="file-pill-rm" onclick="rmFile('${f.name}')">✕</span>
     </div>`).join('');
+}
+
+// ── MUSIQUE ────────────────────────────────────────────────────
+let musicFile = null;
+let musicMode = 'replace';
+
+function toggleMusic(){
+  const sw   = document.getElementById('music-switch');
+  const body = document.getElementById('music-body');
+  sw.classList.toggle('on');
+  body.style.display = sw.classList.contains('on') ? 'block' : 'none';
+}
+
+function setMusicMode(mode){
+  musicMode = mode;
+  document.getElementById('music-mode-replace').classList.toggle('active', mode === 'replace');
+  document.getElementById('music-mode-mix').classList.toggle('active', mode === 'mix');
+  document.getElementById('orig-vol-row').style.display = mode === 'mix' ? 'flex' : 'none';
+}
+
+function loadMusicFile(input){
+  const file = input && input.files ? input.files[0] : input;
+  if(!file) return;
+  musicFile = file;
+  document.getElementById('music-drop-text').textContent = '🎵 ' + file.name;
+}
+
+function handleMusicDrop(e){
+  e.preventDefault();
+  document.getElementById('music-drop').classList.remove('has-file');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('audio/')) loadMusicFile(file);
+}
+
+// ── OPTIONS GÉNÉRER : métadonnées, numérotation, format ────────
+let namingMode = 'sequential';
+
+function toggleMetadataOptions(){
+  const on = document.getElementById('inject-metadata-toggle').checked;
+  document.getElementById('metadata-options').style.opacity = on ? '1' : '.35';
+  document.getElementById('metadata-options').style.pointerEvents = on ? 'auto' : 'none';
+  NorysSound.toggleOn();
+}
+
+function setNamingMode(mode){
+  namingMode = mode === 'random' ? 'random' : 'sequential';
+  document.getElementById('naming-sequential').classList.toggle('active', namingMode === 'sequential');
+  document.getElementById('naming-random').classList.toggle('active', namingMode === 'random');
+  const preview = document.getElementById('naming-preview');
+  if(preview){
+    preview.textContent = namingMode === 'random'
+      ? '→ nomvideo_a1f9c3d2.mp4, nomvideo_7e2b8a41.mp4, …'
+      : '→ variant_001.mp4, variant_002.mp4, …';
+  }
+  NorysSound.toggleOn();
+}
+
+async function openOutputFolder(){
+  NorysSound.click();
+  if(window.electronAPI && window.electronAPI.openOutputFolder){
+    const result = await window.electronAPI.openOutputFolder();
+    if(result && !result.ok) console.error('[openOutputFolder]', result.error);
+  }
 }
 
 // ── SYNC SLIDER/INPUT ─────────────────────────────────────
