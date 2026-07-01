@@ -1783,7 +1783,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.0</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.1</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1904,7 +1904,7 @@
         </div>
 
         <!-- Modal éditeur de template -->
-        <div class="cap-modal-bd" id="cap-modal-bd" onclick="if(event.target===this)closeCapEditor()">
+        <div class="cap-modal-bd" id="cap-modal-bd">
           <div class="cap-modal">
 
             <!-- Header -->
@@ -3418,12 +3418,25 @@ function openCapEditor(id){
     if(edVid){ edVid.src = URL.createObjectURL(capGenFile); edVid.style.display = 'block'; edVid.play().catch(()=>{}); }
   }
   const bd = document.getElementById('cap-modal-bd');
-  if(bd) bd.classList.add('open');
+  if(bd){
+    bd.classList.add('open');
+    // Delay: prevent the opening click from immediately closing the modal
+    setTimeout(() => {
+      bd._closeHandler = e => { if(e.target === bd) closeCapEditor(); };
+      bd._escHandler  = e => { if(e.key === 'Escape') closeCapEditor(); };
+      bd.addEventListener('click', bd._closeHandler);
+      document.addEventListener('keydown', bd._escHandler);
+    }, 200);
+  }
   initEditDrag();
 }
 function closeCapEditor(){
   const bd = document.getElementById('cap-modal-bd');
-  if(bd) bd.classList.remove('open');
+  if(bd){
+    bd.classList.remove('open');
+    if(bd._closeHandler){ bd.removeEventListener('click', bd._closeHandler); bd._closeHandler = null; }
+    if(bd._escHandler){ document.removeEventListener('keydown', bd._escHandler); bd._escHandler = null; }
+  }
   capEditId = null;
 }
 function syncEditControls(){
