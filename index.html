@@ -1768,7 +1768,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.3.6</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.3.7</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3145,6 +3145,13 @@ async function recheckAccess(){
   await enterAppOrLogin();
 }
 
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
+
 async function enterAppOrLogin(){
   const app = document.getElementById('app');
   const login = document.getElementById('login');
@@ -3158,14 +3165,14 @@ async function enterAppOrLogin(){
 
   let session = null;
   try {
-    const { data } = await supabaseClient.auth.getSession();
+    const { data } = await withTimeout(supabaseClient.auth.getSession(), 8000);
     session = data.session;
   } catch(e){
     console.error('Erreur getSession:', e);
   }
 
   if(session){
-    const access = await checkSubscriptionAccess(session.user.id);
+    const access = await withTimeout(checkSubscriptionAccess(session.user.id), 8000).catch(() => ({ granted: false, plan: null }));
     if(!access.granted){
       showAccessDenied(access.plan);
       return;
@@ -3212,11 +3219,11 @@ function winMaximize(){ if(window.electronAPI) window.electronAPI.maximize(); }
 function winClose(){ if(window.electronAPI) window.electronAPI.close(); }
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderTemplates();
-  setupDrop();
+  try { renderTemplates(); } catch(e){ console.error('renderTemplates:', e); }
+  try { setupDrop(); } catch(e){ console.error('setupDrop:', e); }
   runSplash();
-  updateShrinkOption();
-  updateCount();
+  try { updateShrinkOption(); } catch(e){ console.error('updateShrinkOption:', e); }
+  try { updateCount(); } catch(e){ console.error('updateCount:', e); }
 });
 
 
