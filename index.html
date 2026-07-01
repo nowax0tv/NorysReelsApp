@@ -954,6 +954,36 @@
 
     .cap-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+    /* ── CAPTIONS PAGE v2 (bibliothèque de templates) ──────────── */
+    .cap-page-grid { display: grid; grid-template-columns: 1fr 120px; gap: 14px; align-items: start; }
+    .cap-lib-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .cap-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
+    .cap-tpl-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:28px 16px; gap:6px; border:1.5px dashed var(--border); border-radius:var(--r); color:var(--text3); font-size:11px; text-align:center; }
+    .cap-tpl-card { border:1px solid var(--border); border-radius:var(--r); overflow:hidden; transition:border-color .15s,box-shadow .15s; background:rgba(255,255,255,.015); }
+    .cap-tpl-card:hover { border-color:var(--border2); }
+    .cap-tpl-card.cap-sel { border-color:var(--purple2); box-shadow:0 0 0 2px rgba(124,58,237,.22); background:rgba(124,58,237,.05); }
+    .cap-tpl-prev { aspect-ratio:4/3; background:#08081a; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:8px; cursor:pointer; position:relative; }
+    .cap-tpl-tick { position:absolute; top:5px; right:5px; width:18px; height:18px; border-radius:50%; border:1.5px solid rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff; transition:all .15s; background:transparent; }
+    .cap-tpl-card.cap-sel .cap-tpl-tick { background:var(--purple); border-color:var(--purple2); }
+    .cap-tpl-foot { display:flex; align-items:center; justify-content:space-between; gap:5px; padding:6px 8px; border-top:1px solid var(--border); }
+    .cap-tpl-nm { font-size:11px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cap-tpl-inf { font-size:9px; color:var(--text3); margin-top:2px; }
+    .cap-tpl-acts { display:flex; gap:3px; flex-shrink:0; }
+    .cap-ic { background:none; border:1px solid transparent; border-radius:5px; cursor:pointer; padding:3px 5px; font-size:10px; transition:all .15s; }
+    .cap-ic:hover { background:rgba(255,255,255,.06); border-color:var(--border); }
+    .cap-ic.del:hover { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.25); }
+    .cap-right-col { display:flex; flex-direction:column; gap:8px; }
+    .cap-vidrop { aspect-ratio:9/16; border:1.5px dashed var(--border2); border-radius:var(--r); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; position:relative; background:rgba(124,58,237,.03); transition:border-color .15s,background .15s; flex-shrink:0; }
+    .cap-vidrop:hover { border-color:var(--purple2); background:rgba(124,58,237,.06); }
+    .cap-sel-pill { padding:6px 10px; border-radius:var(--r-s); background:var(--dim); border:1px solid var(--border2); font-size:11px; font-weight:700; color:var(--purple2); text-align:center; }
+    .cap-editor-panel { margin-top:14px; border:1px solid var(--border2); border-radius:var(--r); padding:14px; background:rgba(10,10,20,.65); animation:slideIn .2s ease; }
+    .cap-editor-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    .cap-editor-cols { display:grid; grid-template-columns:170px 1fr; gap:14px; align-items:start; }
+    .cap-editor-lcol { display:flex; flex-direction:column; gap:7px; }
+    .cap-editor-rcol { display:flex; flex-direction:column; gap:10px; }
+    .cap-gen-results { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
+    .cap-res-row { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.2); border-radius:var(--r-s); font-size:11px; color:var(--success); }
+
     .select-s {
       background: rgba(255,255,255,.04);
       border: 1px solid var(--border);
@@ -1738,7 +1768,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.3.3</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.3.4</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1814,117 +1844,117 @@
     <div class="page" id="page-captions">
       <div class="page-inner">
         <div class="section-head">
-          <div class="section-title">📝 <span data-i18n="captionsTitle">Sous-titres</span></div>
-          <div class="section-desc" data-i18n="captionsDesc">Texte gravé directement dans la vidéo · drag &amp; drop la position</div>
-          <div class="optional-note" data-i18n="captionsOptionalNote">Outil optionnel — ajoute des sous-titres si tu veux, sinon ignore cet onglet.</div>
+          <div class="section-title">📝 Captions</div>
+          <div class="section-desc">Bibliothèque de templates personnels · glisse une vidéo · génère 1 vidéo par caption</div>
         </div>
 
-        <div class="extract-mode-grid">
-          <div class="extract-mode-card" id="mode-screenshot" onclick="setCaptionInputMode('screenshot')">
-            <span class="extract-mode-icon" data-icon="image"></span>
-            <div class="extract-mode-title" data-i18n="modeScreenshot">SCREENSHOT</div>
-            <div class="extract-mode-sub" data-i18n="modeScreenshotSub">Depuis image</div>
-          </div>
-          <div class="extract-mode-card active" id="mode-manual" onclick="setCaptionInputMode('manual')">
-            <span class="extract-mode-icon" data-icon="pencil"></span>
-            <div class="extract-mode-title" data-i18n="modeManual">MANUEL</div>
-            <div class="extract-mode-sub" data-i18n="modeManualSub">Texte direct</div>
-          </div>
-          <div class="extract-mode-card" id="mode-video" onclick="setCaptionInputMode('video')">
-            <span class="extract-mode-icon" data-icon="clapperboard"></span>
-            <div class="extract-mode-title" data-i18n="modeVideo">VIDÉO</div>
-            <div class="extract-mode-sub" data-i18n="modeVideoSub">Extract auto</div>
-          </div>
-        </div>
+        <!-- Main grid: library (left) + video/generate (right) -->
+        <div class="cap-page-grid">
 
-        <div class="card" id="screenshot-ocr-card" style="display:none;">
-          <div class="card-label" data-i18n="screenshotOcrLabel">Extraction depuis capture d'écran</div>
-          <div class="conv-drop" id="ocr-drop" onclick="document.getElementById('ocr-input').click()" ondrop="handleOcrDrop(event)" ondragover="event.preventDefault()">
-            <div style="font-size:28px;margin-bottom:8px;">🖼️</div>
-            <div style="font-size:13px;font-weight:600;" data-i18n="ocrDropTitle">Dépose une capture d'écran</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;" data-i18n="ocrDropSub">L'IA va lire le texte automatiquement</div>
-            <input type="file" id="ocr-input" accept="image/*" style="display:none" onchange="runOcrExtract(this)"/>
-          </div>
-          <div id="ocr-status" style="margin-top:10px;font-size:12px;color:var(--text2);"></div>
-        </div>
-
-        <div class="card" id="video-extract-card" style="display:none;">
-          <div class="card-label" data-i18n="videoExtractLabel">Extraction automatique depuis vidéo</div>
-          <div style="font-size:12px;color:var(--text3);" data-i18n="comingSoon">Bientôt disponible</div>
-        </div>
-
-        <div class="cap-layout">
-          <!-- Preview -->
+          <!-- Library -->
           <div>
-            <div class="cap-preview-wrap">
-              <video id="cap-video-preview" playsinline muted loop></video>
-              <div class="cap-placeholder" id="cap-placeholder">
-                <span style="font-size:28px;">🎬</span>
-                <span>Aperçu</span>
-                <label style="margin-top:6px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.04);font-size:11px;font-weight:600;color:var(--purple2);cursor:pointer;">
-                  Charger <input type="file" accept="video/*" style="display:none" onchange="loadPreviewVideo(this)"/>
-                </label>
-              </div>
-              <div id="cap-zone">
-                <span id="cap-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:15px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:nowrap;text-align:center;">Votre texte ici</span>
+            <div class="cap-lib-head">
+              <div class="ctrl-lbl" style="margin:0;">Ma bibliothèque</div>
+              <button class="btn-xs" onclick="openCapEditor(null)">＋ Nouveau template</button>
+            </div>
+            <div class="cap-tpl-grid" id="cap-tpl-grid">
+              <div class="cap-tpl-empty" id="cap-tpl-empty">
+                <span style="font-size:24px;">📝</span>
+                <div style="font-weight:700;color:var(--text2);">Aucun template</div>
+                <div>Clique sur «＋ Nouveau template» pour commencer</div>
               </div>
             </div>
-            <div style="display:flex;gap:6px;margin-top:8px;">
-              <div class="pos-btn" data-pos="top" onclick="snapPosV('top')" style="flex:1;">↑ Haut</div>
-              <div class="pos-btn" data-pos="center" onclick="snapPosV('center')" style="flex:1;">• Mid</div>
-              <div class="pos-btn active" data-pos="bottom" onclick="snapPosV('bottom')" style="flex:1;">↓ Bas</div>
-            </div>
-            <div style="display:flex;gap:6px;margin-top:6px;">
-              <div class="pos-btn" data-posh="left" onclick="snapPosH('left')" style="flex:1;">⇤ Gauche</div>
-              <div class="pos-btn active" data-posh="center" onclick="snapPosH('center')" style="flex:1;">• Centre</div>
-              <div class="pos-btn" data-posh="right" onclick="snapPosH('right')" style="flex:1;">⇥ Droite</div>
-            </div>
-            <div class="pos-btn" onclick="openPreviewModal()" style="margin-top:6px;width:100%;text-align:center;">⛶ Agrandir</div>
           </div>
 
-          <!-- Controls -->
-          <div class="cap-right">
-            <div class="card" style="padding:14px;">
-              <div class="ctrl-lbl">Texte</div>
-              <textarea class="cap-textarea" id="caption-text" placeholder="Une ligne = un sous-titre&#10;Écris ton texte ici…" oninput="renderPreview()"></textarea>
-            </div>
-
-            <div class="card" style="padding:14px;">
-              <div class="ctrl-lbl">Style rapide</div>
-              <div class="style-pills">
-                <div class="style-pill active" data-preset="classic" onclick="applyPreset('classic')">Classic</div>
-                <div class="style-pill" data-preset="tiktok" onclick="applyPreset('tiktok')">TikTok</div>
-                <div class="style-pill" data-preset="yellow" onclick="applyPreset('yellow')">Jaune</div>
-                <div class="style-pill" data-preset="minimal" onclick="applyPreset('minimal')">Minimal</div>
-                <div class="style-pill" data-preset="neon" onclick="applyPreset('neon')">Neon</div>
-                <div class="style-pill" data-preset="bold" onclick="applyPreset('bold')">Bold</div>
+          <!-- Video + Generate -->
+          <div class="cap-right-col">
+            <div class="ctrl-lbl">Vidéo source</div>
+            <div class="cap-vidrop" id="cap-vidrop"
+                 onclick="document.getElementById('cap-vid-input').click()"
+                 ondrop="handleCapGenDrop(event)" ondragover="event.preventDefault()">
+              <video id="cap-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+              <div id="cap-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                <span style="font-size:26px;">🎬</span>
+                <div style="font-size:11px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                <div style="font-size:10px;">MP4 · MOV · AVI</div>
               </div>
+              <input type="file" id="cap-vid-input" accept="video/*" style="display:none" onchange="loadCapGenVideo(this)"/>
             </div>
 
-            <div class="card" id="caption-templates-card" style="padding:14px;">
-              <div class="ctrl-lbl">Mes templates</div>
-              <div class="preset-tags-row" id="cap-template-tags" style="display:none;margin-top:0;margin-bottom:10px;"></div>
-              <div class="preset-row" style="margin-top:0;padding-top:0;border-top:none;">
-                <input class="preset-input" id="cap-template-name-input" type="text" placeholder="Nom du template…" maxlength="40"/>
-                <button class="preset-save-btn" onclick="saveCaptionTemplate()">💾 Sauvegarder</button>
+            <div class="cap-sel-pill" id="cap-sel-pill">0 sélectionné</div>
+            <button class="export-btn" id="cap-gen-btn" onclick="generateWithTemplates()" style="opacity:.4;pointer-events:none;">⚡ Générer <span id="cap-gen-count">0</span> vidéo(s)</button>
+            <div id="cap-gen-status" style="font-size:11px;color:var(--text2);text-align:center;"></div>
+            <div class="cap-gen-results" id="cap-gen-results" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Editor panel (hidden by default) -->
+        <div class="cap-editor-panel" id="cap-editor-panel" style="display:none;">
+          <div class="cap-editor-top">
+            <div class="ctrl-lbl" style="margin:0;" id="cap-editor-ttl">Nouveau template</div>
+            <button class="btn-xs" onclick="closeCapEditor()">✕ Fermer</button>
+          </div>
+          <div class="cap-editor-cols">
+
+            <!-- Left: preview + position + name/save -->
+            <div class="cap-editor-lcol">
+              <div class="cap-preview-wrap" id="cap-edit-wrap" style="width:170px;">
+                <video id="cap-edit-vid" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="cap-edit-zone" style="cursor:grab;">
+                  <span id="cap-edit-inner" style="display:block;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;line-height:1.4;white-space:pre-line;text-align:center;">Texte ici</span>
+                </div>
               </div>
+              <div style="display:flex;gap:5px;">
+                <div class="pos-btn" data-epv="top"    onclick="editSnapV('top')"    style="flex:1;font-size:10px;padding:5px;">↑</div>
+                <div class="pos-btn" data-epv="center" onclick="editSnapV('center')" style="flex:1;font-size:10px;padding:5px;">·</div>
+                <div class="pos-btn active" data-epv="bottom" onclick="editSnapV('bottom')" style="flex:1;font-size:10px;padding:5px;">↓</div>
+              </div>
+              <div style="display:flex;gap:5px;">
+                <div class="pos-btn" data-eph="left"   onclick="editSnapH('left')"   style="flex:1;font-size:10px;padding:5px;">⇤</div>
+                <div class="pos-btn active" data-eph="center" onclick="editSnapH('center')" style="flex:1;font-size:10px;padding:5px;">·C</div>
+                <div class="pos-btn" data-eph="right"  onclick="editSnapH('right')"  style="flex:1;font-size:10px;padding:5px;">⇥</div>
+              </div>
+              <input class="preset-input" id="cap-edit-name" type="text" placeholder="Nom du template…" maxlength="40" style="width:100%;"/>
+              <button class="export-btn" onclick="saveCapTemplate()" style="padding:10px;font-size:12px;">💾 Sauvegarder</button>
             </div>
 
-            <div class="card" style="padding:14px;">
+            <!-- Right: style + text controls -->
+            <div class="cap-editor-rcol">
+
+              <!-- Quick presets -->
+              <div>
+                <div class="ctrl-lbl">Style rapide</div>
+                <div class="style-pills">
+                  <div class="style-pill active" data-ep="classic" onclick="applyEditPreset('classic')">Classic</div>
+                  <div class="style-pill" data-ep="tiktok"  onclick="applyEditPreset('tiktok')">TikTok</div>
+                  <div class="style-pill" data-ep="yellow"  onclick="applyEditPreset('yellow')">Jaune</div>
+                  <div class="style-pill" data-ep="minimal" onclick="applyEditPreset('minimal')">Minimal</div>
+                  <div class="style-pill" data-ep="neon"    onclick="applyEditPreset('neon')">Neon</div>
+                  <div class="style-pill" data-ep="bold"    onclick="applyEditPreset('bold')">Bold</div>
+                </div>
+              </div>
+
+              <!-- Text -->
+              <div>
+                <div class="ctrl-lbl">Texte</div>
+                <textarea class="cap-textarea" id="cap-edit-text" placeholder="Une ligne = un sous-titre&#10;Écris ton texte ici…" oninput="renderEditPreview()" style="min-height:70px;"></textarea>
+              </div>
+
+              <!-- Style grid -->
               <div class="cap-grid-2">
                 <div>
                   <div class="ctrl-lbl">Couleur texte</div>
                   <div class="swatches">
-                    <div class="swatch active" data-c="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setSwatch('#ffffff',this)"></div>
-                    <div class="swatch" data-c="#FFD700" style="background:#FFD700;" onclick="setSwatch('#FFD700',this)"></div>
-                    <div class="swatch" data-c="#000000" style="background:#000;" onclick="setSwatch('#000000',this)"></div>
-                    <div class="swatch" data-c="#EF4444" style="background:#EF4444;" onclick="setSwatch('#EF4444',this)"></div>
-                    <input type="color" id="text-color-custom" value="#ffffff" oninput="setCustomColor(this.value)"/>
+                    <div class="swatch active" data-ec="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);" onclick="setEditSwatch('#ffffff',this)"></div>
+                    <div class="swatch" data-ec="#FFD700" style="background:#FFD700;" onclick="setEditSwatch('#FFD700',this)"></div>
+                    <div class="swatch" data-ec="#000000" style="background:#000;" onclick="setEditSwatch('#000000',this)"></div>
+                    <div class="swatch" data-ec="#EF4444" style="background:#EF4444;" onclick="setEditSwatch('#EF4444',this)"></div>
+                    <input type="color" id="cap-edit-color" value="#ffffff" oninput="setEditColor(this.value)"/>
                   </div>
                 </div>
                 <div>
                   <div class="ctrl-lbl">Fond</div>
-                  <select class="select-s" id="cap-bg" onchange="capState.bg=this.value;clearPresets();renderPreview();">
+                  <select class="select-s" id="cap-edit-bg" onchange="editState.bg=this.value;clearEditPresets();renderEditPreview();">
                     <option value="none">Aucun</option>
                     <option value="black_semi">Semi-transparent</option>
                     <option value="black_full">Noir plein</option>
@@ -1935,18 +1965,18 @@
                 <div>
                   <div class="ctrl-lbl">Taille</div>
                   <div class="size-row">
-                    <input type="range" min="24" max="90" value="38" id="cap-size" oninput="document.getElementById('cap-size-val').textContent=this.value+'px';capState.size=parseInt(this.value);clearPresets();renderPreview()" style="flex:1;"/>
-                    <span class="size-val" id="cap-size-val">38px</span>
+                    <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+                    <span class="size-val" id="cap-edit-sz-val">38px</span>
                   </div>
                 </div>
                 <div>
-                  <div class="ctrl-lbl">Contour <span id="stroke-val">2px</span></div>
+                  <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
                   <div class="size-row">
-                    <input type="range" min="0" max="8" value="2" id="cap-stroke" oninput="document.getElementById('stroke-val').textContent=this.value+'px';capState.strokeWidth=parseInt(this.value);clearPresets();renderPreview()" style="flex:1;"/>
-                    <div class="swatches" style="gap:5px;">
-                      <div class="swatch active" data-sc="#000000" style="background:#000;width:22px;height:22px;" onclick="setStrokeColor('#000000',this)"></div>
-                      <div class="swatch" data-sc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:22px;height:22px;" onclick="setStrokeColor('#ffffff',this)"></div>
-                      <input type="color" id="stroke-color-custom" value="#000000" oninput="setStrokeColorCustom(this.value)" style="width:22px;height:22px;"/>
+                    <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+                    <div class="swatches" style="gap:4px;">
+                      <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
+                      <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
+                      <input type="color" id="cap-edit-sc" value="#000000" oninput="setEditStrokeColor(this.value)" style="width:20px;height:20px;"/>
                     </div>
                   </div>
                 </div>
@@ -1954,38 +1984,22 @@
                   <div class="ctrl-lbl">Style</div>
                   <div class="toggle-row">
                     <span>Gras</span>
-                    <label class="toggle-sw"><input type="checkbox" id="cap-bold" checked onchange="capState.bold=this.checked;clearPresets();renderPreview();"/><span class="toggle-sl"></span></label>
+                    <label class="toggle-sw"><input type="checkbox" id="cap-edit-bold" checked onchange="editState.bold=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
                   </div>
-                  <div class="toggle-row" style="margin-top:8px;">
+                  <div class="toggle-row" style="margin-top:6px;">
                     <span>MAJUSCULES</span>
-                    <label class="toggle-sw"><input type="checkbox" id="cap-uppercase" onchange="capState.uppercase=this.checked;clearPresets();renderPreview();"/><span class="toggle-sl"></span></label>
+                    <label class="toggle-sw"><input type="checkbox" id="cap-edit-upper" onchange="editState.uppercase=this.checked;clearEditPresets();renderEditPreview();"/><span class="toggle-sl"></span></label>
                   </div>
                 </div>
                 <div>
-                  <div class="ctrl-lbl">Espacement lignes</div>
-                  <div class="size-row">
-                    <input type="range" min="80" max="200" value="140" id="cap-line-height" oninput="document.getElementById('cap-lh-val').textContent=this.value+'%';capState.lineHeight=parseInt(this.value);renderPreview()" style="flex:1;"/>
-                    <span class="size-val" id="cap-lh-val">140%</span>
-                  </div>
-                </div>
-                <div>
-                  <div class="ctrl-lbl">Emoji</div>
-                  <button class="btn-xs" onclick="toggleEmojiPicker(event)" id="emoji-toggle-btn" style="font-size:15px;">😀 Emoji</button>
-                  <div id="emoji-picker-wrap" style="position:relative;">
-                    <div class="emoji-picker" id="emoji-picker" style="display:none;">
-                      <div class="emoji-cats" id="emoji-cats"></div>
-                      <div class="emoji-grid" id="emoji-grid"></div>
-                    </div>
-                  </div>
+                  <div class="ctrl-lbl">Espacement <span id="cap-edit-lh-val">140%</span></div>
+                  <input type="range" min="80" max="200" value="140" id="cap-edit-lh" oninput="document.getElementById('cap-edit-lh-val').textContent=this.value+'%';editState.lineHeight=parseInt(this.value);renderEditPreview()" style="width:100%;margin-top:6px;"/>
                 </div>
               </div>
             </div>
-
-            <button class="export-btn" id="cap-export-btn" onclick="exportWithCaptions()">📥 Exporter avec sous-titres</button>
-            <div id="cap-export-status"></div>
-            <div id="cap-export-result"></div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -3163,7 +3177,7 @@ async function enterAppOrLogin(){
     goPage('generate');
     checkFFmpeg();
     renderPresetTags();
-    renderCaptionTemplateTags();
+    renderCapLibrary();
     showWelcomeToast();
     if(!window.__mainParticlesStarted){
       window.__mainParticlesStarted = true;
@@ -3200,8 +3214,6 @@ function winClose(){ if(window.electronAPI) window.electronAPI.close(); }
 document.addEventListener('DOMContentLoaded', () => {
   renderTemplates();
   setupDrop();
-  renderPreview();
-  initCaptionDrag();
   runSplash();
   updateShrinkOption();
   updateCount();
@@ -3225,910 +3237,330 @@ function handleConvDrop(e){
   if(f) convertFile(f);
 }
 
-// ── EXTRACTION SOUS-TITRES : Screenshot (OCR) / Manuel / Vidéo ────────────
-let captionInputMode = 'manual';
-let tesseractLoadPromise = null;
+// ── CAPTIONS LIBRARY ──────────────────────────────────────────
 
-function setCaptionInputMode(mode){
-  captionInputMode = mode;
-  NorysSound.toggleOn();
-  document.getElementById('mode-screenshot').classList.toggle('active', mode === 'screenshot');
-  document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
-  document.getElementById('mode-video').classList.toggle('active', mode === 'video');
-  document.getElementById('screenshot-ocr-card').style.display = mode === 'screenshot' ? 'block' : 'none';
-  document.getElementById('video-extract-card').style.display = mode === 'video' ? 'block' : 'none';
-}
-
-function loadTesseractScript(){
-  if(window.Tesseract) return Promise.resolve();
-  if(tesseractLoadPromise) return tesseractLoadPromise;
-  tesseractLoadPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'vendor/tesseract/tesseract.min.js';
-    s.onload = resolve;
-    s.onerror = () => reject(new Error('Impossible de charger le moteur OCR (vendor/tesseract/tesseract.min.js manquant).'));
-    document.head.appendChild(s);
-  });
-  return tesseractLoadPromise;
-}
-
-function handleOcrDrop(e){
-  e.preventDefault();
-  document.getElementById('ocr-drop').classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if(file && file.type.startsWith('image/')) runOcrExtract({files:[file]});
-}
-
-async function runOcrExtract(input){
-  const file = input && input.files ? input.files[0] : input;
-  if(!file) return;
-  const status = document.getElementById('ocr-status');
-  status.textContent = '⏳ Chargement du moteur OCR…';
-  try {
-    await loadTesseractScript();
-    const lang = (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'eng' : 'fra';
-    status.textContent = '🔎 Lecture du texte en cours…';
-    const { data } = await Tesseract.recognize(file, lang, {
-      workerPath: 'vendor/tesseract/worker.min.js',
-      corePath: 'vendor/tesseract/tesseract-core-lstm.js',
-      langPath: 'vendor/tesseract/lang',
-    });
-    const text = (data && data.text || '').split('\n').map(l => l.trim()).filter(Boolean).join('\n');
-    if(!text){
-      status.textContent = '⚠️ Aucun texte détecté sur cette image.';
-      NorysSound.error();
-      return;
-    }
-    const ta = document.getElementById('caption-text');
-    ta.value = text;
-    renderPreview();
-    status.textContent = '✅ Texte extrait — vérifie/édite-le ci-dessous si besoin.';
-    NorysSound.success();
-    setCaptionInputMode('manual');
-  } catch(e){
-    status.textContent = '❌ Erreur OCR : ' + e.message;
-    NorysSound.error();
-  }
-}
-
-// ── TEMPLATES ─────────────────────────────────────────────
-const TEMPLATES = [
-
-  // ── 🟢 SAFE — imperceptibles, hash différent garanti ──────────
-  // Re-encode propre : même visuel, signature binaire unique via CRF+preset variés
-  { id:'clean',      icon:'✨', name:'Re-encode propre',   filter:'', tag:'safe' },
-
-  // Sharpen ultra-léger : imperceptible mais modifie chaque pixel légèrement
-  { id:'sharpen',    icon:'🔍', name:'Sharpen',                  filter:'unsharp=5:5:0.6:5:5:0.0', tag:'safe' },
-
-  // Micro zoom : change le cadrage de 1% → imperceptible, hash totalement différent
-  { id:'zoom',       icon:'🔭', name:'Zoom',                    filter:'scale=iw*1.03:ih*1.03,crop=iw/1.03:ih/1.03', tag:'safe' },
-
-  // Micro grain invisible : noise level 1-2, imperceptible à l'écran
-  { id:'grain',      icon:'🎞️', name:'Grain',               filter:'noise=alls=3:allf=t', tag:'safe' },
-
-  // Vignette ultra-subtile : assombrit très légèrement les coins
-  { id:'vignette',   icon:'🔲', name:'Vignette',              filter:'vignette=0.1', tag:'safe' },
-
-  // EQ micro : +1% brightness ou saturation, indétectable à l'oeil
-  { id:'bright',     icon:'☀️', name:'Bright',              filter:'eq=brightness=0.05', tag:'safe' },
-  { id:'sat',        icon:'🎨', name:'Saturation',          filter:'eq=saturation=1.05', tag:'safe' },
-  { id:'contrast',   icon:'⚡', name:'Contraste',           filter:'eq=contrast=1.05', tag:'safe' },
-
-  // ── 🟡 SUBTILS — légère amélioration visuelle, bonne pour le reach ──
-  // Sharpen standard : rend l'image plus nette, améliore le stop-scroll
-
-  // Contraste + clarté : image qui pop davantage dans le feed
-  { id:'pop',        icon:'💥', name:'Pop (contraste+sat)', filter:'eq=contrast=1.05:saturation=1.08:brightness=0.01', tag:'boost' },
-
-  // Warm très léger : tons chauds imperceptibles, skin tones plus flatteurs
-  { id:'warm',       icon:'🌅', name:'Warm skin',           filter:'colorbalance=rs=0.03:gs=-0.01:bs=-0.02:rm=0.02:gm=-0.01:bm=-0.01', tag:'boost' },
-
-  // Clarté : boost les midtones sans toucher highlights/shadows
-
-  // Désaturation légère : style cinématique, marche bien sur lifestyle
-  { id:'cine',       icon:'🎬', name:'Ciné',               filter:'eq=saturation=0.90:contrast=1.04', tag:'boost' },
-
-];
-
-// Templates créatifs — impact visuel fort
-const SPECIAL_TEMPLATES = [
-  // Miroirs horizontal et vertical appliqués automatiquement sur chaque variante (multiplicateur)
-  { id:'rotate',    icon:'🔄', name:'Rotation',           filter:'rotate=0.1745:fillcolor=black',                   tag:'creative' },
-  { id:'shrink',    icon:'🔳', name:'Rétrécir',           special:'shrink',                                         tag:'creative' },
-  { id:'hue',       icon:'🎨', name:'Hue shift',          filter:'hue=h=30',                                        tag:'creative' },
-  { id:'bleach',    icon:'🌫️', name:'Bleach bypass',      filter:'eq=saturation=0.3:contrast=1.3',                  tag:'creative' },
-  { id:'randcut',   icon:'✂️', name:'Random cuts',        special:'randcut',                                        tag:'creative' },
-  { id:'speed',     icon:'⏱️', name:'Vitesse aléatoire ±10%', special:'speed',                                      tag:'creative' },
-];
-
-// (SPECIAL_TEMPLATES défini plus haut)
-
-const active = new Set(TEMPLATES.filter(t => t.tag === 'safe' || t.tag === 'boost').map(t=>t.id));
-let files = [];
-let combineMode = false;
-
-// ── INIT ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  renderTemplates();
-  setupDrop();
-  checkFFmpeg();
-  renderPreview();
-  initCaptionDrag();
-  checkFontStatus();
-});
-
-function checkFontStatus(){
-  const badge = document.getElementById('font-badge');
-  if(!badge) return;
-  fetch('/font-status').then(r=>r.json()).then(d=>{
-    if(d.ready){
-      badge.textContent = '✅';
-      badge.style.background = 'rgba(34,217,122,.15)';
-      badge.style.color = '#22D97A';
-      badge.title = 'Noto Color Emoji prête';
-    } else {
-      badge.textContent = '⬇️';
-      badge.title = 'Téléchargement en cours...';
-      setTimeout(checkFontStatus, 3000);
-    }
-  }).catch(()=>{});
-}
-
-
-// ── MUSIQUE ────────────────────────────────────────────────────
-let musicFile = null;
-let musicMode = 'replace'; // 'replace' | 'mix'
-
-function toggleMusic(){
-  const sw   = document.getElementById('music-switch');
-  const body = document.getElementById('music-body');
-  sw.classList.toggle('on');
-  body.style.display = sw.classList.contains('on') ? 'block' : 'none';
-}
-
-function setMusicMode(mode){
-  musicMode = mode;
-  document.getElementById('music-mode-replace').classList.toggle('active', mode === 'replace');
-  document.getElementById('music-mode-mix').classList.toggle('active', mode === 'mix');
-  document.getElementById('orig-vol-row').style.display = mode === 'mix' ? 'flex' : 'none';
-}
-
-function loadMusicFile(input){
-  const file = input && input.files ? input.files[0] : input;
-  if(!file) return;
-  musicFile = file;
-  document.getElementById('music-drop-text').textContent = '🎵 ' + file.name;
-}
-
-function handleMusicDrop(e){
-  e.preventDefault();
-  document.getElementById('music-drop').classList.remove('has-file');
-  const file = e.dataTransfer.files[0];
-  if(file && file.type.startsWith('audio/')) loadMusicFile(file);
-}
-
-
-// ── STROKE & EMOJI ─────────────────────────────────────────────
-function setStrokeColor(hex, el){
-  capState.strokeColor = hex;
-  const wrap = el ? el.closest('.swatches') : null;
-  if(wrap) wrap.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const pick = document.getElementById('stroke-color-custom');
-  if(pick) pick.value = hex;
-  clearPresets(); renderPreview();
-}
-function setStrokeColorCustom(hex){
-  capState.strokeColor = hex;
-  clearPresets(); renderPreview();
-}
-
-// Emoji Apple / standard — catégories
-const EMOJI_CATS = {
-  '😀': ['😀','😂','🥹','😍','🥰','😎','🤩','😏','😒','😭','😤','😡','🤬','😈','💀','👻','🔥','💯','✨','⭐','💫','🎉','🎊','💥','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','💕','💞','💓','💗','💖','💘','💝'],
-  '🙌': ['👏','🙌','🤝','👍','👎','✌️','🤞','🫶','💪','🦾','🙏','👀','💋','👄','🫦','💅','🤳','🫵','☝️','🖕'],
-  '🌸': ['🌸','🌺','🌻','🌹','🌷','💐','🍀','🌿','🍃','🌱','🎋','🎍','🍄','🌊','🌈','⚡','🌙','☀️','❄️','🔥','💧','🌍','🌎','🌏'],
-  '🍕': ['🍕','🍔','🍟','🌮','🌯','🍣','🍜','🍝','🍩','🍪','🎂','🍰','🧁','🍫','🍬','🍭','🍦','🥤','☕','🍷','🍸','🥂','🍾','🎁'],
-  '💎': ['💎','👑','💍','💄','👗','👠','👒','🎭','🎬','🎵','🎶','🎸','🎹','🎺','🎻','🥁','🎮','🎯','🏆','🥇','🎀'],
-  '🚀': ['🚀','✈️','🛸','🚗','🏎️','🛻','🚕','🛵','🚲','⛵','🏄','🤿','🧗','🏋️','💃','🕺','🤸','🏃','💨','🌀'],
+const CAP_LIB_KEY = 'norys_cap_lib_v2';
+const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, lineHeight:140 };
+const PRESETS = {
+  classic: { color:'#FFFFFF', bg:'none',        size:52, bold:true  },
+  tiktok:  { color:'#FFFFFF', bg:'black_full',  size:48, bold:true  },
+  yellow:  { color:'#FFE600', bg:'none',        size:56, bold:true  },
+  minimal: { color:'#FFFFFF', bg:'none',        size:36, bold:false },
+  neon:    { color:'#00FFB3', bg:'none',        size:52, bold:true  },
+  bold:    { color:'#000000', bg:'yellow_full', size:52, bold:true  },
 };
 
-let currentEmojiCat = '😀';
-let emojiPickerOpen = false;
+let capLib = [];
+let capSelIds = new Set();
+let capEditId = null;
+let editState = Object.assign({}, DEFAULT_EDIT);
+let capGenFile = null;
 
-function toggleEmojiPicker(){
-  emojiPickerOpen = !emojiPickerOpen;
-  const picker = document.getElementById('emoji-picker');
-  picker.style.display = emojiPickerOpen ? 'block' : 'none';
-  if(emojiPickerOpen) renderEmojiPicker();
+function loadCapLib(){
+  try { capLib = JSON.parse(localStorage.getItem(CAP_LIB_KEY) || '[]'); }
+  catch { capLib = []; }
+}
+function saveCapLib(){ localStorage.setItem(CAP_LIB_KEY, JSON.stringify(capLib)); }
+
+function renderCapLibrary(){
+  const grid = document.getElementById('cap-tpl-grid');
+  if(!grid) return;
+  const empty = document.getElementById('cap-tpl-empty');
+  Array.from(grid.querySelectorAll('.cap-tpl-card')).forEach(c => c.remove());
+  if(!capLib.length){ if(empty) empty.style.display='flex'; updateGenInfo(); return; }
+  if(empty) empty.style.display = 'none';
+  capLib.forEach(tpl => grid.insertBefore(buildTplCard(tpl), empty || null));
+  updateGenInfo();
 }
 
-function renderEmojiPicker(){
-  // Catégories
-  const cats = document.getElementById('emoji-cats');
-  cats.innerHTML = Object.keys(EMOJI_CATS).map(cat =>
-    '<div class="emoji-cat-btn '+(cat===currentEmojiCat?'active':'')+'" onclick="setEmojiCat(\'' + cat + '\')">' + cat + '</div>'
-  ).join('');
-  // Grille
-  const grid = document.getElementById('emoji-grid');
-  grid.innerHTML = (EMOJI_CATS[currentEmojiCat]||[]).map(e =>
-    '<div class="emoji-btn" onclick="insertEmoji(\'' + e + '\')">' + e + '</div>'
-  ).join('');
+function buildTplCard(tpl){
+  const s = Object.assign({}, DEFAULT_EDIT, tpl.state || {});
+  const isSel = capSelIds.has(tpl.id);
+  const bgMap = { none:'transparent', black_semi:'rgba(0,0,0,.55)', black_full:'rgba(0,0,0,.92)', white_full:'rgba(255,255,255,.95)', yellow_full:'#FFE600' };
+  const bgVal = bgMap[s.bg] || 'transparent';
+  const textColor = (s.bg === 'white_full' || s.bg === 'yellow_full') ? '#111' : s.color;
+  const sc = s.strokeColor || '#000';
+  const sw = s.bg === 'none' && s.strokeWidth > 0 ? Math.max(1, Math.round(s.strokeWidth * 0.26)) : 0;
+  const shadow = sw > 0 ? `-${sw}px -${sw}px 0 ${sc},${sw}px -${sw}px 0 ${sc},-${sw}px ${sw}px 0 ${sc},${sw}px ${sw}px 0 ${sc}` : 'none';
+  const lines = (tpl.text || '').split('\n').filter(Boolean);
+  const preview = lines.length ? (s.uppercase ? lines[0].toUpperCase() : lines[0]) : '(vide)';
+  const yLabel = s.yPct < 30 ? '↑ Haut' : s.yPct > 70 ? '↓ Bas' : '• Milieu';
+  const xLabel = s.xPct < 30 ? 'Gauche' : s.xPct > 70 ? 'Droite' : 'Centre';
+
+  const card = document.createElement('div');
+  card.className = 'cap-tpl-card' + (isSel ? ' cap-sel' : '');
+  card.dataset.id = tpl.id;
+  card.innerHTML = `
+    <div class="cap-tpl-prev" onclick="toggleTplSel('${tpl.id}')">
+      <div class="cap-tpl-tick">${isSel ? '✓' : ''}</div>
+      <span style="font-family:Montserrat,Arial,sans-serif;font-size:${Math.min(s.size*0.27,15)}px;font-weight:${s.bold?'800':'400'};color:${textColor};background:${bgVal};text-shadow:${shadow};padding:${s.bg!=='none'?'2px 5px':'0'};border-radius:3px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${preview.replace(/</g,'&lt;')}</span>
+    </div>
+    <div class="cap-tpl-foot">
+      <div style="min-width:0;flex:1;">
+        <div class="cap-tpl-nm">${tpl.name.replace(/</g,'&lt;')}</div>
+        <div class="cap-tpl-inf">${yLabel} · ${xLabel} · ${s.size}px</div>
+      </div>
+      <div class="cap-tpl-acts">
+        <button class="cap-ic" onclick="openCapEditor('${tpl.id}')">✏️</button>
+        <button class="cap-ic del" onclick="deleteCapTpl('${tpl.id}')">🗑️</button>
+      </div>
+    </div>`;
+  return card;
 }
 
-function setEmojiCat(cat){
-  currentEmojiCat = cat;
-  renderEmojiPicker();
-}
-
-function insertEmoji(emoji){
-  const ta = document.getElementById('caption-text');
-  const start = ta.selectionStart;
-  const end   = ta.selectionEnd;
-  ta.value = ta.value.slice(0, start) + emoji + ta.value.slice(end);
-  ta.selectionStart = ta.selectionEnd = start + emoji.length;
-  ta.focus();
-  renderPreview();
-}
-
-
-// ── PREVIEW MODALE ─────────────────────────────────────────────
-function openPreviewModal(e){
-  if(e && e.target.classList.contains('cap-expand-btn') === false && e.target.closest('.cap-expand-btn') === null && e.currentTarget === e.target.closest('.cap-preview-wrap') === false) {
-    // Clic sur le wrap lui-même ou le bouton → ouvrir
+function toggleTplSel(id){
+  if(capSelIds.has(id)) capSelIds.delete(id);
+  else capSelIds.add(id);
+  const card = document.querySelector(`.cap-tpl-card[data-id="${id}"]`);
+  if(card){
+    card.classList.toggle('cap-sel', capSelIds.has(id));
+    const tick = card.querySelector('.cap-tpl-tick');
+    if(tick) tick.textContent = capSelIds.has(id) ? '✓' : '';
   }
-  const modal = document.getElementById('preview-modal');
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-  syncModal();
-  initModalDrag();
+  updateGenInfo();
 }
 
-function closePreviewModal(e){
-  if(e && e.target !== document.getElementById('preview-modal') && !e.target.classList.contains('preview-modal-close')) return;
-  document.getElementById('preview-modal').classList.remove('open');
-  document.body.style.overflow = '';
+function updateGenInfo(){
+  const n = capSelIds.size;
+  const pill = document.getElementById('cap-sel-pill');
+  const btn  = document.getElementById('cap-gen-btn');
+  const cnt  = document.getElementById('cap-gen-count');
+  if(pill) pill.textContent = n + ' template' + (n>1?'s':'') + ' sélectionné' + (n>1?'s':'');
+  if(cnt)  cnt.textContent  = n;
+  const canGen = n > 0 && !!capGenFile;
+  if(btn){ btn.style.opacity = canGen ? '1' : '.4'; btn.style.pointerEvents = canGen ? 'auto' : 'none'; }
 }
 
-// Synchro état capState → modale
-function syncModal(){
-  const inner  = document.getElementById('modal-cap-inner');
-  const zone   = document.getElementById('modal-cap-zone');
-  if(!inner) return;
+function loadCapGenVideo(input){
+  const f = input && input.files ? input.files[0] : null;
+  if(!f) return;
+  capGenFile = f;
+  const vid = document.getElementById('cap-vid-preview');
+  const ph  = document.getElementById('cap-vid-ph');
+  if(vid){ vid.src = URL.createObjectURL(f); vid.style.display = 'block'; vid.play().catch(()=>{}); }
+  if(ph)  ph.style.display = 'none';
+  const drop = document.getElementById('cap-vidrop');
+  if(drop) drop.classList.add('has-video');
+  // Mirror video to editor preview if open
+  const edVid = document.getElementById('cap-edit-vid');
+  if(edVid){ edVid.src = URL.createObjectURL(f); edVid.style.display = 'block'; edVid.play().catch(()=>{}); }
+  updateGenInfo();
+}
+function handleCapGenDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(!f || !f.type.startsWith('video/')) return;
+  const inp = document.getElementById('cap-vid-input');
+  const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files;
+  loadCapGenVideo(inp);
+}
 
-  // Vidéo
-  const srcVid = document.getElementById('cap-video-preview');
-  const modalVid = document.getElementById('modal-video');
-  if(srcVid && srcVid.src && modalVid){
-    modalVid.src = srcVid.src;
+// ── EDITOR ───────────────────────────────────────────────────
+function openCapEditor(id){
+  capEditId = id || null;
+  const ttl = document.getElementById('cap-editor-ttl');
+  if(id){
+    const tpl = capLib.find(t => t.id === id);
+    if(!tpl) return;
+    editState = Object.assign({}, DEFAULT_EDIT, tpl.state || {});
+    const nameIn = document.getElementById('cap-edit-name');
+    const textIn = document.getElementById('cap-edit-text');
+    if(nameIn) nameIn.value = tpl.name || '';
+    if(textIn) textIn.value = tpl.text || '';
+    if(ttl) ttl.textContent = 'Modifier : ' + tpl.name;
+  } else {
+    editState = Object.assign({}, DEFAULT_EDIT);
+    const nameIn = document.getElementById('cap-edit-name');
+    const textIn = document.getElementById('cap-edit-text');
+    if(nameIn) nameIn.value = '';
+    if(textIn) textIn.value = '';
+    if(ttl) ttl.textContent = 'Nouveau template';
   }
-
-  // Texte
-  const ta = document.getElementById('caption-text');
+  syncEditControls();
+  renderEditPreview();
+  if(capGenFile){
+    const edVid = document.getElementById('cap-edit-vid');
+    if(edVid){ edVid.src = URL.createObjectURL(capGenFile); edVid.style.display = 'block'; edVid.play().catch(()=>{}); }
+  }
+  const panel = document.getElementById('cap-editor-panel');
+  if(panel){ panel.style.display = 'block'; panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  initEditDrag();
+}
+function closeCapEditor(){
+  const panel = document.getElementById('cap-editor-panel');
+  if(panel) panel.style.display = 'none';
+  capEditId = null;
+}
+function syncEditControls(){
+  const s = editState;
+  const sz  = document.getElementById('cap-edit-size');    if(sz){ sz.value = s.size; document.getElementById('cap-edit-sz-val').textContent = s.size+'px'; }
+  const sw2 = document.getElementById('cap-edit-stroke');  if(sw2){ sw2.value = s.strokeWidth; document.getElementById('cap-edit-sw-val').textContent = s.strokeWidth+'px'; }
+  const bg  = document.getElementById('cap-edit-bg');      if(bg) bg.value = s.bg || 'none';
+  const bld = document.getElementById('cap-edit-bold');    if(bld) bld.checked = !!s.bold;
+  const upr = document.getElementById('cap-edit-upper');   if(upr) upr.checked = !!s.uppercase;
+  const lh  = document.getElementById('cap-edit-lh');      if(lh){ lh.value = s.lineHeight; document.getElementById('cap-edit-lh-val').textContent = s.lineHeight+'%'; }
+  document.querySelectorAll('[data-ec]').forEach(el => el.classList.toggle('active', el.dataset.ec === s.color));
+  const cp = document.getElementById('cap-edit-color'); if(cp) cp.value = s.color;
+  document.querySelectorAll('[data-esc]').forEach(el => el.classList.toggle('active', el.dataset.esc === s.strokeColor));
+  const scp = document.getElementById('cap-edit-sc'); if(scp) scp.value = s.strokeColor || '#000000';
+  const vPos = s.yPct < 30 ? 'top' : s.yPct > 70 ? 'bottom' : 'center';
+  const hPos = s.xPct < 30 ? 'left' : s.xPct > 70 ? 'right' : 'center';
+  document.querySelectorAll('[data-epv]').forEach(b => b.classList.toggle('active', b.dataset.epv === vPos));
+  document.querySelectorAll('[data-eph]').forEach(b => b.classList.toggle('active', b.dataset.eph === hPos));
+}
+function renderEditPreview(){
+  const zone  = document.getElementById('cap-edit-zone');
+  const inner = document.getElementById('cap-edit-inner');
+  if(!inner || !zone) return;
+  const s = editState;
+  const ta = document.getElementById('cap-edit-text');
   let lines = (ta ? ta.value : '').split('\n').map(l=>l.trim()).filter(Boolean);
-  if(!lines.length) lines.push('Votre texte ici');
-  if(capState.uppercase) lines = lines.map(l => l.toUpperCase());
-  const modalLh = (capState.lineHeight || 140) / 100;
-  inner.innerHTML = lines.map(l => '<span style="display:block;white-space:nowrap;text-align:center;font-family:Montserrat,Arial,sans-serif;line-height:'+modalLh+';">'+l.replace(/</g,'&lt;')+'</span>').join('');
-
-  // Style — taille x2 environ car la modale est plus grande
-  const scale = 2.2;
-  inner.style.fontSize   = Math.round(capState.size * scale * 0.28) + 'px';
-  inner.style.fontWeight = capState.bold ? '800' : '400';
-  inner.style.color      = capState.color;
-
-  const bgMap = {
-    none:        ['transparent',        '0',        '0'  ],
-    black_semi:  ['rgba(0,0,0,.55)',    '6px 14px', '5px'],
-    black_full:  ['rgba(0,0,0,1)',      '7px 16px', '5px'],
-    white_full:  ['#fff',              '7px 16px', '5px'],
-    yellow_full: ['#FFE600',           '7px 16px', '5px'],
-  };
-  const bgCfg = bgMap[capState.bg] || bgMap.none;
-  inner.style.background   = bgCfg[0];
-  inner.style.padding      = bgCfg[1];
-  inner.style.borderRadius = bgCfg[2];
-
-  const sc = capState.strokeColor || '#000';
-  const sw = capState.bg === 'none' && capState.strokeWidth > 0
-    ? Math.max(1, Math.round(capState.strokeWidth * 0.28 * scale))
-    : 0;
-  inner.style.textShadow = sw > 0
-    ? `-${sw}px -${sw}px 0 ${sc},${sw}px -${sw}px 0 ${sc},-${sw}px ${sw}px 0 ${sc},${sw}px ${sw}px 0 ${sc}`
-    : 'none';
-
-  // Position — ancre toujours au centre du point xPct/yPct
-  zone.style.left      = capState.xPct + '%';
-  zone.style.top       = capState.yPct + '%';
-  zone.style.bottom    = 'auto';
-  zone.style.transform = 'translate(-50%, -50%)';
-  zone.style.textAlign = 'center';
+  if(!lines.length) lines = ['Texte ici'];
+  if(s.uppercase) lines = lines.map(l => l.toUpperCase());
+  const lh = (s.lineHeight||140)/100;
+  inner.innerHTML = lines.map(l => `<span style="display:block;white-space:nowrap;text-align:center;font-family:Montserrat,Arial,sans-serif;line-height:${lh};">${l.replace(/</g,'&lt;')}</span>`).join('');
+  inner.style.fontSize   = Math.round(s.size*0.28)+'px';
+  inner.style.fontWeight = s.bold ? '800' : '400';
+  inner.style.color      = s.color;
+  const bgMap = { none:['transparent','0','0'], black_semi:['rgba(0,0,0,.55)','3px 8px','4px'], black_full:['rgba(0,0,0,.92)','3px 8px','4px'], white_full:['rgba(255,255,255,.95)','3px 8px','4px'], yellow_full:['#FFE600','3px 8px','4px'] };
+  const bgC = bgMap[s.bg] || bgMap.none;
+  inner.style.background = bgC[0]; inner.style.padding = bgC[1]; inner.style.borderRadius = bgC[2];
+  const sc = s.strokeColor || '#000';
+  const sw = s.bg==='none' && s.strokeWidth>0 ? Math.max(1, Math.round(s.strokeWidth*0.28)) : 0;
+  inner.style.textShadow = sw>0 ? `-${sw}px -${sw}px 0 ${sc},${sw}px -${sw}px 0 ${sc},-${sw}px ${sw}px 0 ${sc},${sw}px ${sw}px 0 ${sc}` : 'none';
+  zone.style.left = (s.xPct||50)+'%'; zone.style.top = (s.yPct||85)+'%';
+  zone.style.bottom = 'auto'; zone.style.transform = 'translate(-50%,-50%)';
+}
+function applyEditPreset(name){
+  const p = PRESETS[name]; if(!p) return;
+  Object.assign(editState, p);
+  editState.xPct = 50; editState.yPct = 85;
+  document.querySelectorAll('[data-ep]').forEach(b => b.classList.toggle('active', b.dataset.ep === name));
+  syncEditControls(); renderEditPreview();
+}
+function clearEditPresets(){ document.querySelectorAll('[data-ep]').forEach(b => b.classList.remove('active')); }
+function setEditSwatch(hex, el){
+  editState.color = hex;
+  const wrap = el ? el.closest('.swatches') : null;
+  if(wrap) wrap.querySelectorAll('[data-ec]').forEach(s => s.classList.toggle('active', s.dataset.ec===hex));
+  const cp = document.getElementById('cap-edit-color'); if(cp) cp.value = hex;
+  clearEditPresets(); renderEditPreview();
+}
+function setEditColor(hex){ editState.color = hex; document.querySelectorAll('[data-ec]').forEach(s => s.classList.remove('active')); clearEditPresets(); renderEditPreview(); }
+function setEditStroke(hex, el){
+  editState.strokeColor = hex;
+  const wrap = el ? el.closest('.swatches') : null;
+  if(wrap) wrap.querySelectorAll('[data-esc]').forEach(s => s.classList.toggle('active', s.dataset.esc===hex));
+  clearEditPresets(); renderEditPreview();
+}
+function setEditStrokeColor(hex){ editState.strokeColor = hex; document.querySelectorAll('[data-esc]').forEach(s => s.classList.remove('active')); clearEditPresets(); renderEditPreview(); }
+function editSnapV(pos){
+  editState.yPct = pos==='top'?10 : pos==='center'?50 : 85;
+  document.querySelectorAll('[data-epv]').forEach(b => b.classList.toggle('active', b.dataset.epv===pos));
+  renderEditPreview();
+}
+function editSnapH(pos){
+  editState.xPct = pos==='left'?15 : pos==='center'?50 : 85;
+  document.querySelectorAll('[data-eph]').forEach(b => b.classList.toggle('active', b.dataset.eph===pos));
+  renderEditPreview();
+}
+function saveCapTemplate(){
+  const nameIn = document.getElementById('cap-edit-name');
+  const name = (nameIn ? nameIn.value : '').trim();
+  if(!name){ if(nameIn){ nameIn.focus(); nameIn.style.borderColor='#ef4444'; setTimeout(()=>nameIn.style.borderColor='',1500); } return; }
+  const text = ((document.getElementById('cap-edit-text')||{}).value || '').trim();
+  if(capEditId){
+    const idx = capLib.findIndex(t => t.id === capEditId);
+    if(idx >= 0) capLib[idx] = { ...capLib[idx], name, text, state: Object.assign({}, editState) };
+  } else {
+    capLib.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2), name, text, state: Object.assign({}, editState), createdAt: Date.now() });
+  }
+  saveCapLib(); renderCapLibrary(); closeCapEditor();
+  if(typeof NorysSound !== 'undefined') NorysSound.success();
+}
+function deleteCapTpl(id){
+  if(!confirm('Supprimer ce template ?')) return;
+  capLib = capLib.filter(t => t.id !== id);
+  capSelIds.delete(id);
+  saveCapLib(); renderCapLibrary();
 }
 
-// Drag dans la modale — met à jour capState.xPct/yPct (sync avec la petite preview)
-function initModalDrag(){
-  const zone = document.getElementById('modal-cap-zone');
-  const wrap = document.getElementById('modal-vid-wrap');
+function initEditDrag(){
+  const zone = document.getElementById('cap-edit-zone');
+  const wrap = document.getElementById('cap-edit-wrap');
   if(!zone || !wrap) return;
-  const nz = zone.cloneNode(true);
-  zone.parentNode.replaceChild(nz, zone);
-  const z = document.getElementById('modal-cap-zone');
-
-  let dragging = false, startX, startY, startXpct, startYpct;
-  const onDown = e => {
-    e.preventDefault(); e.stopPropagation();
-    dragging = true; z.style.cursor = 'grabbing';
-    const pt = e.touches ? e.touches[0] : e;
-    startX = pt.clientX; startY = pt.clientY;
-    startXpct = capState.xPct; startYpct = capState.yPct;
-  };
-  const onMove = e => {
-    if(!dragging) return; e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const rect = wrap.getBoundingClientRect();
-    capState.xPct = Math.min(95, Math.max(5, startXpct + (pt.clientX - startX)/rect.width*100));
-    capState.yPct = Math.min(95, Math.max(5, startYpct + (pt.clientY - startY)/rect.height*100));
-    syncModal(); applyZonePos();
-  };
-  const onUp = () => { dragging = false; z.style.cursor = 'grab'; };
-  z.addEventListener('mousedown', onDown);
+  const newZone = zone.cloneNode(true);
+  zone.parentNode.replaceChild(newZone, zone);
+  const z = document.getElementById('cap-edit-zone');
+  let drag=false, sx,sy,sxp,syp;
+  const onDown = e => { drag=true; z.style.cursor='grabbing'; const pt=e.touches?e.touches[0]:e; sx=pt.clientX; sy=pt.clientY; sxp=editState.xPct; syp=editState.yPct; e.preventDefault(); };
+  const onMove = e => { if(!drag) return; const pt=e.touches?e.touches[0]:e; const r=wrap.getBoundingClientRect(); editState.xPct=Math.min(95,Math.max(5,sxp+(pt.clientX-sx)/r.width*100)); editState.yPct=Math.min(95,Math.max(5,syp+(pt.clientY-sy)/r.height*100)); renderEditPreview(); e.preventDefault(); };
+  const onUp   = () => { drag=false; z.style.cursor='grab'; };
+  z.addEventListener('mousedown',  onDown);
   z.addEventListener('touchstart', onDown, {passive:false});
   document.addEventListener('mousemove', onMove);
   document.addEventListener('touchmove', onMove, {passive:false});
-  document.addEventListener('mouseup', onUp);
-  document.addEventListener('touchend', onUp);
+  document.addEventListener('mouseup',   onUp);
+  document.addEventListener('touchend',  onUp);
 }
 
-// Touche Escape pour fermer
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') { document.getElementById('preview-modal').classList.remove('open'); document.body.style.overflow=''; }
-});
+// ── GENERATION ───────────────────────────────────────────────
+async function generateWithTemplates(){
+  if(!capGenFile){ alert('Charge d\'abord une vidéo.'); return; }
+  const selected = capLib.filter(t => capSelIds.has(t.id));
+  if(!selected.length){ alert('Sélectionne au moins un template.'); return; }
 
+  const btn    = document.getElementById('cap-gen-btn');
+  const status = document.getElementById('cap-gen-status');
+  const results= document.getElementById('cap-gen-results');
+  btn.style.opacity = '.5'; btn.style.pointerEvents = 'none';
+  if(results){ results.style.display='none'; results.innerHTML=''; }
 
-// ── EXPORT SOUS-TITRES ─────────────────────────────────────────
-async function exportWithCaptions(){
-  if(!files.length){
-    alert('Ajoute d\'abord une vidéo dans la zone de dépôt.');
-    return;
-  }
-  let capText = (document.getElementById('caption-text').value || '').trim();
-  if(!capText){
-    alert('Écris du texte dans le champ sous-titres d\'abord.');
-    return;
-  }
-  if(capState.uppercase) capText = capText.toUpperCase();
-
-  const btn    = document.getElementById('cap-export-btn');
-  const status = document.getElementById('cap-export-status');
-  const result = document.getElementById('cap-export-result');
-
-  btn.disabled = true;
-  btn.style.opacity = '.5';
-  result.style.display = 'none';
-  status.textContent = '⏳ Export en cours…';
-
-  const fd = new FormData();
-  // Envoyer toutes les vidéos source
-  files.forEach(f => fd.append('videos', f));
-  fd.append('captionText', capText);
-  fd.append('captionStyle', JSON.stringify(capState));
-  fd.append('exportOnly', '1'); // flag pour dire : 1 seule variante, filtre clean
-
-  try {
-    const res  = await fetch('/export-captions', { method:'POST', body:fd });
-    const reader = res.body.getReader();
-    const dec    = new TextDecoder();
-    let lastFile = '';
-
-    while(true){
-      const {value, done} = await reader.read();
-      if(done) break;
-      dec.decode(value).split('\n').filter(Boolean).forEach(line => {
-        try {
-          const ev = JSON.parse(line);
-          if(ev.type === 'progress'){
-            status.textContent = '⏳ ' + ev.file;
-            lastFile = ev.file;
-          } else if(ev.type === 'done'){
-            status.textContent = '';
-            result.style.display = 'block';
-            result.innerHTML = '✅ Exporté : <strong>' + ev.file + '</strong> (' + ev.size + 'MB)<br/>📁 Dans : Norys Reels Output sur ton Bureau';
-          } else if(ev.type === 'error'){
-            status.textContent = '❌ ' + ev.msg;
-          }
-        } catch(e){}
-      });
-    }
-  } catch(e){
-    status.textContent = '❌ ' + e.message;
+  const outputs = [];
+  for(let i=0; i<selected.length; i++){
+    const tpl = selected[i];
+    if(status) status.textContent = `(${i+1}/${selected.length}) ${tpl.name}…`;
+    let capText = (tpl.text||'').trim();
+    if(tpl.state && tpl.state.uppercase) capText = capText.toUpperCase();
+    const fd = new FormData();
+    fd.append('videos', capGenFile);
+    fd.append('captionText', capText);
+    fd.append('captionStyle', JSON.stringify(tpl.state || {}));
+    try {
+      const res = await fetch('/export-captions', { method:'POST', body:fd });
+      const reader = res.body.getReader(); const dec = new TextDecoder();
+      let lastFile='', lastSize='';
+      while(true){
+        const {value,done} = await reader.read(); if(done) break;
+        dec.decode(value).split('\n').filter(Boolean).forEach(line => {
+          try {
+            const ev = JSON.parse(line);
+            if(ev.type==='done'){ lastFile=ev.file; lastSize=ev.size; }
+          } catch {}
+        });
+      }
+      if(lastFile) outputs.push({ name:tpl.name, file:lastFile, size:lastSize });
+    } catch(err){ if(status) status.textContent = `Erreur "${tpl.name}" : ${err.message}`; }
   }
 
-  btn.disabled = false;
-  btn.style.opacity = '1';
-}
-
-
-// ── OPTIONS GÉNÉRER : métadonnées, numérotation, format ────────
-let namingMode = 'sequential';
-
-function toggleMetadataOptions(){
-  const on = document.getElementById('inject-metadata-toggle').checked;
-  document.getElementById('metadata-options').style.opacity = on ? '1' : '.35';
-  document.getElementById('metadata-options').style.pointerEvents = on ? 'auto' : 'none';
-  NorysSound.toggleOn();
-}
-
-function setNamingMode(mode){
-  namingMode = mode === 'random' ? 'random' : 'sequential';
-  document.getElementById('naming-sequential').classList.toggle('active', namingMode === 'sequential');
-  document.getElementById('naming-random').classList.toggle('active', namingMode === 'random');
-  const preview = document.getElementById('naming-preview');
-  if(preview){
-    preview.textContent = namingMode === 'random'
-      ? '→ nomvideo_a1f9c3d2.mp4, nomvideo_7e2b8a41.mp4, …'
-      : '→ variant_001.mp4, variant_002.mp4, …';
+  if(status) status.textContent = outputs.length ? `✅ ${outputs.length} vidéo(s) générée(s) · dossier Norys Reels Output` : '❌ Aucune vidéo générée';
+  if(results && outputs.length){
+    results.style.display = 'flex';
+    results.innerHTML = outputs.map(o => `<div class="cap-res-row"><span>${o.name} · ${o.file} · ${o.size}MB</span></div>`).join('');
   }
-  NorysSound.toggleOn();
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
 }
 
-async function openOutputFolder(){
-  NorysSound.click();
-  if(!window.electronAPI || !window.electronAPI.openOutputFolder){
-    console.warn('[Norys Reels] electronAPI.openOutputFolder indisponible (preload non chargé ?)');
-    if(typeof showToast === 'function') showToast('⚠️', 'Impossible d\'ouvrir le dossier depuis cette fenêtre', 3500);
-    return;
-  }
-  const result = await window.electronAPI.openOutputFolder();
-  if(result && !result.ok && typeof showToast === 'function'){
-    showToast('⚠️', 'Dossier introuvable ou inaccessible : ' + (result.path||''), 4000);
-  }
-}
+// Stubs for any residual calls from old code
+function renderPreview(){}
+function applyZonePos(){}
+function syncModalIfOpen(){}
+function clearPresets(){}
+function initCaptionDrag(){}
 
-// ── FILTER PRESETS ─────────────────────────────────────────────
-// Sauvegardés dans localStorage sous 'norys_filter_presets'
-function loadPresetsFromStorage(){
-  try { return JSON.parse(localStorage.getItem('norys_filter_presets') || '[]'); }
-  catch { return []; }
-}
+loadCapLib();
 
-function savePresetsToStorage(presets){
-  localStorage.setItem('norys_filter_presets', JSON.stringify(presets));
-}
-
-function renderPresetTags(){
-  const presets = loadPresetsFromStorage();
-  const tags = document.getElementById('preset-tags');
-  if(!tags) return;
-  if(!presets.length){ tags.style.display = 'none'; return; }
-  tags.style.display = 'flex';
-  tags.innerHTML = presets.map((p,i) =>
-    `<div class="preset-tag" onclick="applyFilterPreset(${i})">
-      ${p.name}
-      <span class="del" onclick="deletePreset(event,${i})">✕</span>
-    </div>`
-  ).join('');
-}
-
-function savePreset(){
-  const input = document.getElementById('preset-name-input');
-  const name  = (input.value || '').trim();
-  if(!name){ input.focus(); return; }
-  const presets = loadPresetsFromStorage();
-  // Vérifier doublon
-  if(presets.find(p => p.name.toLowerCase() === name.toLowerCase())){
-    input.style.borderColor = '#ff4466';
-    setTimeout(() => input.style.borderColor = '', 1500);
-    input.placeholder = 'Ce nom existe déjà !';
-    setTimeout(() => input.placeholder = 'Nom du preset (ex: OFM Boost, Safe mode…)', 2000);
-    return;
-  }
-  presets.push({ name, filters: [...active] });
-  savePresetsToStorage(presets);
-  input.value = '';
-  renderPresetTags();
-  updateShrinkOption();
-  // Flash de confirmation
-  const btn = document.querySelector('.preset-save-btn');
-  const orig = btn.textContent;
-  btn.textContent = '✅ Sauvegardé !';
-  btn.style.background = 'rgba(34,217,122,.2)';
-  btn.style.borderColor = '#22D97A';
-  btn.style.color = '#22D97A';
-  setTimeout(() => {
-    btn.textContent = orig;
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-  }, 1500);
-}
-
-function applyFilterPreset(idx){
-  const presets = loadPresetsFromStorage();
-  const p = presets[idx];
-  if(!p) return;
-  active.clear();
-  p.filters.forEach(id => active.add(id));
-  renderTemplates();
-  // Flash du nom
-  const tags = document.getElementById('preset-tags');
-  if(tags) tags.children[idx] && tags.children[idx].classList.add('active');
-}
-
-function deletePreset(e, idx){
-  e.stopPropagation();
-  const presets = loadPresetsFromStorage();
-  presets.splice(idx, 1);
-  savePresetsToStorage(presets);
-  renderPresetTags();
-}
-
-
-
-// ── SHRINK BG ──────────────────────────────────────────────────
-let shrinkBgMode  = 'blur';   // 'blur' | 'color'
-let shrinkBgColor = '#ff69b4';
-
-function setShrinkBg(mode){
-  shrinkBgMode = mode;
-  document.getElementById('shrink-bg-blur').classList.toggle('active', mode === 'blur');
-  document.getElementById('shrink-bg-color').classList.toggle('active', mode === 'color');
-  const picker = document.getElementById('shrink-color-picker');
-  picker.style.display = mode === 'color' ? 'flex' : 'none';
-}
-
-function setShrinkColor(hex){
-  shrinkBgColor = hex;
-  document.getElementById('shrink-custom-color').value = hex;
-  document.querySelectorAll('#shrink-color-picker .swatch').forEach(s => s.classList.remove('active'));
-}
-
-// Afficher/masquer l'option fond selon si shrink est actif
-function updateShrinkOption(){
-  const opt = document.getElementById('shrink-bg-option');
-  if(opt) opt.style.display = active.has('shrink') ? 'block' : 'none';
-}
-
-
-// ── CAPTIONS ──────────────────────────────────────────────
-let capState = { color:'#FFFFFF', bg:'none', pos:'bottom', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, lineHeight:140 };
-
-const PRESETS = {
-  classic: { color:'#FFFFFF', bg:'none',        pos:'bottom', size:52, bold:true  },
-  tiktok:  { color:'#FFFFFF', bg:'black_full',  pos:'bottom', size:48, bold:true  },
-  yellow:  { color:'#FFE600', bg:'none',        pos:'bottom', size:56, bold:true  },
-  minimal: { color:'#FFFFFF', bg:'none',        pos:'bottom', size:36, bold:false },
-  neon:    { color:'#00FFB3', bg:'none',        pos:'bottom', size:52, bold:true  },
-  bold:    { color:'#000000', bg:'yellow_full', pos:'bottom', size:52, bold:true  },
-};
-
-function toggleCaption(){
-  const sw   = document.getElementById('cap-switch');
-  const body = document.getElementById('cap-body');
-  sw.classList.toggle('on');
-  const isOn = sw.classList.contains('on');
-  body.style.display = isOn ? 'block' : 'none';
-  // Réinitialiser le drag après affichage (l'élément doit être visible)
-  if(isOn) setTimeout(initCaptionDrag, 50);
-}
-
-function applyPreset(name){
-  const p = PRESETS[name]; if(!p) return;
-  Object.assign(capState, p);
-  // Position : les presets définissent juste 'bottom' par défaut, centré horizontalement
-  capState.xPct = 50;
-  capState.yPct = p.pos === 'top' ? 10 : p.pos === 'center' ? 50 : 85;
-
-  const sizeInput = document.getElementById('cap-size');
-  if(sizeInput){ sizeInput.value = p.size; }
-  const sizeVal = document.getElementById('cap-size-val');
-  if(sizeVal) sizeVal.textContent = p.size + 'px';
-
-  const boldInput = document.getElementById('cap-bold');
-  if(boldInput) boldInput.checked = p.bold;
-
-  const strokeInput = document.getElementById('cap-stroke');
-  if(strokeInput){
-    const sw = p.strokeWidth !== undefined ? p.strokeWidth : capState.strokeWidth;
-    capState.strokeWidth = sw;
-    strokeInput.value = sw;
-    const strokeVal = document.getElementById('stroke-val');
-    if(strokeVal) strokeVal.textContent = sw + 'px';
-    const sc = p.strokeColor || capState.strokeColor;
-    capState.strokeColor = sc;
-    document.querySelectorAll('[data-sc]').forEach(s => s.classList.toggle('active', s.dataset.sc === sc));
-    const strokePick = document.getElementById('stroke-color-custom');
-    if(strokePick) strokePick.value = sc;
-  }
-
-  const bgSelect = document.getElementById('cap-bg');
-  if(bgSelect) bgSelect.value = p.bg;
-
-  document.querySelectorAll('.swatches .swatch[data-c]').forEach(s => s.classList.toggle('active', s.dataset.c.toLowerCase() === p.color.toLowerCase()));
-  const colorPick = document.getElementById('text-color-custom');
-  if(colorPick) colorPick.value = p.color;
-
-  document.querySelectorAll('[data-pos]').forEach(b => b.classList.toggle('active', b.dataset.pos === p.pos));
-  document.querySelectorAll('[data-posh]').forEach(b => b.classList.toggle('active', b.dataset.posh === 'center'));
-  document.querySelectorAll('.style-pill[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
-
-  applyZonePos();
-  renderPreview();
-  syncModalIfOpen();
-}
-
-// ── TEMPLATES DE SOUS-TITRES (sauvegarde de tous les réglages) ──
-function loadCaptionTemplatesFromStorage(){
-  try { return JSON.parse(localStorage.getItem('norys_caption_templates') || '[]'); }
-  catch { return []; }
-}
-function saveCaptionTemplatesToStorage(templates){
-  localStorage.setItem('norys_caption_templates', JSON.stringify(templates));
-}
-
-function renderCaptionTemplateTags(){
-  const templates = loadCaptionTemplatesFromStorage();
-  const tags = document.getElementById('cap-template-tags');
-  if(!tags) return;
-  if(!templates.length){ tags.style.display = 'none'; return; }
-  tags.style.display = 'flex';
-  tags.innerHTML = templates.map((t,i) =>
-    `<div class="preset-tag" onclick="applyCaptionTemplate(${i})">
-      ${t.name}
-      <span class="del" onclick="deleteCaptionTemplate(event,${i})">✕</span>
-    </div>`
-  ).join('');
-}
-
-function saveCaptionTemplate(){
-  const input = document.getElementById('cap-template-name-input');
-  const name = (input.value || '').trim();
-  if(!name){ input.focus(); return; }
-  const templates = loadCaptionTemplatesFromStorage();
-  if(templates.find(t => t.name.toLowerCase() === name.toLowerCase())){
-    input.style.borderColor = '#ef4444';
-    setTimeout(() => input.style.borderColor = '', 1500);
-    input.placeholder = 'Ce nom existe déjà !';
-    setTimeout(() => input.placeholder = 'Nom du template…', 2000);
-    return;
-  }
-  templates.push({ name, state: Object.assign({}, capState) });
-  saveCaptionTemplatesToStorage(templates);
-  input.value = '';
-  renderCaptionTemplateTags();
-  NorysSound.success();
-}
-
-function deleteCaptionTemplate(e, idx){
-  e.stopPropagation();
-  const templates = loadCaptionTemplatesFromStorage();
-  templates.splice(idx, 1);
-  saveCaptionTemplatesToStorage(templates);
-  renderCaptionTemplateTags();
-}
-
-// Remet tous les contrôles visuels en phase avec capState (après chargement d'un template)
-function syncCaptionControlsFromState(){
-  const sizeInput = document.getElementById('cap-size');
-  if(sizeInput) sizeInput.value = capState.size;
-  const sizeVal = document.getElementById('cap-size-val');
-  if(sizeVal) sizeVal.textContent = capState.size + 'px';
-
-  const boldInput = document.getElementById('cap-bold');
-  if(boldInput) boldInput.checked = !!capState.bold;
-  const upperInput = document.getElementById('cap-uppercase');
-  if(upperInput) upperInput.checked = !!capState.uppercase;
-
-  const lhInput = document.getElementById('cap-line-height');
-  if(lhInput) lhInput.value = capState.lineHeight || 140;
-  const lhVal = document.getElementById('cap-lh-val');
-  if(lhVal) lhVal.textContent = (capState.lineHeight || 140) + '%';
-
-  const strokeInput = document.getElementById('cap-stroke');
-  if(strokeInput) strokeInput.value = capState.strokeWidth;
-  const strokeVal = document.getElementById('stroke-val');
-  if(strokeVal) strokeVal.textContent = capState.strokeWidth + 'px';
-  document.querySelectorAll('[data-sc]').forEach(s => s.classList.toggle('active', (s.dataset.sc||'').toLowerCase() === (capState.strokeColor||'').toLowerCase()));
-  const strokePick = document.getElementById('stroke-color-custom');
-  if(strokePick) strokePick.value = capState.strokeColor;
-
-  const bgSelect = document.getElementById('cap-bg');
-  if(bgSelect) bgSelect.value = capState.bg;
-
-  document.querySelectorAll('.swatches .swatch[data-c]').forEach(s => s.classList.toggle('active', s.dataset.c.toLowerCase() === capState.color.toLowerCase()));
-  const colorPick = document.getElementById('text-color-custom');
-  if(colorPick) colorPick.value = capState.color;
-
-  document.querySelectorAll('[data-pos]').forEach(b => b.classList.toggle('active',
-    (capState.yPct <= 25 && b.dataset.pos === 'top') ||
-    (capState.yPct > 25 && capState.yPct < 70 && b.dataset.pos === 'center') ||
-    (capState.yPct >= 70 && b.dataset.pos === 'bottom')
-  ));
-  document.querySelectorAll('[data-posh]').forEach(b => b.classList.toggle('active',
-    (capState.xPct <= 30 && b.dataset.posh === 'left') ||
-    (capState.xPct > 30 && capState.xPct < 70 && b.dataset.posh === 'center') ||
-    (capState.xPct >= 70 && b.dataset.posh === 'right')
-  ));
-}
-
-function applyCaptionTemplate(idx){
-  const templates = loadCaptionTemplatesFromStorage();
-  const t = templates[idx];
-  if(!t) return;
-  Object.assign(capState, t.state);
-  syncCaptionControlsFromState();
-  clearPresets();
-  applyZonePos();
-  renderPreview();
-  syncModalIfOpen();
-  NorysSound.toggleOn();
-}
-
-function setSwatch(hex, el){
-  capState.color = hex;
-  document.querySelectorAll('.swatches .swatch').forEach(s => s.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const pick = document.getElementById('text-color-custom');
-  if(pick) pick.value = hex;
-  clearPresets(); renderPreview();
-}
-
-function setCustomColor(hex){
-  capState.color = hex;
-  document.querySelectorAll('.swatches .swatch').forEach(s => s.classList.remove('active'));
-  clearPresets(); renderPreview();
-}
-
-function clearPresets(){
-  document.querySelectorAll('.cap-preset').forEach(b => b.classList.remove('active'));
-}
-
-// Position en % de la preview (0,0 = haut-gauche)
-// capState.xPct / capState.yPct : centre du texte en %
-if(!capState.xPct) capState.xPct = 50;
-if(!capState.yPct) capState.yPct = 85; // bas par défaut
-
-function syncModalIfOpen(){
-  const modal = document.getElementById('preview-modal');
-  if(modal && modal.classList.contains('open')) syncModal();
-}
-
-function snapPosV(pos){
-  if(pos === 'top')    capState.yPct = 10;
-  if(pos === 'center') capState.yPct = 50;
-  if(pos === 'bottom') capState.yPct = 85;
-  document.querySelectorAll('[data-pos]').forEach(b => b.classList.toggle('active', b.dataset.pos === pos));
-  clearPresets();
-  applyZonePos();
-  syncModalIfOpen();
-}
-
-function snapPosH(pos){
-  if(pos === 'left')   capState.xPct = 15;
-  if(pos === 'center') capState.xPct = 50;
-  if(pos === 'right')  capState.xPct = 85;
-  document.querySelectorAll('[data-posh]').forEach(b => b.classList.toggle('active', b.dataset.posh === pos));
-  clearPresets();
-  applyZonePos();
-  syncModalIfOpen();
-}
-
-function applyZonePos(){
-  const zone = document.getElementById('cap-zone');
-  if(!zone) return;
-  zone.style.left      = capState.xPct + '%';
-  zone.style.top       = capState.yPct + '%';
-  zone.style.bottom    = 'auto';
-  zone.style.transform = 'translate(-50%, -50%)';
-  zone.style.textAlign = 'center';
-}
-
-function renderPreview(){
-  const inner = document.getElementById('cap-inner');
-  const zone  = document.getElementById('cap-zone');
-  if(!inner || !zone) return;
-
-  const ta    = document.getElementById('caption-text');
-  let lines = (ta ? ta.value : '').split('\n').map(l => l.trim()).filter(Boolean);
-  if(!lines.length) lines.push('Votre texte ici');
-  if(capState.uppercase) lines = lines.map(l => l.toUpperCase());
-  const lh = (capState.lineHeight || 140) / 100;
-  // Afficher chaque ligne comme un bloc séparé, nowrap = pas de retour à la ligne auto
-  inner.innerHTML = lines.map(l =>
-    '<span style="display:block;white-space:nowrap;text-align:center;font-family:Montserrat,Arial,sans-serif;line-height:' + lh + ';">' + l.replace(/</g,'&lt;') + '</span>'
-  ).join('');
-  inner.style.whiteSpace = '';
-  inner.style.fontSize   = Math.round(capState.size * 0.28) + 'px';
-  inner.style.fontWeight = capState.bold ? '800' : '400';
-  inner.style.color      = capState.color;
-
-  const bgMap = {
-    none:       ['transparent',     '0',        '0'  ],
-    black_semi: ['rgba(0,0,0,.55)', '4px 10px', '4px'],
-    black_full: ['rgba(0,0,0,1)',   '5px 13px', '4px'],
-    white_full: ['#fff',            '5px 13px', '4px'],
-    yellow_full:['#FFE600',         '5px 13px', '4px'],
-  };
-  const bgCfg = bgMap[capState.bg] || bgMap['none'];
-  inner.style.background   = bgCfg[0];
-  inner.style.padding      = bgCfg[1];
-  inner.style.borderRadius = bgCfg[2];
-  // Simuler le stroke via text-shadow dans la preview
-  if(capState.bg === 'none' && capState.strokeWidth > 0){
-    const sc = capState.strokeColor || '#000';
-    const sw = Math.max(1, Math.round(capState.strokeWidth * 0.28));
-    inner.style.textShadow = `-${sw}px -${sw}px 0 ${sc},${sw}px -${sw}px 0 ${sc},-${sw}px ${sw}px 0 ${sc},${sw}px ${sw}px 0 ${sc}`;
-  } else {
-    inner.style.textShadow = 'none';
-  }
-
-  applyZonePos();
-}
-
-// ── VIDEO PREVIEW dans les sous-titres ───────────────────
-function loadPreviewVideo(input){
-  const file = input && input.files ? input.files[0] : input;
-  if(!file) return;
-  const vid = document.getElementById('cap-video-preview');
-  const placeholder = document.getElementById('cap-placeholder');
-  if(!vid) return;
-  const url = URL.createObjectURL(file);
-  vid.src = url;
-  vid.classList.add('loaded');
-  vid.play().catch(() => {});
-  if(placeholder) placeholder.style.display = 'none';
-}
-
-// ── DRAG  & DROP sur la preview ─────────────────────────────
-function initCaptionDrag(){
-  const zone = document.getElementById('cap-zone');
-  const wrap = document.querySelector('.cap-preview-wrap');
-  if(!zone || !wrap) return;
-
-  // Nettoyer les anciens listeners pour éviter les doublons
-  const newZone = zone.cloneNode(true);
-  zone.parentNode.replaceChild(newZone, zone);
-  const z = document.getElementById('cap-zone');
-
-  let dragging = false, startX, startY, startXpct, startYpct;
-
-  const getRect = () => wrap.getBoundingClientRect();
-
-  const onDown = (e) => {
-    e.preventDefault();
-    dragging = true;
-    z.style.cursor = 'grabbing';
-    const pt = e.touches ? e.touches[0] : e;
-    startX = pt.clientX;
-    startY = pt.clientY;
-    startXpct = capState.xPct;
-    startYpct = capState.yPct;
-  };
-
-  const onMove = (e) => {
-    if(!dragging) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const rect = getRect();
-    const dx = (pt.clientX - startX) / rect.width  * 100;
-    const dy = (pt.clientY - startY) / rect.height * 100;
-    capState.xPct = Math.min(95, Math.max(5, startXpct + dx));
-    capState.yPct = Math.min(95, Math.max(5, startYpct + dy));
-    applyZonePos();
-  };
-
-  const onUp = () => {
-    dragging = false;
-    z.style.cursor = 'grab';
-  };
-
-  z.addEventListener('mousedown',  onDown);
-  z.addEventListener('touchstart', onDown, {passive:false});
-  document.addEventListener('mousemove',  onMove);
-  document.addEventListener('touchmove',  onMove, {passive:false});
-  document.addEventListener('mouseup',    onUp);
-  document.addEventListener('touchend',   onUp);
-}
+// (old caption code removed — replaced by cap library above)
 
 // ── COMBINE MODE ──────────────────────────────────────────
 function toggleCombine(){
@@ -4363,11 +3795,7 @@ async function generate(){
     if(volMusic) fd.append('musicVol', volMusic.value);
     if(volOrig)  fd.append('origVol',  volOrig.value);
   }
-  // Sous-titres (si du texte a été saisi sur la page Captions)
-  const capTextEl = document.getElementById('caption-text');
-  let capTxt = capTextEl ? (capTextEl.value||'').trim() : '';
-  if(capTxt && capState.uppercase) capTxt = capTxt.toUpperCase();
-  if(capTxt){ fd.append('captionText', capTxt); fd.append('captionStyle', JSON.stringify(capState)); }
+  // (captions are now handled separately via the Captions library page)
 
   try {
     const res = await fetch('/generate', { method:'POST', body:fd });
