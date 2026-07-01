@@ -91,23 +91,31 @@ function createMainWindow() {
 }
 
 // ── AUTO-UPDATE ──────────────────────────────────────────────
-// Avant ça, une mise à jour voulait dire retélécharger et réinstaller
-// manuellement depuis le site à chaque fois. electron-updater vérifie
-// la dernière release GitHub (latest.yml, déjà généré par electron-builder),
-// télécharge la mise à jour en arrière-plan, puis prévient l'UI une fois
-// prête — l'utilisateur n'a qu'à cliquer "Redémarrer pour installer".
-// Ne s'applique qu'à l'installeur NSIS : le portable n'a pas de mécanisme
-// de remplacement automatique, donc on ignore silencieusement les erreurs
-// dans ce cas (checkForUpdates() échoue proprement, sans planter l'app).
+// Windows (NSIS) : electron-updater télécharge en arrière-plan et installe
+// silencieusement → on attend update-downloaded avant d'afficher le bandeau.
+//
+// macOS : l'installation automatique d'un .dmg requiert une signature
+// Apple Developer ID qu'on n'a pas. On écoute update-available à la place :
+// dès qu'une version plus récente existe sur GitHub, le bandeau s'affiche
+// avec un bouton "Télécharger" qui ouvre la page releases — l'utilisateur
+// remplace le DMG manuellement (même procédure que la première installation).
 function setupAutoUpdater() {
-  if (!app.isPackaged) return; // inutile en dev (electron .), pas de release à comparer
+  if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
+  const isMac = process.platform === 'darwin';
+  autoUpdater.autoDownload = !isMac;
   autoUpdater.autoInstallOnAppQuit = false;
 
-  autoUpdater.on('update-downloaded', (info) => {
-    if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version });
-  });
+  if (isMac) {
+    autoUpdater.on('update-available', (info) => {
+      if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version, macManual: true });
+    });
+  } else {
+    autoUpdater.on('update-downloaded', (info) => {
+      if (mainWindow) mainWindow.webContents.send('update-ready', { version: info.version });
+    });
+  }
+
   autoUpdater.on('error', (err) => {
     console.log('[Norys Reels] auto-update:', err.message);
   });
@@ -118,11 +126,14 @@ function setupAutoUpdater() {
 }
 
 ipcMain.on('restart-and-install-update', () => {
-  // (isSilent, isForceRunAfter) : sans ça, l'installeur NSIS rouvrait son
-  // assistant complet (choix du dossier, etc.) à chaque mise à jour — on
-  // dirait que ça réinstalle une toute nouvelle app au lieu de juste
-  // remplacer les fichiers et relancer.
-  autoUpdater.quitAndInstall(true, true);
+  if (process.platform === 'darwin') {
+    // Ouvre la page releases GitHub pour que l'utilisateur télécharge le DMG
+    shell.openExternal('https://github.com/nowax0tv/NorysReelsApp/releases');
+  } else {
+    // (isSilent, isForceRunAfter) : sans ça, l'installeur NSIS rouvrait son
+    // assistant complet à chaque mise à jour.
+    autoUpdater.quitAndInstall(true, true);
+  }
 });
 
 ipcMain.on('window-minimize', () => mainWindow && mainWindow.minimize());
