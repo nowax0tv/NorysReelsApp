@@ -1224,6 +1224,10 @@
     .conv-drop { border:1.5px dashed var(--border2);border-radius:var(--r-s);padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px; }
     .conv-drop:hover { border-color:var(--purple);background:var(--dim); }
     .conv-result { font-size:12px;color:var(--text2);margin-top:8px; }
+    .fc-drop-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px; }
+    .fc-drop { position:relative;height:170px;border:1.5px dashed var(--border2);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .2s;overflow:hidden;text-align:center; }
+    .fc-drop:hover { border-color:var(--purple);background:var(--dim); }
+    .fc-drop.has-file { border-style:solid;border-color:var(--purple2); }
 
     /* Cap export */
     #cap-export-status { font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-top:8px; }
@@ -1790,7 +1794,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.1</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.2</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1810,6 +1814,10 @@
       <div class="nav-step" id="nav-videos" onclick="goPage('videos')">
         <span class="nav-step-icon" data-icon="repeat"></span> <span data-i18n="navConverter">Convertisseur</span>
         <span class="nav-step-badge" data-i18n="optionalBadge">optionnel</span>
+      </div>
+      <div class="nav-step" id="nav-fastcut" onclick="goPage('fastcut')">
+        <span class="nav-step-icon" data-icon="scissors"></span> <span>Fast Cut</span>
+        <span class="nav-step-badge">optionnel</span>
       </div>
 
       <div class="sidebar-section-label" data-i18n="navAccount">Compte</div>
@@ -1859,6 +1867,82 @@
           <div id="conv-status" style="font-size:12px;color:var(--text3);margin-top:8px;"></div>
           <div class="conv-result" id="conv-result"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- PAGE : FAST CUT -->
+    <div class="page" id="page-fastcut">
+      <div class="page-inner">
+        <div class="section-head">
+          <div class="section-title">✂️ Fast Cut</div>
+          <div class="section-desc">Insère une photo en microcut dans ta vidéo — contrôle le timing et la durée de l'insert</div>
+          <div class="optional-note">Outil optionnel — utile pour créer des effets de flash / jump cut avec une image.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Fichiers</div>
+          <div class="fc-drop-grid">
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Vidéo</div>
+              <div class="fc-drop" id="fc-vid-drop" onclick="document.getElementById('fc-vid-input').click()" ondrop="handleFcVideoDrop(event)" ondragover="event.preventDefault()">
+                <video id="fc-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="fc-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🎬</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                  <div style="font-size:10px;">MP4 · MOV · AVI</div>
+                </div>
+                <input type="file" id="fc-vid-input" accept="video/*" style="display:none" onchange="loadFcVideo(this)"/>
+              </div>
+              <div id="fc-vid-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Photo / Image</div>
+              <div class="fc-drop" id="fc-img-drop" onclick="document.getElementById('fc-img-input').click()" ondrop="handleFcImageDrop(event)" ondragover="event.preventDefault()">
+                <img id="fc-img-preview" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt=""/>
+                <div id="fc-img-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🖼️</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ta photo</div>
+                  <div style="font-size:10px;">JPG · PNG · WEBP</div>
+                </div>
+                <input type="file" id="fc-img-input" accept="image/*" style="display:none" onchange="loadFcImage(this)"/>
+              </div>
+              <div id="fc-img-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Paramètres du montage</div>
+          <div style="margin-bottom:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span class="ctrl-lbl" style="margin:0;">Moment du cut</span>
+              <span id="fc-cut-val" style="color:var(--purple2);font-weight:700;font-size:12px;">2.0s</span>
+            </div>
+            <input type="range" id="fc-cut-slider" min="0.5" max="60" step="0.1" value="2"
+                   oninput="document.getElementById('fc-cut-val').textContent=parseFloat(this.value).toFixed(1)+'s'"
+                   style="width:100%;"/>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">À quel moment dans la vidéo la photo apparaît</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span class="ctrl-lbl" style="margin:0;">Durée de l'insert</span>
+              <span id="fc-dur-val" style="color:var(--purple2);font-weight:700;font-size:12px;">0.50s</span>
+            </div>
+            <input type="range" id="fc-dur-slider" min="0.05" max="3" step="0.05" value="0.5"
+                   oninput="document.getElementById('fc-dur-val').textContent=parseFloat(this.value).toFixed(2)+'s'"
+                   style="width:100%;"/>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">Combien de temps la photo reste à l'écran</div>
+          </div>
+        </div>
+
+        <button class="export-btn" id="fc-gen-btn" onclick="generateFastCut()" style="margin-top:16px;opacity:.4;pointer-events:none;">✂️ Générer le fast cut</button>
+
+        <div id="fc-progress-wrap" style="display:none;margin-top:14px;">
+          <div class="prog-bar-wrap"><div class="prog-bar" id="fc-prog-bar" style="width:0%;"></div></div>
+          <div id="fc-status" style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px;"></div>
+        </div>
+
+        <div id="fc-result" style="display:none;margin-top:12px;"></div>
       </div>
     </div>
 
@@ -2183,7 +2267,7 @@
 // Plus de séquence imposée : "Générer" est l'onglet principal (tout ce
 // qu'il faut pour lancer une génération y est regroupé), les autres sont
 // des outils optionnels indépendants accessibles à tout moment.
-const PAGES = ['generate','captions','music','videos','billing'];
+const PAGES = ['generate','captions','music','videos','fastcut','billing'];
 
 function staggerReveal(pg){
   if(!pg) return;
@@ -4074,6 +4158,134 @@ function log(type, msg){
 }
 
 // ── CONVERTISSEUR ─────────────────────────────────────────
+// ── FAST CUT ──────────────────────────────────────────────────
+let fcVideoFile = null;
+let fcImageFile = null;
+
+function handleFcVideoDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('video/')) setFcVideo(f);
+}
+function loadFcVideo(input){ if(input.files[0]) setFcVideo(input.files[0]); }
+function setFcVideo(f){
+  fcVideoFile = f;
+  const vid = document.getElementById('fc-vid-preview');
+  const ph  = document.getElementById('fc-vid-ph');
+  const nm  = document.getElementById('fc-vid-name');
+  const drop = document.getElementById('fc-vid-drop');
+  vid.src = URL.createObjectURL(f);
+  vid.style.display = 'block';
+  vid.play().catch(()=>{});
+  if(ph) ph.style.display = 'none';
+  if(drop) drop.classList.add('has-file');
+  nm.textContent = f.name;
+  vid.onloadedmetadata = ()=>{
+    const dur = vid.duration;
+    if(!isFinite(dur) || dur <= 0) return;
+    const sl = document.getElementById('fc-cut-slider');
+    if(sl){
+      sl.max = Math.max(1, (dur - 0.5)).toFixed(1);
+      if(parseFloat(sl.value) >= dur) sl.value = Math.min(2, dur - 0.5).toFixed(1);
+      document.getElementById('fc-cut-val').textContent = parseFloat(sl.value).toFixed(1)+'s';
+    }
+  };
+  checkFcReady();
+}
+
+function handleFcImageDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')) setFcImage(f);
+}
+function loadFcImage(input){ if(input.files[0]) setFcImage(input.files[0]); }
+function setFcImage(f){
+  fcImageFile = f;
+  const img  = document.getElementById('fc-img-preview');
+  const ph   = document.getElementById('fc-img-ph');
+  const nm   = document.getElementById('fc-img-name');
+  const drop = document.getElementById('fc-img-drop');
+  img.src = URL.createObjectURL(f);
+  img.style.display = 'block';
+  if(ph) ph.style.display = 'none';
+  if(drop) drop.classList.add('has-file');
+  nm.textContent = f.name;
+  checkFcReady();
+}
+
+function checkFcReady(){
+  const btn = document.getElementById('fc-gen-btn');
+  if(!btn) return;
+  const ready = !!(fcVideoFile && fcImageFile);
+  btn.style.opacity = ready ? '1' : '.4';
+  btn.style.pointerEvents = ready ? 'auto' : 'none';
+}
+
+async function generateFastCut(){
+  if(!fcVideoFile || !fcImageFile) return;
+  const btn      = document.getElementById('fc-gen-btn');
+  const progWrap = document.getElementById('fc-progress-wrap');
+  const progBar  = document.getElementById('fc-prog-bar');
+  const status   = document.getElementById('fc-status');
+  const result   = document.getElementById('fc-result');
+
+  btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  status.textContent = 'Préparation...';
+  result.style.display = 'none';
+  result.innerHTML = '';
+
+  const cutTime        = document.getElementById('fc-cut-slider').value;
+  const insertDuration = document.getElementById('fc-dur-slider').value;
+
+  const fd = new FormData();
+  fd.append('video', fcVideoFile, fcVideoFile.name);
+  fd.append('image', fcImageFile, fcImageFile.name);
+  fd.append('cutTime', cutTime);
+  fd.append('insertDuration', insertDuration);
+
+  try {
+    const resp   = await fetch('/fastcut', { method:'POST', body:fd });
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '';
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for(const line of lines){
+        if(!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
+          if(msg.type === 'progress'){
+            progBar.style.width = msg.pct+'%';
+            status.textContent  = msg.pct+'%';
+          } else if(msg.type === 'done'){
+            progBar.style.width = '100%';
+            status.textContent  = '';
+            result.style.display = 'block';
+            result.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1.5px solid var(--border);">
+              <span style="font-size:18px;">✅</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${msg.file}</div>
+                <div style="font-size:10px;color:var(--text3);">${msg.size} MB</div>
+              </div>
+              <button class="btn-xs" onclick="openOutputFolder()">📂 Ouvrir</button>
+            </div>`;
+          } else if(msg.type === 'error'){
+            status.textContent = '❌ ' + msg.msg;
+          }
+        } catch{}
+      }
+    }
+  } catch(e){
+    status.textContent = '❌ Erreur : ' + e.message;
+  }
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+
 async function convertFile(input){
   // Accepte aussi bien un élément <input type=file> (onchange="convertFile(this)")
   // qu'un objet File brut (drag & drop) — comme loadMusicFile().

@@ -217,6 +217,27 @@ function getVideoDuration(filePath){
   } catch { return 30; }
 }
 
+function probeVideoInfo(filePath){
+  try {
+    const out = execSync(
+      `${FFPROBE_CMD} -v error -print_format json -show_streams -show_format "${filePath}"`,
+      { stdio:'pipe' }
+    ).toString();
+    const data = JSON.parse(out);
+    const vStream = (data.streams||[]).find(s=>s.codec_type==='video');
+    const aStream = (data.streams||[]).find(s=>s.codec_type==='audio');
+    const duration = parseFloat(((data.format||{}).duration)||0) || 30;
+    const width  = vStream ? (parseInt(vStream.width)  || 1080) : 1080;
+    const height = vStream ? (parseInt(vStream.height) || 1920) : 1920;
+    let fps = 30;
+    if(vStream && vStream.r_frame_rate){
+      const [n,d] = vStream.r_frame_rate.split('/').map(Number);
+      if(d) fps = Math.round(n/d);
+    }
+    return { width, height, duration, hasAudio:!!aStream, fps };
+  } catch { return { width:1080, height:1920, duration:30, hasAudio:true, fps:30 }; }
+}
+
 function buildSRT(lines, totalDuration, posX, posY, rotation){
   if(!lines || !lines.length) return null;
   const count = lines.length;
@@ -1091,6 +1112,124 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+
+  // ── Fast Cut ─────────────────────────────────────────────────
+  if(req.url === '/fastcut' && req.method === 'POST'){
+    res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});
+    const chunks = [];
+    req.on('data', c=>chunks.push(c));
+    req.on('end', async ()=>{
+      let videoTmp=null, imageTmp=null;
+      try {
+        const body   = Buffer.concat(chunks);
+        const bMatch = (req.headers['content-type']||'').match(/boundary=([^\s;]+)/);
+        if(!bMatch){ res.end(); return; }
+        const parts  = parseMultipart(body, bMatch[1]);
+
+        let cutTime=2, insertDuration=0.5;
+        for(const p of parts){
+          const val = p.data.toString('utf8').trim();
+          if(p.name==='cutTime')             cutTime        = Math.max(0.1, parseFloat(val)||2);
+          else if(p.name==='insertDuration') insertDuration = Math.max(0.05, Math.min(5, parseFloat(val)||0.5));
+          else if(p.name==='video' && p.filename){
+            const ext = path.extname(p.filename)||'.mp4';
+            videoTmp = path.join(os.tmpdir(),'fc_vid_'+Date.now()+ext);
+            fs.writeFileSync(videoTmp, p.data);
+          }
+          else if(p.name==='image' && p.filename){
+            const ext = path.extname(p.filename)||'.jpg';
+            imageTmp = path.join(os.tmpdir(),'fc_img_'+Date.now()+ext);
+            fs.writeFileSync(imageTmp, p.data);
+          }
+        }
+
+        if(!videoTmp||!imageTmp){ send(res,{type:'error',msg:'Fichiers manquants'}); res.end(); return; }
+
+        const info = probeVideoInfo(videoTmp);
+        const { width:W, height:H, duration:totalDur, hasAudio } = info;
+        const T = Math.min(cutTime, Math.max(0.1, totalDur - 0.1));
+        const D = insertDuration;
+
+        const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
+        if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
+        const outName = 'fastcut_'+Date.now()+'.mp4';
+        const outPath = path.join(outDir, outName);
+
+        const fcParts = [
+          `[0:v]trim=0:${T},setpts=PTS-STARTPTS[v1]`,
+          `[1:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v2]`,
+          `[0:v]trim=start=${T},setpts=PTS-STARTPTS[v3]`,
+          `[v1][v2][v3]concat=n=3:v=1:a=0[vout]`
+        ];
+        if(hasAudio){
+          fcParts.push(`[0:a]atrim=0:${T},asetpts=PTS-STARTPTS[a1]`);
+          fcParts.push(`anullsrc=channel_layout=stereo:sample_rate=44100:duration=${D}[a2]`);
+          fcParts.push(`[0:a]atrim=start=${T},asetpts=PTS-STARTPTS[a3]`);
+          fcParts.push(`[a1][a2][a3]concat=n=3:v=0:a=1[aout]`);
+        }
+
+        const ffArgs = [
+          '-y',
+          '-i', videoTmp,
+          '-loop','1','-t',String(D + 0.5),'-i', imageTmp,
+          '-filter_complex', fcParts.join(';'),
+          '-map','[vout]',
+          ...(hasAudio ? ['-map','[aout]'] : []),
+          '-c:v','libx264','-preset','fast','-crf','23','-pix_fmt','yuv420p',
+          ...(hasAudio ? ['-c:a','aac','-b:a','192k'] : []),
+          outPath
+        ];
+
+        send(res,{type:'start'});
+        const outputDur = totalDur + D;
+
+        const ok = await new Promise(resolve=>{
+          const { spawn } = require('child_process');
+          const fullArgs = ['-progress','pipe:1','-nostats',...ffArgs];
+          console.log('=== FASTCUT ===', FFMPEG_BIN, fullArgs.join(' '));
+          const proc = spawn(FFMPEG_BIN, fullArgs, {windowsHide:true});
+          let buf='', stderrFull='';
+          const kill = setTimeout(()=>{ try{proc.kill('SIGKILL');}catch{} }, 300000);
+          proc.stdout.on('data', chunk=>{
+            buf += chunk.toString();
+            const lines = buf.split('\n'); buf = lines.pop();
+            for(const line of lines){
+              const m = line.match(/^out_time_ms=(\d+)/);
+              if(m && outputDur > 0){
+                const pct = Math.min(99, Math.round((parseInt(m[1],10)/1e6)/outputDur*100));
+                send(res,{type:'progress',pct});
+              }
+            }
+          });
+          proc.stderr.on('data', c=>{ stderrFull += c.toString(); });
+          proc.on('error', e=>{ clearTimeout(kill); console.error('FFmpeg fastcut spawn:',e.message); resolve(false); });
+          proc.on('close', code=>{
+            clearTimeout(kill);
+            if(code===0){ send(res,{type:'progress',pct:100}); resolve(true); }
+            else { console.error('FFmpeg fastcut (code '+code+'):',stderrFull.slice(-1500)); resolve(false); }
+          });
+        });
+
+        if(videoTmp) try{fs.unlinkSync(videoTmp);}catch{}
+        if(imageTmp) try{fs.unlinkSync(imageTmp);}catch{}
+
+        if(ok){
+          const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
+          send(res,{type:'done',file:outName,size,path:outPath});
+        } else {
+          send(res,{type:'error',msg:'Erreur FFmpeg — vérifier les logs serveur'});
+        }
+        res.end();
+      } catch(err){
+        if(videoTmp) try{fs.unlinkSync(videoTmp);}catch{}
+        if(imageTmp) try{fs.unlinkSync(imageTmp);}catch{}
+        console.error('FastCut error:',err);
+        send(res,{type:'error',msg:err.message});
+        res.end();
+      }
+    });
+    return;
+  }
 
   // Fichiers statiques scopés à vendor/ et fonts/ (lecture seule, pas de logique métier)
   if(req.method === 'GET' && /^\/(vendor|fonts)\//.test(req.url)){
