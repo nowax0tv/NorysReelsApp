@@ -1130,7 +1130,7 @@ const server = http.createServer((req, res) => {
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if(p.name==='cutTime')             cutTime        = Math.max(0.1, parseFloat(val)||2);
-          else if(p.name==='insertDuration') insertDuration = Math.max(0.05, Math.min(5, parseFloat(val)||0.5));
+          else if(p.name==='insertDuration') insertDuration = Math.max(0.01, Math.min(5, parseFloat(val)||0.1));
           else if(p.name==='video' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             videoTmp = path.join(os.tmpdir(),'fc_vid_'+Date.now()+ext);
