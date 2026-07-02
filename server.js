@@ -1113,6 +1113,125 @@ const server = http.createServer((req, res) => {
   }
 
 
+  // ── Incrustation GIF / vidéo ─────────────────────────────────
+  if(req.url === '/incrust' && req.method === 'POST'){
+    res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});
+    const chunks = [];
+    req.on('data', c=>chunks.push(c));
+    req.on('end', async ()=>{
+      let mainTmp=null, overlayTmp=null;
+      try {
+        const body   = Buffer.concat(chunks);
+        const bMatch = (req.headers['content-type']||'').match(/boundary=([^\s;]+)/);
+        if(!bMatch){ res.end(); return; }
+        const parts  = parseMultipart(body, bMatch[1]);
+
+        let posX=50, posY=20, sizePercent=30, opacity=0.4;
+        for(const p of parts){
+          const val = p.data.toString('utf8').trim();
+          if     (p.name==='posX')        posX        = Math.max(0,   Math.min(100, parseFloat(val)||50));
+          else if(p.name==='posY')        posY        = Math.max(0,   Math.min(100, parseFloat(val)||20));
+          else if(p.name==='sizePercent') sizePercent = Math.max(5,   Math.min(90,  parseFloat(val)||30));
+          else if(p.name==='opacity')     opacity     = Math.max(0.02,Math.min(1,   parseFloat(val)||0.4));
+          else if(p.name==='main' && p.filename){
+            const ext = path.extname(p.filename)||'.mp4';
+            mainTmp = path.join(os.tmpdir(),'gi_main_'+Date.now()+ext);
+            fs.writeFileSync(mainTmp, p.data);
+          }
+          else if(p.name==='overlay' && p.filename){
+            const ext = path.extname(p.filename)||'.gif';
+            overlayTmp = path.join(os.tmpdir(),'gi_ov_'+Date.now()+ext);
+            fs.writeFileSync(overlayTmp, p.data);
+          }
+        }
+
+        if(!mainTmp||!overlayTmp){ send(res,{type:'error',msg:'Fichiers manquants'}); res.end(); return; }
+
+        const info = probeVideoInfo(mainTmp);
+        const { width:W, height:H, duration:totalDur } = info;
+
+        const DIAM = Math.max(10, Math.round(W * sizePercent / 100));
+        const cx   = Math.round(W * posX / 100);
+        const cy   = Math.round(H * posY / 100);
+        const ox   = cx - Math.floor(DIAM/2);
+        const oy   = cy - Math.floor(DIAM/2);
+        const op   = opacity.toFixed(4);
+
+        const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
+        if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
+        const outName = 'incrust_'+Date.now()+'.mp4';
+        const outPath = path.join(outDir, outName);
+
+        // Scale overlay to fill square DIAM×DIAM, then apply cosine circular alpha gradient
+        const filterComplex =
+          `[1:v]scale=${DIAM}:${DIAM}:force_original_aspect_ratio=increase,crop=${DIAM}:${DIAM},`+
+          `format=yuva420p,`+
+          `geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':`+
+          `a='clip(${op}*255*max(0,(cos(hypot(X-W/2,Y-H/2)/(W/2)*PI)+1)/2),0,255)'[ov];`+
+          `[0:v][ov]overlay=${ox}:${oy}:shortest=1,format=yuv420p[out]`;
+
+        const ffArgs = [
+          '-y',
+          '-i', mainTmp,
+          '-stream_loop', '-1', '-ignore_loop', '0', '-i', overlayTmp,
+          '-filter_complex', filterComplex,
+          '-map', '[out]', '-map', '0:a?',
+          '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p',
+          '-c:a', 'copy',
+          '-shortest',
+          outPath
+        ];
+
+        send(res,{type:'start'});
+
+        const ok = await new Promise(resolve=>{
+          const { spawn } = require('child_process');
+          const fullArgs = ['-progress','pipe:1','-nostats',...ffArgs];
+          console.log('=== INCRUST ===', FFMPEG_BIN, fullArgs.join(' '));
+          const proc = spawn(FFMPEG_BIN, fullArgs, {windowsHide:true});
+          let buf='', stderrFull='';
+          const kill = setTimeout(()=>{ try{proc.kill('SIGKILL');}catch{} }, 300000);
+          proc.stdout.on('data', chunk=>{
+            buf += chunk.toString();
+            const lines = buf.split('\n'); buf = lines.pop();
+            for(const line of lines){
+              const m = line.match(/^out_time_ms=(\d+)/);
+              if(m && totalDur > 0){
+                const pct = Math.min(99, Math.round((parseInt(m[1],10)/1e6)/totalDur*100));
+                send(res,{type:'progress',pct});
+              }
+            }
+          });
+          proc.stderr.on('data', c=>{ stderrFull += c.toString(); });
+          proc.on('error', e=>{ clearTimeout(kill); console.error('FFmpeg incrust spawn:',e.message); resolve(false); });
+          proc.on('close', code=>{
+            clearTimeout(kill);
+            if(code===0){ send(res,{type:'progress',pct:100}); resolve(true); }
+            else { console.error('FFmpeg incrust (code '+code+'):',stderrFull.slice(-1500)); resolve(false); }
+          });
+        });
+
+        if(mainTmp)    try{fs.unlinkSync(mainTmp);}catch{}
+        if(overlayTmp) try{fs.unlinkSync(overlayTmp);}catch{}
+
+        if(ok){
+          const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
+          send(res,{type:'done',file:outName,size,path:outPath});
+        } else {
+          send(res,{type:'error',msg:'Erreur FFmpeg — vérifier les logs serveur'});
+        }
+        res.end();
+      } catch(err){
+        if(mainTmp)    try{fs.unlinkSync(mainTmp);}catch{}
+        if(overlayTmp) try{fs.unlinkSync(overlayTmp);}catch{}
+        console.error('Incrust error:',err);
+        send(res,{type:'error',msg:err.message});
+        res.end();
+      }
+    });
+    return;
+  }
+
   // ── Fast Cut ─────────────────────────────────────────────────
   if(req.url === '/fastcut' && req.method === 'POST'){
     res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});

@@ -1228,6 +1228,8 @@
     .fc-drop { position:relative;height:170px;border:1.5px dashed var(--border2);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .2s;overflow:hidden;text-align:center; }
     .fc-drop:hover { border-color:var(--purple);background:var(--dim); }
     .fc-drop.has-file { border-style:solid;border-color:var(--purple2); }
+    .gi-prev-wrap { width:80px;height:145px;background:rgba(0,0,0,.55);border-radius:8px;position:relative;overflow:hidden;flex-shrink:0;border:1.5px solid var(--border); }
+    .gi-circle-dot { position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(167,139,250,.95) 0%,rgba(167,139,250,0) 100%); }
 
     /* Cap export */
     #cap-export-status { font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-top:8px; }
@@ -1794,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.4</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.5</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1817,6 +1819,10 @@
       </div>
       <div class="nav-step" id="nav-fastcut" onclick="goPage('fastcut')">
         <span class="nav-step-icon" data-icon="scissors"></span> <span>Fast Cut</span>
+        <span class="nav-step-badge">optionnel</span>
+      </div>
+      <div class="nav-step" id="nav-incrust" onclick="goPage('incrust')">
+        <span class="nav-step-icon" data-icon="layers"></span> <span>Incrustation</span>
         <span class="nav-step-badge">optionnel</span>
       </div>
 
@@ -1943,6 +1949,85 @@
         </div>
 
         <div id="fc-result" style="display:none;margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- PAGE : INCRUSTATION GIF -->
+    <div class="page" id="page-incrust">
+      <div class="page-inner">
+        <div class="section-head">
+          <div class="section-title">🌀 Incrustation GIF</div>
+          <div class="section-desc">Superpose un GIF ou une vidéo en fondu circulaire dégradé sur ta vidéo — opacité et position réglables</div>
+          <div class="optional-note">Outil optionnel — effet de watermark circulaire semi-transparent.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Fichiers</div>
+          <div class="fc-drop-grid">
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Vidéo principale</div>
+              <div class="fc-drop" id="gi-main-drop" onclick="document.getElementById('gi-main-input').click()" ondrop="handleGiMainDrop(event)" ondragover="event.preventDefault()">
+                <video id="gi-main-prev" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="gi-main-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🎬</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                  <div style="font-size:10px;">MP4 · MOV · AVI</div>
+                </div>
+                <input type="file" id="gi-main-input" accept="video/*" style="display:none" onchange="loadGiMain(this)"/>
+              </div>
+              <div id="gi-main-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">GIF / Vidéo à incruster</div>
+              <div class="fc-drop" id="gi-ov-drop" onclick="document.getElementById('gi-ov-input').click()" ondrop="handleGiOvDrop(event)" ondragover="event.preventDefault()">
+                <video id="gi-ov-vid" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <img id="gi-ov-img" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt=""/>
+                <div id="gi-ov-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🌀</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ton GIF</div>
+                  <div style="font-size:10px;">GIF · MP4 · WEBM</div>
+                </div>
+                <input type="file" id="gi-ov-input" accept="video/*,image/gif" style="display:none" onchange="loadGiOverlay(this)"/>
+              </div>
+              <div id="gi-ov-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Position &amp; effet</div>
+          <div style="display:flex;gap:18px;align-items:flex-start;">
+            <div class="gi-prev-wrap">
+              <div class="gi-circle-dot" id="gi-circle-dot" style="width:24px;height:24px;left:40px;top:29px;opacity:.4;"></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:13px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="ctrl-lbl" style="margin:0;">Position X</span><span id="gi-x-val" style="color:var(--purple2);font-weight:700;font-size:12px;">50%</span></div>
+                <input type="range" id="gi-pos-x" min="0" max="100" step="1" value="50" oninput="document.getElementById('gi-x-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="ctrl-lbl" style="margin:0;">Position Y</span><span id="gi-y-val" style="color:var(--purple2);font-weight:700;font-size:12px;">20%</span></div>
+                <input type="range" id="gi-pos-y" min="0" max="100" step="1" value="20" oninput="document.getElementById('gi-y-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="ctrl-lbl" style="margin:0;">Taille</span><span id="gi-sz-val" style="color:var(--purple2);font-weight:700;font-size:12px;">30%</span></div>
+                <input type="range" id="gi-size" min="5" max="90" step="1" value="30" oninput="document.getElementById('gi-sz-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="ctrl-lbl" style="margin:0;">Opacité</span><span id="gi-op-val" style="color:var(--purple2);font-weight:700;font-size:12px;">40%</span></div>
+                <input type="range" id="gi-opacity" min="2" max="100" step="1" value="40" oninput="document.getElementById('gi-op-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="export-btn" id="gi-gen-btn" onclick="generateIncrust()" style="margin-top:16px;opacity:.4;pointer-events:none;">🌀 Incruster</button>
+
+        <div id="gi-progress-wrap" style="display:none;margin-top:14px;">
+          <div class="prog-bar-wrap"><div class="prog-bar" id="gi-prog-bar" style="width:0%;"></div></div>
+          <div id="gi-status" style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px;"></div>
+        </div>
+        <div id="gi-result" style="display:none;margin-top:12px;"></div>
       </div>
     </div>
 
@@ -2267,7 +2352,7 @@
 // Plus de séquence imposée : "Générer" est l'onglet principal (tout ce
 // qu'il faut pour lancer une génération y est regroupé), les autres sont
 // des outils optionnels indépendants accessibles à tout moment.
-const PAGES = ['generate','captions','music','videos','fastcut','billing'];
+const PAGES = ['generate','captions','music','videos','fastcut','incrust','billing'];
 
 function staggerReveal(pg){
   if(!pg) return;
@@ -2490,6 +2575,7 @@ const ICONS = {
   creditCard: '<rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" />',
   check: '<path d="M20 6 9 17l-5-5" />',
   scissors: '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+  layers: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
 };
 function iconSvgMarkup(name){
   const inner = ICONS[name];
@@ -4159,6 +4245,129 @@ function log(type, msg){
 }
 
 // ── CONVERTISSEUR ─────────────────────────────────────────
+// ── INCRUSTATION GIF ─────────────────────────────────────────
+let giMainFile = null;
+let giOverlayFile = null;
+
+function handleGiMainDrop(e){ e.preventDefault(); const f = e.dataTransfer.files[0]; if(f && f.type.startsWith('video/')) setGiMain(f); }
+function loadGiMain(input){ if(input.files[0]) setGiMain(input.files[0]); }
+function setGiMain(f){
+  giMainFile = f;
+  const vid = document.getElementById('gi-main-prev');
+  const ph  = document.getElementById('gi-main-ph');
+  const drop= document.getElementById('gi-main-drop');
+  vid.src = URL.createObjectURL(f); vid.style.display='block'; vid.play().catch(()=>{});
+  if(ph) ph.style.display='none';
+  if(drop) drop.classList.add('has-file');
+  document.getElementById('gi-main-name').textContent = f.name;
+  checkGiReady();
+}
+
+function handleGiOvDrop(e){ e.preventDefault(); const f = e.dataTransfer.files[0]; if(f) setGiOverlay(f); }
+function loadGiOverlay(input){ if(input.files[0]) setGiOverlay(input.files[0]); }
+function setGiOverlay(f){
+  giOverlayFile = f;
+  const vid  = document.getElementById('gi-ov-vid');
+  const img  = document.getElementById('gi-ov-img');
+  const ph   = document.getElementById('gi-ov-ph');
+  const drop = document.getElementById('gi-ov-drop');
+  const url  = URL.createObjectURL(f);
+  if(f.type === 'image/gif'){
+    img.src = url; img.style.display='block'; vid.style.display='none';
+  } else {
+    vid.src = url; vid.style.display='block'; vid.play().catch(()=>{}); img.style.display='none';
+  }
+  if(ph) ph.style.display='none';
+  if(drop) drop.classList.add('has-file');
+  document.getElementById('gi-ov-name').textContent = f.name;
+  checkGiReady();
+}
+
+function checkGiReady(){
+  const btn = document.getElementById('gi-gen-btn');
+  if(!btn) return;
+  const ready = !!(giMainFile && giOverlayFile);
+  btn.style.opacity = ready ? '1' : '.4';
+  btn.style.pointerEvents = ready ? 'auto' : 'none';
+}
+
+function updateGiPreview(){
+  const dot = document.getElementById('gi-circle-dot');
+  if(!dot) return;
+  const posX  = parseFloat(document.getElementById('gi-pos-x').value)  || 50;
+  const posY  = parseFloat(document.getElementById('gi-pos-y').value)  || 20;
+  const size  = parseFloat(document.getElementById('gi-size').value)   || 30;
+  const opct  = parseFloat(document.getElementById('gi-opacity').value)|| 40;
+  const wW=80, wH=145;
+  const diamPx = wW * size / 100;
+  dot.style.width   = diamPx+'px';
+  dot.style.height  = diamPx+'px';
+  dot.style.left    = (wW * posX / 100)+'px';
+  dot.style.top     = (wH * posY / 100)+'px';
+  dot.style.opacity = opct / 100;
+}
+
+async function generateIncrust(){
+  if(!giMainFile || !giOverlayFile) return;
+  const btn      = document.getElementById('gi-gen-btn');
+  const progWrap = document.getElementById('gi-progress-wrap');
+  const progBar  = document.getElementById('gi-prog-bar');
+  const status   = document.getElementById('gi-status');
+  const result   = document.getElementById('gi-result');
+
+  btn.style.opacity='.4'; btn.style.pointerEvents='none';
+  progWrap.style.display='block';
+  progBar.style.width='0%';
+  status.textContent='Préparation...';
+  result.style.display='none'; result.innerHTML='';
+
+  const posX        = document.getElementById('gi-pos-x').value;
+  const posY        = document.getElementById('gi-pos-y').value;
+  const sizePercent = document.getElementById('gi-size').value;
+  const opacityPct  = document.getElementById('gi-opacity').value;
+
+  const fd = new FormData();
+  fd.append('main',    giMainFile,    giMainFile.name);
+  fd.append('overlay', giOverlayFile, giOverlayFile.name);
+  fd.append('posX',        posX);
+  fd.append('posY',        posY);
+  fd.append('sizePercent', sizePercent);
+  fd.append('opacity',     (parseFloat(opacityPct)/100).toFixed(3));
+
+  try {
+    const resp   = await fetch('/incrust', {method:'POST',body:fd});
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '';
+    while(true){
+      const {done,value} = await reader.read();
+      if(done) break;
+      buf += dec.decode(value,{stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for(const line of lines){
+        if(!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
+          if(msg.type==='progress'){ progBar.style.width=msg.pct+'%'; status.textContent=msg.pct+'%'; }
+          else if(msg.type==='done'){
+            progBar.style.width='100%'; status.textContent='';
+            result.style.display='block';
+            result.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1.5px solid var(--border);">
+              <span style="font-size:18px;">✅</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${msg.file}</div>
+                <div style="font-size:10px;color:var(--text3);">${msg.size} MB</div>
+              </div>
+              <button class="btn-xs" onclick="openOutputFolder()">📂 Ouvrir</button>
+            </div>`;
+          } else if(msg.type==='error'){ status.textContent='❌ '+msg.msg; }
+        } catch{}
+      }
+    }
+  } catch(e){ status.textContent='❌ Erreur : '+e.message; }
+  btn.style.opacity='1'; btn.style.pointerEvents='auto';
+}
+
 // ── FAST CUT ──────────────────────────────────────────────────
 let fcVideoFile = null;
 let fcImageFile = null;
