@@ -1229,7 +1229,7 @@
     .fc-drop:hover { border-color:var(--purple);background:var(--dim); }
     .fc-drop.has-file { border-style:solid;border-color:var(--purple2); }
     .gi-live-wrap { position:relative;width:110px;flex-shrink:0;aspect-ratio:9/16;background:#0b0b15;border-radius:8px;overflow:hidden;border:1.5px solid var(--border); }
-    .gi-live-ov { position:absolute;transform:translate(-50%,-50%);object-fit:cover;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 0%,transparent 100%);mask-image:radial-gradient(circle,black 0%,transparent 100%);pointer-events:none; }
+    .gi-live-ov { position:absolute;transform:translate(-50%,-50%);object-fit:cover;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 30%,transparent 100%);mask-image:radial-gradient(circle,black 30%,transparent 100%);pointer-events:none; }
 
     /* Cap export */
     #cap-export-status { font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-top:8px; }
@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.13</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.14</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -2015,7 +2015,7 @@
           <div style="display:flex;gap:18px;align-items:flex-start;">
             <div class="gi-live-wrap" id="gi-live-wrap">
               <video id="gi-live-main" playsinline muted loop style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
-              <div id="gi-live-ov-wrap" style="display:none;position:absolute;overflow:hidden;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 0%,transparent 100%);mask-image:radial-gradient(circle,black 0%,transparent 100%);pointer-events:none;transform:translate(-50%,-50%);width:30px;height:30px;left:50%;top:20%;">
+              <div id="gi-live-ov-wrap" style="display:none;position:absolute;overflow:hidden;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 30%,transparent 100%);mask-image:radial-gradient(circle,black 30%,transparent 100%);pointer-events:none;transform:translate(-50%,-50%);width:30px;height:30px;left:50%;top:20%;">
                 <video id="gi-live-ov-vid" playsinline muted loop style="display:none;position:absolute;"></video>
                 <img id="gi-live-ov-img" alt="" style="display:none;position:absolute;"/>
               </div>
@@ -2060,7 +2060,7 @@
       <div style="position:relative;">
         <div id="gi-modal-inner" style="position:relative;width:270px;height:480px;background:#0b0b15;border-radius:14px;overflow:hidden;border:1.5px solid var(--border);">
           <video id="gi-modal-main" playsinline muted loop style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
-          <div id="gi-modal-ov-wrap" style="display:none;position:absolute;overflow:hidden;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 0%,transparent 100%);mask-image:radial-gradient(circle,black 0%,transparent 100%);pointer-events:none;transform:translate(-50%,-50%);">
+          <div id="gi-modal-ov-wrap" style="display:none;position:absolute;overflow:hidden;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 30%,transparent 100%);mask-image:radial-gradient(circle,black 30%,transparent 100%);pointer-events:none;transform:translate(-50%,-50%);">
             <video id="gi-modal-ov-vid" playsinline muted loop style="display:none;position:absolute;"></video>
             <img id="gi-modal-ov-img" alt="" style="display:none;position:absolute;"/>
           </div>

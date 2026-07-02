@@ -1173,11 +1173,13 @@ const server = http.createServer((req, res) => {
         const cropFilter = needsCrop
           ? `crop=iw*${(cropW/100).toFixed(4)}:ih*${(cropH/100).toFixed(4)}:iw*${(cropX/100).toFixed(4)}:ih*${(cropY/100).toFixed(4)},`
           : '';
+        // Gradient: centre opaque jusqu'à 30% du rayon, puis fondu cosinus sur les 70% restants
+        // fadeT = max(0, (dist - 0.3) / 0.7) — 0 au centre, 1 au bord
         const filterComplex =
           `[1:v]${cropFilter}scale=${DIAM}:${DIAM}:force_original_aspect_ratio=increase,crop=${DIAM}:${DIAM},`+
           `format=rgba,`+
           `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':`+
-          `a='clip(${op}*255*max(0,(cos(min(1,hypot(X-W/2,Y-H/2)/(W/2))*PI)+1)/2),0,255)'[ov];`+
+          `a='clip(${op}*255*max(0,(cos(min(1,max(0,(hypot(X-W/2,Y-H/2)/(W/2)-0.3)/0.7))*PI)+1)/2),0,255)'[ov];`+
           `[0:v][ov]overlay=${ox}:${oy},format=yuv420p[out]`;
 
         // -ignore_loop is a GIF-only demuxer option; passing it on MP4/WEBM causes "Option not found"
