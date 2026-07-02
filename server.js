@@ -1162,13 +1162,14 @@ const server = http.createServer((req, res) => {
         const outName = 'incrust_'+Date.now()+'.mp4';
         const outPath = path.join(outDir, outName);
 
-        // Scale overlay to fill square DIAM×DIAM, then apply cosine circular alpha gradient
+        // Circular cosine gradient mask: rgba (r/g/b pass-through, alpha = cosine falloff)
+        // min(1, dist) clamps corners so the mask is a true circle, not a rounded square
         const filterComplex =
           `[1:v]scale=${DIAM}:${DIAM}:force_original_aspect_ratio=increase,crop=${DIAM}:${DIAM},`+
-          `format=yuva420p,`+
-          `geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)':`+
-          `a='clip(${op}*255*max(0,(cos(hypot(X-W/2,Y-H/2)/(W/2)*PI)+1)/2),0,255)'[ov];`+
-          `[0:v][ov]overlay=${ox}:${oy}:shortest=1,format=yuv420p[out]`;
+          `format=rgba,`+
+          `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':`+
+          `a='clip(${op}*255*max(0,(cos(min(1,hypot(X-W/2,Y-H/2)/(W/2))*PI)+1)/2),0,255)'[ov];`+
+          `[0:v][ov]overlay=${ox}:${oy},format=yuv420p[out]`;
 
         const ffArgs = [
           '-y',
@@ -1203,22 +1204,26 @@ const server = http.createServer((req, res) => {
             }
           });
           proc.stderr.on('data', c=>{ stderrFull += c.toString(); });
-          proc.on('error', e=>{ clearTimeout(kill); console.error('FFmpeg incrust spawn:',e.message); resolve(false); });
+          proc.on('error', e=>{ clearTimeout(kill); console.error('FFmpeg incrust spawn:',e.message); resolve('spawn: '+e.message); });
           proc.on('close', code=>{
             clearTimeout(kill);
-            if(code===0){ send(res,{type:'progress',pct:100}); resolve(true); }
-            else { console.error('FFmpeg incrust (code '+code+'):',stderrFull.slice(-1500)); resolve(false); }
+            if(code===0){ send(res,{type:'progress',pct:100}); resolve(null); }
+            else {
+              const errLines = stderrFull.split('\n').filter(l=>/error|invalid|no such|cannot|failed/i.test(l)).slice(-3).join(' | ');
+              console.error('FFmpeg incrust (code '+code+'):',stderrFull.slice(-1500));
+              resolve(errLines || stderrFull.slice(-250));
+            }
           });
         });
 
         if(mainTmp)    try{fs.unlinkSync(mainTmp);}catch{}
         if(overlayTmp) try{fs.unlinkSync(overlayTmp);}catch{}
 
-        if(ok){
+        if(ok === null){
           const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
           send(res,{type:'done',file:outName,size,path:outPath});
         } else {
-          send(res,{type:'error',msg:'Erreur FFmpeg — vérifier les logs serveur'});
+          send(res,{type:'error',msg:String(ok)});
         }
         res.end();
       } catch(err){

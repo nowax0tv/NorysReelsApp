@@ -1228,8 +1228,8 @@
     .fc-drop { position:relative;height:170px;border:1.5px dashed var(--border2);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .2s;overflow:hidden;text-align:center; }
     .fc-drop:hover { border-color:var(--purple);background:var(--dim); }
     .fc-drop.has-file { border-style:solid;border-color:var(--purple2); }
-    .gi-prev-wrap { width:80px;height:145px;background:rgba(0,0,0,.55);border-radius:8px;position:relative;overflow:hidden;flex-shrink:0;border:1.5px solid var(--border); }
-    .gi-circle-dot { position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(167,139,250,.95) 0%,rgba(167,139,250,0) 100%); }
+    .gi-live-wrap { position:relative;width:110px;flex-shrink:0;aspect-ratio:9/16;background:#0b0b15;border-radius:8px;overflow:hidden;border:1.5px solid var(--border); }
+    .gi-live-ov { position:absolute;transform:translate(-50%,-50%);object-fit:cover;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 0%,transparent 100%);mask-image:radial-gradient(circle,black 0%,transparent 100%);pointer-events:none; }
 
     /* Cap export */
     #cap-export-status { font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-top:8px; }
@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.5</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.6</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1995,10 +1995,13 @@
         </div>
 
         <div class="card" style="margin-top:12px;">
-          <div class="card-label">Position &amp; effet</div>
+          <div class="card-label">Position &amp; effet <span style="font-size:10px;color:var(--text3);font-weight:400;">· aperçu en direct</span></div>
           <div style="display:flex;gap:18px;align-items:flex-start;">
-            <div class="gi-prev-wrap">
-              <div class="gi-circle-dot" id="gi-circle-dot" style="width:24px;height:24px;left:40px;top:29px;opacity:.4;"></div>
+            <div class="gi-live-wrap" id="gi-live-wrap">
+              <video id="gi-live-main" playsinline muted loop style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+              <video id="gi-live-ov-vid" class="gi-live-ov" playsinline muted loop style="display:none;width:30px;height:30px;left:50%;top:20%;opacity:.4;"></video>
+              <img id="gi-live-ov-img" class="gi-live-ov" alt="" style="display:none;width:30px;height:30px;left:50%;top:20%;opacity:.4;"/>
+              <div id="gi-live-ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3);">aperçu</div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;gap:13px;">
               <div>
@@ -4256,10 +4259,16 @@ function setGiMain(f){
   const vid = document.getElementById('gi-main-prev');
   const ph  = document.getElementById('gi-main-ph');
   const drop= document.getElementById('gi-main-drop');
-  vid.src = URL.createObjectURL(f); vid.style.display='block'; vid.play().catch(()=>{});
+  const url = URL.createObjectURL(f);
+  vid.src = url; vid.style.display='block'; vid.play().catch(()=>{});
   if(ph) ph.style.display='none';
   if(drop) drop.classList.add('has-file');
   document.getElementById('gi-main-name').textContent = f.name;
+  // Live preview
+  const lm = document.getElementById('gi-live-main');
+  if(lm){ lm.src = url; lm.play().catch(()=>{}); }
+  const lph = document.getElementById('gi-live-ph');
+  if(lph) lph.style.display='none';
   checkGiReady();
 }
 
@@ -4280,7 +4289,18 @@ function setGiOverlay(f){
   if(ph) ph.style.display='none';
   if(drop) drop.classList.add('has-file');
   document.getElementById('gi-ov-name').textContent = f.name;
+  // Live preview overlay
+  const lvid = document.getElementById('gi-live-ov-vid');
+  const limg = document.getElementById('gi-live-ov-img');
+  if(f.type === 'image/gif'){
+    if(limg){ limg.src = url; limg.style.display='block'; }
+    if(lvid){ lvid.style.display='none'; }
+  } else {
+    if(lvid){ lvid.src = url; lvid.style.display='block'; lvid.play().catch(()=>{}); }
+    if(limg){ limg.style.display='none'; }
+  }
   checkGiReady();
+  updateGiPreview();
 }
 
 function checkGiReady(){
@@ -4292,19 +4312,26 @@ function checkGiReady(){
 }
 
 function updateGiPreview(){
-  const dot = document.getElementById('gi-circle-dot');
-  if(!dot) return;
-  const posX  = parseFloat(document.getElementById('gi-pos-x').value)  || 50;
-  const posY  = parseFloat(document.getElementById('gi-pos-y').value)  || 20;
-  const size  = parseFloat(document.getElementById('gi-size').value)   || 30;
-  const opct  = parseFloat(document.getElementById('gi-opacity').value)|| 40;
-  const wW=80, wH=145;
+  const wrap = document.getElementById('gi-live-wrap');
+  if(!wrap) return;
+  const posX = parseFloat(document.getElementById('gi-pos-x').value)  || 50;
+  const posY = parseFloat(document.getElementById('gi-pos-y').value)  || 20;
+  const size = parseFloat(document.getElementById('gi-size').value)   || 30;
+  const opct = parseFloat(document.getElementById('gi-opacity').value)|| 40;
+  const wW = wrap.offsetWidth  || 110;
+  const wH = wrap.offsetHeight || 196;
   const diamPx = wW * size / 100;
-  dot.style.width   = diamPx+'px';
-  dot.style.height  = diamPx+'px';
-  dot.style.left    = (wW * posX / 100)+'px';
-  dot.style.top     = (wH * posY / 100)+'px';
-  dot.style.opacity = opct / 100;
+  const cx = wW * posX / 100;
+  const cy = wH * posY / 100;
+  ['gi-live-ov-vid','gi-live-ov-img'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.width   = diamPx+'px';
+    el.style.height  = diamPx+'px';
+    el.style.left    = cx+'px';
+    el.style.top     = cy+'px';
+    el.style.opacity = opct/100;
+  });
 }
 
 async function generateIncrust(){
