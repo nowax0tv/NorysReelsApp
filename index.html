@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.11</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.12</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1990,12 +1990,18 @@
                 <input type="file" id="gi-ov-input" accept="video/*,image/gif" style="display:none" onchange="loadGiOverlay(this)"/>
                 <!-- crop selector — shown when a GIF/video is loaded -->
                 <div id="gi-crop-overlay" style="display:none;position:absolute;inset:0;z-index:5;" onclick="event.stopPropagation()">
-                  <div id="gi-crop-rect" style="position:absolute;border:2px solid #a78bfa;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);cursor:move;left:0%;top:0%;width:100%;height:100%;box-sizing:border-box;">
-                    <div class="gi-crop-h" data-c="nw" style="position:absolute;top:-5px;left:-5px;width:10px;height:10px;background:#a78bfa;cursor:nw-resize;border-radius:2px;"></div>
-                    <div class="gi-crop-h" data-c="ne" style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#a78bfa;cursor:ne-resize;border-radius:2px;"></div>
-                    <div class="gi-crop-h" data-c="sw" style="position:absolute;bottom:-5px;left:-5px;width:10px;height:10px;background:#a78bfa;cursor:sw-resize;border-radius:2px;"></div>
-                    <div class="gi-crop-h" data-c="se" style="position:absolute;bottom:-5px;right:-5px;width:10px;height:10px;background:#a78bfa;cursor:se-resize;border-radius:2px;"></div>
-                    <button onclick="event.stopPropagation();document.getElementById('gi-ov-input').click()" title="Changer de fichier" style="position:absolute;bottom:4px;right:4px;font-size:9px;padding:2px 5px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:4px;cursor:pointer;line-height:1.4;">↺</button>
+                  <!-- 4 darkening strips around the crop rect -->
+                  <div id="gi-dark-top"    style="position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                  <div id="gi-dark-bottom" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                  <div id="gi-dark-left"   style="position:absolute;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                  <div id="gi-dark-right"  style="position:absolute;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                  <!-- the crop rect itself -->
+                  <div id="gi-crop-rect" style="position:absolute;border:2px solid #a78bfa;cursor:move;left:0%;top:0%;width:100%;height:100%;box-sizing:border-box;">
+                    <div class="gi-crop-h" data-c="nw" style="position:absolute;top:2px;left:2px;width:12px;height:12px;background:#a78bfa;cursor:nw-resize;border-radius:2px;"></div>
+                    <div class="gi-crop-h" data-c="ne" style="position:absolute;top:2px;right:2px;width:12px;height:12px;background:#a78bfa;cursor:ne-resize;border-radius:2px;"></div>
+                    <div class="gi-crop-h" data-c="sw" style="position:absolute;bottom:2px;left:2px;width:12px;height:12px;background:#a78bfa;cursor:sw-resize;border-radius:2px;"></div>
+                    <div class="gi-crop-h" data-c="se" style="position:absolute;bottom:2px;right:2px;width:12px;height:12px;background:#a78bfa;cursor:se-resize;border-radius:2px;"></div>
+                    <button onclick="event.stopPropagation();document.getElementById('gi-ov-input').click()" title="Changer de fichier" style="position:absolute;bottom:4px;right:18px;font-size:9px;padding:2px 5px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:4px;cursor:pointer;line-height:1.4;">↺</button>
                   </div>
                 </div>
               </div>
@@ -4288,10 +4294,19 @@ let _giCropDrag   = null;
 function updateGiCropRect(){
   const r = document.getElementById('gi-crop-rect');
   if(!r) return;
-  r.style.left   = giCropX.toFixed(2) + '%';
-  r.style.top    = giCropY.toFixed(2) + '%';
-  r.style.width  = giCropW.toFixed(2) + '%';
-  r.style.height = giCropH.toFixed(2) + '%';
+  const x=giCropX, y=giCropY, w=giCropW, h=giCropH;
+  r.style.left   = x.toFixed(2) + '%';
+  r.style.top    = y.toFixed(2) + '%';
+  r.style.width  = w.toFixed(2) + '%';
+  r.style.height = h.toFixed(2) + '%';
+  const dt = document.getElementById('gi-dark-top');
+  const db = document.getElementById('gi-dark-bottom');
+  const dl = document.getElementById('gi-dark-left');
+  const dr = document.getElementById('gi-dark-right');
+  if(dt){ dt.style.height = y.toFixed(2)+'%'; }
+  if(db){ db.style.height = (100-y-h).toFixed(2)+'%'; }
+  if(dl){ dl.style.top=y.toFixed(2)+'%'; dl.style.height=h.toFixed(2)+'%'; dl.style.left='0'; dl.style.width=x.toFixed(2)+'%'; }
+  if(dr){ dr.style.top=y.toFixed(2)+'%'; dr.style.height=h.toFixed(2)+'%'; dr.style.right='0'; dr.style.width=(100-x-w).toFixed(2)+'%'; }
 }
 
 function initGiCropOverlay(){
