@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.12</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.13</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3096,7 +3096,7 @@ function renderReelsQuotaUI(){
     unlimited: t('billingPlanUnlimitedName'),
     admin: 'Admin',
   };
-  const pct = reelsLimit === Infinity ? 0 : Math.min(100, Math.round((reelsUsed / reelsLimit) * 100));
+  const pct = reelsLimit === Infinity ? Math.min(100, reelsUsed) : Math.min(100, Math.round((reelsUsed / reelsLimit) * 100));
   const usedText = reelsLimit === Infinity ? (reelsUsed + ' / ∞') : (reelsUsed + ' / ' + reelsLimit);
 
   const tierEl = document.getElementById('billing-tier-label');
@@ -3158,8 +3158,8 @@ async function registerGeneratedCount(n){
       totalGeneratedSyncsToSupabase = false;
     }
   }
-  // Compte vers le quota hebdomadaire Reels (50 inclus / 200 Standard / illimité)
-  if(supabaseClient && reelsTier !== 'admin'){
+  // Compte vers le quota — toujours logué, même pour les admins (pour afficher l'usage réel)
+  if(supabaseClient){
     try {
       await supabaseClient.from('reels_generation_log').insert({ user_id: currentUserId, count: n });
       reelsUsed += n;
