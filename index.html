@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.7</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.8</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -4336,6 +4336,16 @@ function updateGiPreview(){
 
 async function generateIncrust(){
   if(!giMainFile || !giOverlayFile) return;
+  if(reelsLimit !== Infinity && reelsUsed + 1 > reelsLimit){
+    NorysSound.error();
+    const remaining = Math.max(0, reelsLimit - reelsUsed);
+    const msg = remaining === 0
+      ? t('quotaExhausted').replace('{used}', reelsUsed).replace('{limit}', reelsLimit)
+      : t('quotaExceeded').replace('{requested}', 1).replace('{remaining}', remaining).replace('{limit}', reelsLimit);
+    showToast('🚫', msg, 7000);
+    goPage('billing');
+    return;
+  }
   const btn      = document.getElementById('gi-gen-btn');
   const progWrap = document.getElementById('gi-progress-wrap');
   const progBar  = document.getElementById('gi-prog-bar');
@@ -4387,6 +4397,7 @@ async function generateIncrust(){
               </div>
               <button class="btn-xs" onclick="openOutputFolder()">📂 Ouvrir</button>
             </div>`;
+            registerGeneratedCount(1);
           } else if(msg.type==='error'){ status.textContent='❌ '+msg.msg; }
         } catch{}
       }
@@ -4460,6 +4471,16 @@ function checkFcReady(){
 
 async function generateFastCut(){
   if(!fcVideoFile || !fcImageFile) return;
+  if(reelsLimit !== Infinity && reelsUsed + 1 > reelsLimit){
+    NorysSound.error();
+    const remaining = Math.max(0, reelsLimit - reelsUsed);
+    const msg = remaining === 0
+      ? t('quotaExhausted').replace('{used}', reelsUsed).replace('{limit}', reelsLimit)
+      : t('quotaExceeded').replace('{requested}', 1).replace('{remaining}', remaining).replace('{limit}', reelsLimit);
+    showToast('🚫', msg, 7000);
+    goPage('billing');
+    return;
+  }
   const btn      = document.getElementById('fc-gen-btn');
   const progWrap = document.getElementById('fc-progress-wrap');
   const progBar  = document.getElementById('fc-prog-bar');
@@ -4511,6 +4532,7 @@ async function generateFastCut(){
               </div>
               <button class="btn-xs" onclick="openOutputFolder()">📂 Ouvrir</button>
             </div>`;
+            registerGeneratedCount(1);
           } else if(msg.type === 'error'){
             status.textContent = '❌ ' + msg.msg;
           }
