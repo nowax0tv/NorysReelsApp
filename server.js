@@ -1281,7 +1281,7 @@ const server = http.createServer((req, res) => {
 
         const fcParts = [
           `[0:v]trim=0:${T},setpts=PTS-STARTPTS[v1]`,
-          `[1:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v2]`,
+          `[1:v]trim=0:${D},setpts=PTS-STARTPTS,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v2]`,
           `[0:v]trim=start=${T},setpts=PTS-STARTPTS[v3]`,
           `[v1][v2][v3]concat=n=3:v=1:a=0[vout]`
         ];
@@ -1295,7 +1295,7 @@ const server = http.createServer((req, res) => {
         const ffArgs = [
           '-y',
           '-i', videoTmp,
-          '-loop','1','-t',String(D + 0.5),'-i', imageTmp,
+          '-loop','1','-t','1','-i', imageTmp,
           '-filter_complex', fcParts.join(';'),
           '-map','[vout]',
           ...(hasAudio ? ['-map','[aout]'] : []),
