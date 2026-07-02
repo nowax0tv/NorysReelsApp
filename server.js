@@ -1127,12 +1127,17 @@ const server = http.createServer((req, res) => {
         const parts  = parseMultipart(body, bMatch[1]);
 
         let posX=50, posY=20, sizePercent=30, opacity=0.4;
+        let cropX=0, cropY=0, cropW=100, cropH=100;
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if     (p.name==='posX')        posX        = Math.max(0,   Math.min(100, parseFloat(val)||50));
           else if(p.name==='posY')        posY        = Math.max(0,   Math.min(100, parseFloat(val)||20));
           else if(p.name==='sizePercent') sizePercent = Math.max(5,   Math.min(90,  parseFloat(val)||30));
           else if(p.name==='opacity')     opacity     = Math.max(0.02,Math.min(1,   parseFloat(val)||0.4));
+          else if(p.name==='cropX')       cropX       = Math.max(0,   Math.min(99,  parseFloat(val)||0));
+          else if(p.name==='cropY')       cropY       = Math.max(0,   Math.min(99,  parseFloat(val)||0));
+          else if(p.name==='cropW')       cropW       = Math.max(1,   Math.min(100, parseFloat(val)||100));
+          else if(p.name==='cropH')       cropH       = Math.max(1,   Math.min(100, parseFloat(val)||100));
           else if(p.name==='main' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             mainTmp = path.join(os.tmpdir(),'gi_main_'+Date.now()+ext);
@@ -1164,17 +1169,27 @@ const server = http.createServer((req, res) => {
 
         // Circular cosine gradient mask: rgba (r/g/b pass-through, alpha = cosine falloff)
         // min(1, dist) clamps corners so the mask is a true circle, not a rounded square
+        const needsCrop = cropW < 100 || cropH < 100 || cropX > 0 || cropY > 0;
+        const cropFilter = needsCrop
+          ? `crop=iw*${(cropW/100).toFixed(4)}:ih*${(cropH/100).toFixed(4)}:iw*${(cropX/100).toFixed(4)}:ih*${(cropY/100).toFixed(4)},`
+          : '';
         const filterComplex =
-          `[1:v]scale=${DIAM}:${DIAM}:force_original_aspect_ratio=increase,crop=${DIAM}:${DIAM},`+
+          `[1:v]${cropFilter}scale=${DIAM}:${DIAM}:force_original_aspect_ratio=increase,crop=${DIAM}:${DIAM},`+
           `format=rgba,`+
           `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':`+
           `a='clip(${op}*255*max(0,(cos(min(1,hypot(X-W/2,Y-H/2)/(W/2))*PI)+1)/2),0,255)'[ov];`+
           `[0:v][ov]overlay=${ox}:${oy},format=yuv420p[out]`;
 
+        // -ignore_loop is a GIF-only demuxer option; passing it on MP4/WEBM causes "Option not found"
+        const isGif = path.extname(overlayTmp).toLowerCase() === '.gif';
+        const overlayInputArgs = isGif
+          ? ['-stream_loop', '-1', '-ignore_loop', '0', '-i', overlayTmp]
+          : ['-stream_loop', '-1', '-i', overlayTmp];
+
         const ffArgs = [
           '-y',
           '-i', mainTmp,
-          '-stream_loop', '-1', '-ignore_loop', '0', '-i', overlayTmp,
+          ...overlayInputArgs,
           '-filter_complex', filterComplex,
           '-map', '[out]', '-map', '0:a?',
           '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p',

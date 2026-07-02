@@ -1796,7 +1796,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.8</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.9</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -1999,8 +1999,10 @@
           <div style="display:flex;gap:18px;align-items:flex-start;">
             <div class="gi-live-wrap" id="gi-live-wrap">
               <video id="gi-live-main" playsinline muted loop style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
-              <video id="gi-live-ov-vid" class="gi-live-ov" playsinline muted loop style="display:none;width:30px;height:30px;left:50%;top:20%;opacity:.4;"></video>
-              <img id="gi-live-ov-img" class="gi-live-ov" alt="" style="display:none;width:30px;height:30px;left:50%;top:20%;opacity:.4;"/>
+              <div id="gi-live-ov-wrap" style="display:none;position:absolute;overflow:hidden;border-radius:50%;-webkit-mask-image:radial-gradient(circle,black 0%,transparent 100%);mask-image:radial-gradient(circle,black 0%,transparent 100%);pointer-events:none;transform:translate(-50%,-50%);width:30px;height:30px;left:50%;top:20%;">
+                <video id="gi-live-ov-vid" playsinline muted loop style="display:none;position:absolute;"></video>
+                <img id="gi-live-ov-img" alt="" style="display:none;position:absolute;"/>
+              </div>
               <div id="gi-live-ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3);">aperçu</div>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;gap:13px;">
@@ -2019,6 +2021,29 @@
               <div>
                 <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="ctrl-lbl" style="margin:0;">Opacité</span><span id="gi-op-val" style="color:var(--purple2);font-weight:700;font-size:12px;">40%</span></div>
                 <input type="range" id="gi-opacity" min="2" max="100" step="1" value="40" oninput="document.getElementById('gi-op-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px;">
+                <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Zone à incruster (crop)</div>
+                <div style="display:flex;gap:10px;margin-bottom:8px;">
+                  <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:10px;color:var(--text2);">Départ X</span><span id="gi-cx-val" style="color:var(--purple2);font-weight:700;font-size:10px;">0%</span></div>
+                    <input type="range" id="gi-crop-x" min="0" max="99" step="1" value="0" oninput="document.getElementById('gi-cx-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:10px;color:var(--text2);">Départ Y</span><span id="gi-cy-val" style="color:var(--purple2);font-weight:700;font-size:10px;">0%</span></div>
+                    <input type="range" id="gi-crop-y" min="0" max="99" step="1" value="0" oninput="document.getElementById('gi-cy-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px;">
+                  <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:10px;color:var(--text2);">Largeur</span><span id="gi-cw-val" style="color:var(--purple2);font-weight:700;font-size:10px;">100%</span></div>
+                    <input type="range" id="gi-crop-w" min="1" max="100" step="1" value="100" oninput="document.getElementById('gi-cw-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:10px;color:var(--text2);">Hauteur</span><span id="gi-ch-val" style="color:var(--purple2);font-weight:700;font-size:10px;">100%</span></div>
+                    <input type="range" id="gi-crop-h" min="1" max="100" step="1" value="100" oninput="document.getElementById('gi-ch-val').textContent=this.value+'%';updateGiPreview()" style="width:100%;"/>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -4290,8 +4315,9 @@ function setGiOverlay(f){
   if(drop) drop.classList.add('has-file');
   document.getElementById('gi-ov-name').textContent = f.name;
   // Live preview overlay
-  const lvid = document.getElementById('gi-live-ov-vid');
-  const limg = document.getElementById('gi-live-ov-img');
+  const lwrap = document.getElementById('gi-live-ov-wrap');
+  const lvid  = document.getElementById('gi-live-ov-vid');
+  const limg  = document.getElementById('gi-live-ov-img');
   if(f.type === 'image/gif'){
     if(limg){ limg.src = url; limg.style.display='block'; }
     if(lvid){ lvid.style.display='none'; }
@@ -4299,6 +4325,7 @@ function setGiOverlay(f){
     if(lvid){ lvid.src = url; lvid.style.display='block'; lvid.play().catch(()=>{}); }
     if(limg){ limg.style.display='none'; }
   }
+  if(lwrap) lwrap.style.display='block';
   checkGiReady();
   updateGiPreview();
 }
@@ -4314,24 +4341,39 @@ function checkGiReady(){
 function updateGiPreview(){
   const wrap = document.getElementById('gi-live-wrap');
   if(!wrap) return;
-  const posX = parseFloat(document.getElementById('gi-pos-x').value)  || 50;
-  const posY = parseFloat(document.getElementById('gi-pos-y').value)  || 20;
-  const size = parseFloat(document.getElementById('gi-size').value)   || 30;
-  const opct = parseFloat(document.getElementById('gi-opacity').value)|| 40;
+  const posX  = parseFloat(document.getElementById('gi-pos-x').value)   || 50;
+  const posY  = parseFloat(document.getElementById('gi-pos-y').value)   || 20;
+  const size  = parseFloat(document.getElementById('gi-size').value)    || 30;
+  const opct  = parseFloat(document.getElementById('gi-opacity').value) || 40;
+  const cropX = parseFloat((document.getElementById('gi-crop-x')||{}).value) || 0;
+  const cropY = parseFloat((document.getElementById('gi-crop-y')||{}).value) || 0;
+  const cropW = parseFloat((document.getElementById('gi-crop-w')||{}).value) || 100;
+  const cropH = parseFloat((document.getElementById('gi-crop-h')||{}).value) || 100;
   const wW = wrap.offsetWidth  || 110;
   const wH = wrap.offsetHeight || 196;
   const diamPx = wW * size / 100;
   const cx = wW * posX / 100;
   const cy = wH * posY / 100;
-  ['gi-live-ov-vid','gi-live-ov-img'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.style.width   = diamPx+'px';
-    el.style.height  = diamPx+'px';
-    el.style.left    = cx+'px';
-    el.style.top     = cy+'px';
-    el.style.opacity = opct/100;
-  });
+  const ovWrap = document.getElementById('gi-live-ov-wrap');
+  if(ovWrap){
+    ovWrap.style.width   = diamPx + 'px';
+    ovWrap.style.height  = diamPx + 'px';
+    ovWrap.style.left    = cx + 'px';
+    ovWrap.style.top     = cy + 'px';
+    ovWrap.style.opacity = opct / 100;
+    const innerW = diamPx * (100 / cropW);
+    const innerH = diamPx * (100 / cropH);
+    const innerX = -(innerW * cropX / 100);
+    const innerY = -(innerH * cropY / 100);
+    ['gi-live-ov-vid','gi-live-ov-img'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.style.width  = innerW + 'px';
+      el.style.height = innerH + 'px';
+      el.style.left   = innerX + 'px';
+      el.style.top    = innerY + 'px';
+    });
+  }
 }
 
 async function generateIncrust(){
@@ -4362,6 +4404,10 @@ async function generateIncrust(){
   const posY        = document.getElementById('gi-pos-y').value;
   const sizePercent = document.getElementById('gi-size').value;
   const opacityPct  = document.getElementById('gi-opacity').value;
+  const cropX       = document.getElementById('gi-crop-x').value;
+  const cropY       = document.getElementById('gi-crop-y').value;
+  const cropW       = document.getElementById('gi-crop-w').value;
+  const cropH       = document.getElementById('gi-crop-h').value;
 
   const fd = new FormData();
   fd.append('main',    giMainFile,    giMainFile.name);
@@ -4370,6 +4416,10 @@ async function generateIncrust(){
   fd.append('posY',        posY);
   fd.append('sizePercent', sizePercent);
   fd.append('opacity',     (parseFloat(opacityPct)/100).toFixed(3));
+  fd.append('cropX', cropX);
+  fd.append('cropY', cropY);
+  fd.append('cropW', cropW);
+  fd.append('cropH', cropH);
 
   try {
     const resp   = await fetch('/incrust', {method:'POST',body:fd});
