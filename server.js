@@ -130,6 +130,7 @@ const EXTRA_FONTS = [
   { key:'pacifico',  file:'Pacifico-Regular.ttf',  url:'https://github.com/google/fonts/raw/main/ofl/pacifico/Pacifico-Regular.ttf' },
   { key:'spacemono', file:'SpaceMono-Bold.ttf',         url:'https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Bold.ttf' },
   { key:'barlow',    file:'BarlowCondensed-Black.ttf',  url:'https://github.com/google/fonts/raw/main/ofl/barlowcondensed/BarlowCondensed-Black.ttf' },
+  { key:'inter',     file:'Inter-Bold.ttf',             url:'https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Bold.ttf' },
 ];
 
 const FONT_FILES = {
@@ -139,6 +140,7 @@ const FONT_FILES = {
   pacifico:   { assName:'Pacifico-Regular',      path: path.join(FONT_DIR,'Pacifico-Regular.ttf') },
   spacemono:  { assName:'SpaceMono-Bold',        path: path.join(FONT_DIR,'SpaceMono-Bold.ttf') },
   barlow:     { assName:'BarlowCondensed-Black', path: path.join(FONT_DIR,'BarlowCondensed-Black.ttf') },
+  inter:      { assName:'Inter-Bold',            path: path.join(FONT_DIR,'Inter-Bold.ttf') },
 };
 
 let notoFontReady = false;
