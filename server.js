@@ -215,7 +215,7 @@ function getVideoDuration(filePath){
   } catch { return 30; }
 }
 
-function buildSRT(lines, totalDuration, posX, posY){
+function buildSRT(lines, totalDuration, posX, posY, rotation){
   if(!lines || !lines.length) return null;
   const count = lines.length;
   const fmt = t => {
@@ -225,10 +225,10 @@ function buildSRT(lines, totalDuration, posX, posY){
     const ms = Math.round((t%1)*1000);
     return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0')+','+String(ms).padStart(3,'0');
   };
-  // \pos(x,y) en ASS SRT override la position du style global
+  const rot = rotation && rotation !== 0 ? '\\frz'+(-(rotation)) : ''; // ASS \frz = CCW, CSS rotate = CW → negate
   const posTag = (posX !== undefined && posY !== undefined)
-    ? '{\\pos('+posX+','+posY+')}'
-    : '';
+    ? '{\\pos('+posX+','+posY+')'+rot+'}'
+    : (rot ? '{'+rot+'}' : '');
   let srt = '';
   lines.forEach((line,i) => {
     const st = line.start !== undefined ? line.start : (totalDuration/count)*i;
@@ -494,7 +494,8 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     const _yPct = (captionStyle && captionStyle.yPct !== undefined) ? parseFloat(captionStyle.yPct) : 85;
     const posX = Math.round(1080 * _xPct / 100);
     const posY = Math.round(1920 * _yPct / 100);
-    const srtContent = buildSRT(captionLines, duration, posX, posY);
+    const _rot = (captionStyle && captionStyle.rotation) ? parseFloat(captionStyle.rotation) : 0;
+    const srtContent = buildSRT(captionLines, duration, posX, posY, _rot);
     if(srtContent){
       srtPath = path.join(os.tmpdir(), 'ncap_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.srt');
       fs.writeFileSync(srtPath, srtContent, 'utf8');

@@ -1790,7 +1790,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.4.9</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.0</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -3159,10 +3159,9 @@ function handleConvDrop(e){
 // ── CAPTIONS LIBRARY ──────────────────────────────────────────
 
 const CAP_LIB_KEY = 'norys_cap_lib_v2';
-const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, font:'montserrat' };
-// Preview scale: libass renders SRT at PlayResY=288, video is 1920px tall, preview is 320px tall
-// → scale = 320/288 ≈ 1.111
-const ASS_PREVIEW_SCALE = 320 / 288;
+const DEFAULT_EDIT = { color:'#ffffff', bg:'none', size:38, bold:true, xPct:50, yPct:85, strokeWidth:2, strokeColor:'#000000', uppercase:false, font:'montserrat', rotation:0 };
+// libass wraps SRT files with PlayResY=480 (PAL default) — preview is 320px tall
+const ASS_PREVIEW_SCALE = 320 / 480;
 const FONT_CSS_MAP = {
   montserrat: "'Montserrat',Arial,sans-serif",
   anton:      "'Anton','Anton-Regular',Impact,sans-serif",
@@ -3395,6 +3394,9 @@ function syncEditControls(){
   document.querySelectorAll('[data-epv]').forEach(b => b.classList.toggle('active', b.dataset.epv === vPos));
   document.querySelectorAll('[data-eph]').forEach(b => b.classList.toggle('active', b.dataset.eph === hPos));
   document.querySelectorAll('.cap-font-pill').forEach(p => p.classList.toggle('active', p.dataset.fontKey === (s.font || 'montserrat')));
+  const rot = document.getElementById('cap-edit-rot'); if(rot){ rot.value = s.rotation||0; document.getElementById('cap-edit-rot-val').textContent = (s.rotation||0)+'°'; }
+  const xsl = document.getElementById('cap-edit-xpct'); if(xsl){ xsl.value = s.xPct||50; document.getElementById('cap-edit-xpct-val').textContent = Math.round(s.xPct||50)+'%'; }
+  const ysl = document.getElementById('cap-edit-ypct'); if(ysl){ ysl.value = s.yPct||85; document.getElementById('cap-edit-ypct-val').textContent = Math.round(s.yPct||85)+'%'; }
 }
 function renderEditPreview(){
   const zone  = document.getElementById('cap-edit-zone');
@@ -3421,7 +3423,12 @@ function renderEditPreview(){
   inner.style.paintOrder = 'stroke fill';
   inner.style.textShadow = 'none';
   zone.style.left = (s.xPct||50)+'%'; zone.style.top = (s.yPct||85)+'%';
-  zone.style.bottom = 'auto'; zone.style.transform = 'translate(-50%,-50%)';
+  zone.style.bottom = 'auto';
+  const rot = s.rotation || 0;
+  zone.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
+  // sync sliders
+  const xsl = document.getElementById('cap-edit-xpct'); if(xsl){ xsl.value = s.xPct||50; document.getElementById('cap-edit-xpct-val').textContent = Math.round(s.xPct||50)+'%'; }
+  const ysl = document.getElementById('cap-edit-ypct'); if(ysl){ ysl.value = s.yPct||85; document.getElementById('cap-edit-ypct-val').textContent = Math.round(s.yPct||85)+'%'; }
 }
 function applyEditPreset(name){
   const p = PRESETS[name]; if(!p) return;
@@ -4191,16 +4198,25 @@ async function convertFile(input){
             </select>
           </div>
           <div>
-            <div class="ctrl-lbl">Taille</div>
-            <div class="size-row">
-              <input type="range" min="24" max="90" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
-              <span class="size-val" id="cap-edit-sz-val">38px</span>
-            </div>
+            <div class="ctrl-lbl" style="display:flex;justify-content:space-between;margin-bottom:5px;">Rotation <span id="cap-edit-rot-val" style="color:var(--purple2);font-weight:700;">0°</span></div>
+            <input type="range" min="-180" max="180" value="0" id="cap-edit-rot" oninput="editState.rotation=parseInt(this.value);document.getElementById('cap-edit-rot-val').textContent=this.value+'°';renderEditPreview()" style="width:100%;"/>
           </div>
           <div>
-            <div class="ctrl-lbl">Contour <span id="cap-edit-sw-val">2px</span></div>
+            <div class="ctrl-lbl" style="display:flex;justify-content:space-between;margin-bottom:5px;">Position X <span id="cap-edit-xpct-val" style="color:var(--purple2);font-weight:700;">50%</span></div>
+            <input type="range" min="5" max="95" value="50" id="cap-edit-xpct" oninput="editState.xPct=parseInt(this.value);document.getElementById('cap-edit-xpct-val').textContent=this.value+'%';renderEditPreview()" style="width:100%;"/>
+          </div>
+          <div>
+            <div class="ctrl-lbl" style="display:flex;justify-content:space-between;margin-bottom:5px;">Position Y <span id="cap-edit-ypct-val" style="color:var(--purple2);font-weight:700;">85%</span></div>
+            <input type="range" min="5" max="95" value="85" id="cap-edit-ypct" oninput="editState.yPct=parseInt(this.value);document.getElementById('cap-edit-ypct-val').textContent=this.value+'%';renderEditPreview()" style="width:100%;"/>
+          </div>
+          <div>
+            <div class="ctrl-lbl" style="display:flex;justify-content:space-between;margin-bottom:5px;">Taille <span id="cap-edit-sz-val" style="color:var(--purple2);font-weight:700;">38px</span></div>
+            <input type="range" min="12" max="120" value="38" id="cap-edit-size" oninput="document.getElementById('cap-edit-sz-val').textContent=this.value+'px';editState.size=parseInt(this.value);clearEditPresets();renderEditPreview()" style="width:100%;"/>
+          </div>
+          <div>
+            <div class="ctrl-lbl" style="display:flex;justify-content:space-between;margin-bottom:5px;">Contour <span id="cap-edit-sw-val" style="color:var(--purple2);font-weight:700;">2px</span></div>
             <div class="size-row">
-              <input type="range" min="0" max="8" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
+              <input type="range" min="0" max="12" value="2" id="cap-edit-stroke" oninput="document.getElementById('cap-edit-sw-val').textContent=this.value+'px';editState.strokeWidth=parseInt(this.value);clearEditPresets();renderEditPreview()" style="flex:1;"/>
               <div class="swatches" style="gap:4px;">
                 <div class="swatch active" data-esc="#000000" style="background:#000;width:20px;height:20px;" onclick="setEditStroke('#000000',this)"></div>
                 <div class="swatch" data-esc="#ffffff" style="background:#fff;border-color:rgba(255,255,255,.3);width:20px;height:20px;" onclick="setEditStroke('#ffffff',this)"></div>
