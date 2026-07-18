@@ -38,6 +38,7 @@
       "fonts/**/*",
       "assets/**/*",
       "vendor/**/*",
+      "!vendor/whisper/**/*",
       "package.json",
       "node_modules/ffmpeg-static/**/*",
       "node_modules/ffprobe-static/index.js",

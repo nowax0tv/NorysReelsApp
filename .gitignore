@@ -3,3 +3,8 @@ dist_electron
 .DS_Store
 .claude/settings.local.json
 .claude
+
+# Moteur + modèle whisper.cpp (auto-captions IA) : téléchargés à la demande
+# au premier lancement (voir server.js), jamais committés (le modèle seul
+# fait ~148MB, au-delà de ce qui est raisonnable à versionner).
+vendor/whisper

@@ -205,6 +205,342 @@ function downloadExtraFonts(){
   return Promise.all(EXTRA_FONTS.map(f => downloadFontFile(f.file, path.join(FONT_DIR, f.file), f.url)));
 }
 
+// ── AUTO-CAPTIONS IA (whisper.cpp) ──────────────────────────────
+// Transcription vocale locale (hors-ligne) pour générer des captions
+// animées avec timing mot-par-mot, sans dépendre d'une API cloud.
+// Le binaire + le modèle ne sont PAS committés dans le repo (le binaire
+// fait ~2-3MB mais le modèle ~148MB dépasse largement ce qui est
+// raisonnable à versionner) : les deux sont téléchargés à la demande,
+// exactement comme NotoColorEmoji.ttf / Montserrat-Bold.ttf plus haut.
+const WHISPER_DIR        = path.join(__dirname, 'vendor', 'whisper');
+const WHISPER_BIN_DIR    = path.join(WHISPER_DIR, 'win');
+const WHISPER_BIN_PATH   = path.join(WHISPER_BIN_DIR, 'whisper-cli.exe');
+const WHISPER_MODEL_DIR  = path.join(WHISPER_DIR, 'models');
+const WHISPER_MODEL_PATH = path.join(WHISPER_MODEL_DIR, 'ggml-base.bin');
+// Build officiel whisper.cpp v1.9.1 (CPU, x64) — release GitHub ggml-org/whisper.cpp
+const WHISPER_ZIP_URL    = 'https://github.com/ggml-org/whisper.cpp/releases/download/v1.9.1/whisper-bin-x64.zip';
+// Modèle multilingue "base" (FR/EN/...) hébergé par le mainteneur de whisper.cpp sur Hugging Face
+const WHISPER_MODEL_URL  = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
+
+function whisperPlatformSupported(){ return os.platform() === 'win32'; }
+function isWhisperEngineReady(){ try{ return fs.existsSync(WHISPER_BIN_PATH); }catch{ return false; } }
+function isWhisperModelReady(){ try{ return fs.existsSync(WHISPER_MODEL_PATH); }catch{ return false; } }
+
+// Téléchargement générique avec progression (0..1) — écrit dans un .part
+// puis rename atomique, pour ne jamais laisser un fichier tronqué faire
+// croire que le moteur/modèle est prêt après un échec réseau.
+function downloadWithProgress(url, destPath, onProgress){
+  return new Promise((resolve, reject) => {
+    const dir = path.dirname(destPath);
+    if(!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive:true});
+    const tmpPath = destPath + '.part';
+    // Le stream d'écriture n'est ouvert qu'une fois la réponse finale (200)
+    // obtenue — GitHub/HF redirigent en cascade (2-3 sauts) avant le vrai
+    // fichier, et créer/fermer le stream à chaque saut le laissait fermé
+    // par la suite : res.pipe(file) sur un stream déjà clos n'écrivait
+        // plus rien et ne déclenchait jamais 'finish', bloquant le téléchargement indéfiniment sans erreur visible.
+    const request = (u, depth=0) => {
+      if(depth > 5){ reject(new Error('Trop de redirections')); return; }
+      https.get(u, {headers:{'User-Agent':'NorysReels'}}, (res) => {
+        if(res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308){
+          res.resume();
+          return request(res.headers.location, depth+1);
+        }
+        if(res.statusCode !== 200){ reject(new Error('HTTP '+res.statusCode)); return; }
+        const file = fs.createWriteStream(tmpPath);
+        const total = parseInt(res.headers['content-length']||'0', 10);
+        let received = 0;
+        res.on('data', chunk => { received += chunk.length; if(total && onProgress) onProgress(received/total); });
+        res.on('error', (e) => { try{ file.close(); }catch{} try{ fs.unlinkSync(tmpPath); }catch{} reject(e); });
+        file.on('error', (e) => { try{ fs.unlinkSync(tmpPath); }catch{} reject(e); });
+        res.pipe(file);
+        file.on('finish', () => { file.close(() => { fs.renameSync(tmpPath, destPath); resolve(); }); });
+      }).on('error', (e) => { try{ fs.unlinkSync(tmpPath); }catch{} reject(e); });
+    };
+    request(url);
+  });
+}
+
+function unzipWindows(zipPath, destDir){
+  return new Promise((resolve, reject) => {
+    if(!fs.existsSync(destDir)) fs.mkdirSync(destDir, {recursive:true});
+    const { spawn } = require('child_process');
+    const psCmd = "Expand-Archive -LiteralPath '"+zipPath.replace(/'/g,"''")+"' -DestinationPath '"+destDir.replace(/'/g,"''")+"' -Force";
+    const proc = spawn('powershell.exe', ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command', psCmd], {windowsHide:true});
+    let errBuf = '';
+    proc.stderr.on('data', d => errBuf += d.toString());
+    proc.on('close', code => { if(code===0) resolve(); else reject(new Error('Expand-Archive: '+errBuf.slice(-300))); });
+    proc.on('error', reject);
+  });
+}
+
+// Télécharge + installe le moteur whisper.cpp (binaire + DLLs) si absent.
+async function ensureWhisperEngine(onProgress){
+  if(isWhisperEngineReady()) return;
+  if(!whisperPlatformSupported()) throw new Error('Auto-captions IA : disponible uniquement sur Windows pour le moment.');
+  const zipPath = path.join(os.tmpdir(), 'whisper-bin-x64_'+Date.now()+'.zip');
+  await downloadWithProgress(WHISPER_ZIP_URL, zipPath, pct => onProgress && onProgress('engine', pct));
+  const extractTmp = path.join(os.tmpdir(), 'whisper_extract_'+Date.now());
+  await unzipWindows(zipPath, extractTmp);
+  try {
+    const releaseDir = fs.existsSync(path.join(extractTmp,'Release')) ? path.join(extractTmp,'Release') : extractTmp;
+    if(!fs.existsSync(WHISPER_BIN_DIR)) fs.mkdirSync(WHISPER_BIN_DIR, {recursive:true});
+    for(const f of fs.readdirSync(releaseDir)){
+      if(/^(whisper-cli\.exe|whisper\.dll|ggml[\w-]*\.dll)$/i.test(f)){
+        fs.copyFileSync(path.join(releaseDir,f), path.join(WHISPER_BIN_DIR,f));
+      }
+    }
+  } finally {
+    try{ fs.unlinkSync(zipPath); }catch{}
+    try{ fs.rmSync(extractTmp, {recursive:true, force:true}); }catch{}
+  }
+  if(!isWhisperEngineReady()) throw new Error('whisper-cli.exe introuvable après extraction du zip');
+}
+
+async function ensureWhisperModel(onProgress){
+  if(isWhisperModelReady()) return;
+  await downloadWithProgress(WHISPER_MODEL_URL, WHISPER_MODEL_PATH, pct => onProgress && onProgress('model', pct));
+}
+
+// Extrait l'audio en WAV mono 16kHz (format attendu par whisper.cpp).
+function extractAudioForWhisper(videoPath){
+  return new Promise((resolve, reject) => {
+    const wavPath = path.join(os.tmpdir(), 'nwav_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.wav');
+    const { spawn } = require('child_process');
+    const proc = spawn(FFMPEG_BIN, ['-y','-i',videoPath,'-vn','-ac','1','-ar','16000','-c:a','pcm_s16le',wavPath], {windowsHide:true});
+    let errBuf = '';
+    proc.stderr.on('data', d => errBuf += d.toString());
+    proc.on('close', code => {
+      if(code===0 && fs.existsSync(wavPath)) resolve(wavPath);
+      else reject(new Error('Extraction audio échouée: '+errBuf.slice(-300)));
+    });
+    proc.on('error', reject);
+  });
+}
+
+// Lance whisper-cli avec -ml 1 -sow : force un découpage segment-par-segment
+// au mot près (au lieu de phrases entières), condition nécessaire pour avoir
+// un timestamp {start,end} par mot et pouvoir animer chaque mot séparément.
+function transcribeAudio(wavPath, lang){
+  return new Promise((resolve, reject) => {
+    const outBase = wavPath.replace(/\.wav$/i, '');
+    const { spawn } = require('child_process');
+    const args = ['-m', WHISPER_MODEL_PATH, '-f', wavPath, '-l', lang||'auto', '-ml','1', '-sow', '-oj', '-of', outBase, '-np', '-nt'];
+    const proc = spawn(WHISPER_BIN_PATH, args, {windowsHide:true, cwd:WHISPER_BIN_DIR});
+    let errBuf = '';
+    proc.stderr.on('data', d => errBuf += d.toString());
+    proc.on('close', () => {
+      const jsonPath = outBase+'.json';
+      if(!fs.existsSync(jsonPath)){ reject(new Error('Transcription échouée: '+errBuf.slice(-400))); return; }
+      try {
+        const data  = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        const words = (data.transcription||[])
+          .map(seg => ({ text:(seg.text||'').trim(), start:(seg.offsets.from)/1000, end:(seg.offsets.to)/1000 }))
+          .filter(w => w.text);
+        resolve(words);
+      } catch(e){ reject(e); }
+      finally { try{ fs.unlinkSync(jsonPath); }catch{} }
+    });
+    proc.on('error', reject);
+  });
+}
+
+// Regroupe les mots en courtes séquences affichées à l'écran (~28 caractères
+// / 6 mots max, comme les standards CapCut/Submagic), sans jamais couper un
+// mot au milieu.
+function groupWordsIntoChunks(words, maxChars, maxWords){
+  maxChars = maxChars || 28;
+  maxWords = maxWords || 6;
+  const chunks = [];
+  let cur = [], curLen = 0;
+  for(const w of words){
+    const wlen = w.text.length + 1;
+    if(cur.length && (curLen + wlen > maxChars || cur.length >= maxWords)){
+      chunks.push(cur);
+      cur = []; curLen = 0;
+    }
+    cur.push(w); curLen += wlen;
+  }
+  if(cur.length) chunks.push(cur);
+  return chunks.map(cw => ({
+    words: cw,
+    start: cw[0].start,
+    end:   cw[cw.length-1].end,
+    text:  cw.map(w=>w.text).join(' '),
+  }));
+}
+
+function assEscapeText(s){
+  return String(s).replace(/\\/g,'\\\\').replace(/[{}]/g,'').replace(/\r?\n/g,' ');
+}
+function assTimestamp(t){
+  t = Math.max(0, t);
+  const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60;
+  return h+':'+String(m).padStart(2,'0')+':'+s.toFixed(2).padStart(5,'0');
+}
+function resolveAssFont(fontKey){
+  const fontInfo = FONT_FILES[fontKey] || FONT_FILES.montserrat;
+  return fs.existsSync(fontInfo.path) ? fontInfo.assName
+    : fs.existsSync(MONTSERRAT_PATH) ? 'Montserrat-Bold' : 'Arial';
+}
+
+// Template "Karaoke surligné" : chaque chunk de mots reste affiché en entier,
+// avec UNE ligne Dialogue par mot du chunk — seul le mot en cours de lecture
+// est colorié en accent, le reste en couleur de base. Volontairement NON
+// cumulatif (contrairement au tag natif ASS \k) pour retrouver le rendu
+// "un seul mot en surbrillance à la fois" de Opus Pro / Submagic plutôt que
+// l'effet karaoké chanson qui garde tous les mots précédents surlignés.
+function buildKaraokeASS(chunks, style, W, H){
+  style = style || {};
+  const baseColor    = hexToASS(style.color        || '#FFFFFF');
+  const accentColor  = hexToASS(style.accentColor  || '#39FF14');
+  const outlineColor = hexToASS(style.strokeColor  || '#000000');
+  const size         = parseInt(style.size) || 64;
+  const outline      = style.strokeWidth !== undefined ? parseFloat(style.strokeWidth) : 4;
+  const fontName     = resolveAssFont(style.font);
+  const xPct = style.xPct !== undefined ? parseFloat(style.xPct) : 50;
+  const yPct = style.yPct !== undefined ? parseFloat(style.yPct) : 78;
+  const posX = Math.round(W*xPct/100), posY = Math.round(H*yPct/100);
+
+  const lines = [];
+  for(const chunk of chunks){
+    const cw = chunk.words;
+    for(let i=0;i<cw.length;i++){
+      const start = cw[i].start;
+      const end   = (i < cw.length-1) ? cw[i+1].start : chunk.end;
+      if(end <= start) continue;
+      const text = cw.map((w,j) => '{\\c'+(j===i?accentColor:baseColor)+'}'+assEscapeText(w.text)).join(' ');
+      lines.push('Dialogue: 0,'+assTimestamp(start)+','+assTimestamp(end)+',K,,0,0,0,,{\\pos('+posX+','+posY+')}'+text);
+    }
+  }
+  return [
+    '[Script Info]','ScriptType: v4.00+','PlayResX: '+W,'PlayResY: '+H,'',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    'Style: K,'+fontName+','+size+','+baseColor+','+baseColor+','+outlineColor+',&H00000000,-1,0,0,0,100,100,0,0,1,'+outline+',0,5,40,40,40,1',
+    '','[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ...lines, '',
+  ].join('\n');
+}
+
+// Template "Mot unique géant" (façon TikTok) : un seul mot énorme à l'écran
+// à la fois, avec un petit effet de "pop" (zoom-in rapide) à l'apparition.
+function buildBigWordASS(words, style, W, H){
+  style = style || {};
+  const color        = hexToASS(style.color       || '#FFFFFF');
+  const outlineColor = hexToASS(style.strokeColor || '#000000');
+  const size         = parseInt(style.size) || 100;
+  const outline      = style.strokeWidth !== undefined ? parseFloat(style.strokeWidth) : 5;
+  const fontName     = resolveAssFont(style.font);
+  const xPct = style.xPct !== undefined ? parseFloat(style.xPct) : 50;
+  const yPct = style.yPct !== undefined ? parseFloat(style.yPct) : 50;
+  const posX = Math.round(W*xPct/100), posY = Math.round(H*yPct/100);
+  const uppercase = !!style.uppercase;
+
+  const lines = words.map(w => {
+    if(w.end <= w.start) return null;
+    const txt = assEscapeText(uppercase ? w.text.toUpperCase() : w.text);
+    const pop = '{\\fscx72\\fscy72\\t(0,110,\\fscx100\\fscy100)}';
+    return 'Dialogue: 0,'+assTimestamp(w.start)+','+assTimestamp(w.end)+',B,,0,0,0,,{\\pos('+posX+','+posY+')}'+pop+txt;
+  }).filter(Boolean);
+
+  return [
+    '[Script Info]','ScriptType: v4.00+','PlayResX: '+W,'PlayResY: '+H,'',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    'Style: B,'+fontName+','+size+','+color+','+color+','+outlineColor+',&H00000000,-1,0,0,0,100,100,0,0,1,'+outline+',0,5,40,40,40,1',
+    '','[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ...lines, '',
+  ].join('\n');
+}
+
+// Template "Sous-titres classiques" : une phrase courte à la fois, style
+// unique (pas de surbrillance mot par mot), mais avec un vrai timing
+// mot-par-mot (contrairement aux sous-titres manuels existants qui répartissent
+// le texte uniformément sur toute la durée faute de timing réel). Génère son
+// propre .ass (plutôt que de repasser par generateVariant()/buildCaptionFilter,
+// pensés pour les templates manuels) pour : déclarer PlayResX/Y correctement
+// et éviter le -ss aléatoire + les fausses métadonnées iPhone/GPS que
+// generateVariant() applique par défaut pour la génération de variantes.
+function buildClassicASS(chunks, style, W, H){
+  style = style || {};
+  const color        = hexToASS(style.color       || '#FFFFFF');
+  const outlineColor = hexToASS(style.strokeColor || '#000000');
+  const size         = parseInt(style.size) || 56;
+  const bold         = style.bold !== false ? -1 : 0;
+  const outline      = style.strokeWidth !== undefined ? parseFloat(style.strokeWidth) : 3;
+  const fontName     = resolveAssFont(style.font);
+  const xPct = style.xPct !== undefined ? parseFloat(style.xPct) : 50;
+  const yPct = style.yPct !== undefined ? parseFloat(style.yPct) : 85;
+  const posX = Math.round(W*xPct/100), posY = Math.round(H*yPct/100);
+
+  const lines = chunks.map(c => {
+    if(c.end <= c.start) return null;
+    return 'Dialogue: 0,'+assTimestamp(c.start)+','+assTimestamp(c.end)+',C,,0,0,0,,{\\pos('+posX+','+posY+')}'+assEscapeText(c.text);
+  }).filter(Boolean);
+
+  return [
+    '[Script Info]','ScriptType: v4.00+','PlayResX: '+W,'PlayResY: '+H,'',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    'Style: C,'+fontName+','+size+','+color+','+color+','+outlineColor+',&H00000000,'+bold+',0,0,0,100,100,0,0,1,'+outline+',0,5,40,40,40,1',
+    '','[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ...lines, '',
+  ].join('\n');
+}
+
+function buildAssCaptionFilter(assPath, fontDir){
+  const escaped = assPath.replace(/\\/g,'/').replace(/:/g,'\\:').replace(/'/g,"\\'");
+  const fontsDirArg = fontDir ? ':fontsdir=\'' + fontDir.replace(/\\/g,'/').replace(/:/g,'\\:') + '\'' : '';
+  return "subtitles='"+escaped+"'"+fontsDirArg;
+}
+
+// Grave un fichier .ass (déjà stylé, une Dialogue par mot) dans la vidéo —
+// même logique d'encodage que generateVariant() mais sans les à-côtés
+// (filtres visuels, musique, métadonnées) qui ne s'appliquent pas ici.
+function burnAssCaptions(inputFile, outputFile, assPath, fontDir, totalDur, onProgress){
+  return new Promise((resolve) => {
+    const vf = buildAssCaptionFilter(assPath, fontDir) + ',format=yuv420p';
+    const args = [
+      '-y', '-i', inputFile,
+      '-vf', vf,
+      '-c:v', 'libx264', '-profile:v', 'high', '-level', '4.0',
+      '-crf', '21', '-preset', 'fast',
+      '-maxrate', '6M', '-bufsize', '12M',
+      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
+      '-movflags', '+faststart',
+      outputFile,
+    ];
+    const { spawn } = require('child_process');
+    const fullArgs = ['-progress','pipe:1','-nostats', ...args];
+    console.log('=== AUTO-CAPTIONS CMD ===', FFMPEG_BIN, fullArgs.join(' '));
+    const proc = spawn(FFMPEG_BIN, fullArgs, {windowsHide:true});
+    let buf = '', stderrFull = '';
+    const killTimer = setTimeout(()=>{ try{proc.kill('SIGKILL');}catch{} }, 600000);
+    proc.stdout.on('data', chunk => {
+      buf += chunk.toString();
+      const ls = buf.split('\n'); buf = ls.pop();
+      for(const line of ls){
+        const m = line.match(/^out_time_ms=(\d+)/);
+        if(m && onProgress && totalDur > 0){
+          const pct = Math.min(99, Math.round((parseInt(m[1],10)/1e6)/totalDur*100));
+          onProgress(pct);
+        }
+      }
+    });
+    proc.stderr.on('data', c => stderrFull += c.toString());
+    proc.on('close', code => {
+      clearTimeout(killTimer);
+      if(code===0) resolve(true);
+      else { console.error('FFmpeg auto-captions (code '+code+'):', stderrFull.slice(-1500)); resolve(false); }
+    });
+    proc.on('error', e => { clearTimeout(killTimer); console.error('FFmpeg spawn:', e.message); resolve(false); });
+  });
+}
+
 // ── CAPTION UTILS ─────────────────────────────────────────────
 
 function getVideoDuration(filePath){
@@ -1112,6 +1448,121 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Statut moteur auto-captions IA (whisper.cpp) — utilisé par l'UI pour
+  // savoir si un téléchargement (binaire/modèle) sera nécessaire avant de
+  // lancer la génération, et afficher la taille attendue à l'utilisateur.
+  if(req.url === '/whisper-status'){
+    res.writeHead(200,{'Content-Type':'application/json'});
+    res.end(JSON.stringify({
+      supported: whisperPlatformSupported(),
+      engineReady: isWhisperEngineReady(),
+      modelReady: isWhisperModelReady(),
+    }));
+    return;
+  }
+
+  // ── Auto-captions IA (whisper.cpp) ────────────────────────────
+  // 1 vidéo en entrée → transcription vocale locale mot-par-mot → captions
+  // animées gravées selon le template choisi (karaoke / mot géant / classique).
+  if(req.url === '/auto-captions' && req.method === 'POST'){
+    res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', async () => {
+      let videoTmp = null, wavPath = null, assPath = null;
+      try {
+        const body   = Buffer.concat(chunks);
+        const bMatch = (req.headers['content-type']||'').match(/boundary=([^\s;]+)/);
+        if(!bMatch){ res.end(); return; }
+        const parts = parseMultipart(body, bMatch[1]);
+
+        let templateId = 'karaoke';
+        let lang       = 'auto';
+        let style      = {};
+        let videoName  = 'video.mp4';
+        for(const p of parts){
+          if(p.name==='videos' && p.filename){
+            const ext = path.extname(p.filename)||'.mp4';
+            videoName = p.filename;
+            videoTmp  = path.join(os.tmpdir(),'nauto_'+Date.now()+'_'+Math.random().toString(36).slice(2)+ext);
+            fs.writeFileSync(videoTmp, p.data);
+          } else {
+            const val = p.data.toString('utf8').trim();
+            if(p.name==='templateId') templateId = val;
+            else if(p.name==='lang')  lang = val;
+            else if(p.name==='style'){ try{ style = JSON.parse(val); }catch{} }
+          }
+        }
+        if(!videoTmp){ send(res,{type:'error',msg:'Aucune vidéo reçue'}); res.end(); return; }
+
+        if(!whisperPlatformSupported()){
+          send(res,{type:'error',msg:'Auto-captions IA : disponible uniquement sur Windows pour le moment.'});
+          res.end(); return;
+        }
+
+        if(!isWhisperEngineReady()){
+          send(res,{type:'setup',what:'engine',pct:0});
+          await ensureWhisperEngine((what,pct)=>send(res,{type:'setup',what,pct:Math.round(pct*100)}));
+        }
+        if(!isWhisperModelReady()){
+          send(res,{type:'setup',what:'model',pct:0});
+          await ensureWhisperModel((what,pct)=>send(res,{type:'setup',what,pct:Math.round(pct*100)}));
+        }
+
+        send(res,{type:'status',msg:'extracting'});
+        wavPath = await extractAudioForWhisper(videoTmp);
+
+        send(res,{type:'status',msg:'transcribing'});
+        const words = await transcribeAudio(wavPath, lang);
+        try{ fs.unlinkSync(wavPath); }catch{}
+        wavPath = null;
+
+        if(!words.length){
+          send(res,{type:'error',msg:"Aucune parole détectée dans cette vidéo."});
+          res.end(); return;
+        }
+
+        const info    = probeVideoInfo(videoTmp);
+        const chunks_ = groupWordsIntoChunks(words, style.maxChars, style.maxWords);
+
+        const base    = path.basename(videoName, path.extname(videoName));
+        const outName = base + '_autocaptions.mp4';
+        const outDir  = path.join(os.homedir(),'Desktop','Norys Reels Output');
+        if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
+        const outPath = path.join(outDir, outName);
+
+        send(res,{type:'status',msg:'rendering'});
+
+        const fontDir = fs.existsSync(FONT_PATH) ? path.dirname(FONT_PATH) : null;
+        const assContent = templateId === 'bigword'  ? buildBigWordASS(words, style, info.width, info.height)
+                          : templateId === 'classic'  ? buildClassicASS(chunks_, style, info.width, info.height)
+                          : buildKaraokeASS(chunks_, style, info.width, info.height);
+        assPath = path.join(os.tmpdir(), 'nass_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.ass');
+        fs.writeFileSync(assPath, assContent, 'utf8');
+        const ok = await burnAssCaptions(videoTmp, outPath, assPath, fontDir, info.duration, (pct)=>{
+          send(res,{type:'progress',pct});
+        });
+
+        if(ok){
+          const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
+          send(res,{type:'done',file:outName,size,path:outPath});
+        } else {
+          send(res,{type:'error',msg:'Erreur FFmpeg pendant la génération des captions'});
+        }
+        res.end();
+      } catch(err){
+        console.error('Auto-captions error:', err);
+        send(res,{type:'error',msg:err.message});
+        res.end();
+      } finally {
+        if(videoTmp) try{ fs.unlinkSync(videoTmp); }catch{}
+        if(wavPath)  try{ fs.unlinkSync(wavPath); }catch{}
+        if(assPath)  try{ fs.unlinkSync(assPath); }catch{}
+      }
+    });
+    return;
+  }
+
 
   // ── Incrustation GIF / vidéo ─────────────────────────────────
   if(req.url === '/incrust' && req.method === 'POST'){
@@ -1365,6 +1816,136 @@ const server = http.createServer((req, res) => {
         if(videoTmp) try{fs.unlinkSync(videoTmp);}catch{}
         if(imageTmp) try{fs.unlinkSync(imageTmp);}catch{}
         console.error('FastCut error:',err);
+        send(res,{type:'error',msg:err.message});
+        res.end();
+      }
+    });
+    return;
+  }
+
+  if(req.url === '/startcut' && req.method === 'POST'){
+    res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Transfer-Encoding':'chunked','Cache-Control':'no-cache'});
+    const chunks = [];
+    req.on('data', c=>chunks.push(c));
+    req.on('end', async ()=>{
+      let videoTmp=null, imageTmp=null;
+      try {
+        const body   = Buffer.concat(chunks);
+        const bMatch = (req.headers['content-type']||'').match(/boundary=([^\s;]+)/);
+        if(!bMatch){ res.end(); return; }
+        const parts  = parseMultipart(body, bMatch[1]);
+
+        let blackDuration=1, photoDuration=1.5;
+        for(const p of parts){
+          const val = p.data.toString('utf8').trim();
+          if(p.name==='blackDuration')      blackDuration = Math.max(0, Math.min(30, parseFloat(val)||0));
+          else if(p.name==='photoDuration') photoDuration = Math.max(0.1, Math.min(30, parseFloat(val)||1.5));
+          else if(p.name==='video' && p.filename){
+            const ext = path.extname(p.filename)||'.mp4';
+            videoTmp = path.join(os.tmpdir(),'sc_vid_'+Date.now()+ext);
+            fs.writeFileSync(videoTmp, p.data);
+          }
+          else if(p.name==='image' && p.filename){
+            const ext = path.extname(p.filename)||'.jpg';
+            imageTmp = path.join(os.tmpdir(),'sc_img_'+Date.now()+ext);
+            fs.writeFileSync(imageTmp, p.data);
+          }
+        }
+
+        if(!videoTmp||!imageTmp){ send(res,{type:'error',msg:'Fichiers manquants'}); res.end(); return; }
+
+        const info = probeVideoInfo(videoTmp);
+        const { width:W, height:H, duration:totalDur, hasAudio, fps } = info;
+        const B = blackDuration;
+        const D = photoDuration;
+
+        const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
+        if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
+        const outName = 'startcut_'+Date.now()+'.mp4';
+        const outPath = path.join(outDir, outName);
+
+        const scParts = [];
+        const segments = [];
+        if(B > 0){
+          scParts.push(`[0:v]format=yuv420p,setsar=1[vblack]`);
+          segments.push('vblack');
+        }
+        scParts.push(`[1:v]trim=0:${D},setpts=PTS-STARTPTS,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[vphoto]`);
+        segments.push('vphoto');
+        scParts.push(`[2:v]format=yuv420p,setsar=1[vvid]`);
+        segments.push('vvid');
+        scParts.push(`${segments.map(s=>'['+s+']').join('')}concat=n=${segments.length}:v=1:a=0[vout]`);
+
+        if(hasAudio){
+          const aSegments = [];
+          if(B > 0){
+            scParts.push(`anullsrc=channel_layout=stereo:sample_rate=44100:duration=${B}[ablack]`);
+            aSegments.push('ablack');
+          }
+          scParts.push(`anullsrc=channel_layout=stereo:sample_rate=44100:duration=${D}[aphoto]`);
+          aSegments.push('aphoto');
+          scParts.push(`[2:a]asetpts=PTS-STARTPTS[avid]`);
+          aSegments.push('avid');
+          scParts.push(`${aSegments.map(s=>'['+s+']').join('')}concat=n=${aSegments.length}:v=0:a=1[aout]`);
+        }
+
+        const ffArgs = [
+          '-y',
+          '-f','lavfi','-i', `color=c=black:s=${W}x${H}:r=${fps}:d=${Math.max(B,0.04)}`,
+          '-loop','1','-t', String(D+0.1), '-i', imageTmp,
+          '-i', videoTmp,
+          '-filter_complex', scParts.join(';'),
+          '-map','[vout]',
+          ...(hasAudio ? ['-map','[aout]'] : []),
+          '-c:v','libx264','-preset','fast','-crf','23','-pix_fmt','yuv420p',
+          ...(hasAudio ? ['-c:a','aac','-b:a','192k'] : []),
+          outPath
+        ];
+
+        send(res,{type:'start'});
+        const outputDur = B + D + totalDur;
+
+        const ok = await new Promise(resolve=>{
+          const { spawn } = require('child_process');
+          const fullArgs = ['-progress','pipe:1','-nostats',...ffArgs];
+          console.log('=== STARTCUT ===', FFMPEG_BIN, fullArgs.join(' '));
+          const proc = spawn(FFMPEG_BIN, fullArgs, {windowsHide:true});
+          let buf='', stderrFull='';
+          const kill = setTimeout(()=>{ try{proc.kill('SIGKILL');}catch{} }, 300000);
+          proc.stdout.on('data', chunk=>{
+            buf += chunk.toString();
+            const lines = buf.split('\n'); buf = lines.pop();
+            for(const line of lines){
+              const m = line.match(/^out_time_ms=(\d+)/);
+              if(m && outputDur > 0){
+                const pct = Math.min(99, Math.round((parseInt(m[1],10)/1e6)/outputDur*100));
+                send(res,{type:'progress',pct});
+              }
+            }
+          });
+          proc.stderr.on('data', c=>{ stderrFull += c.toString(); });
+          proc.on('error', e=>{ clearTimeout(kill); console.error('FFmpeg startcut spawn:',e.message); resolve(false); });
+          proc.on('close', code=>{
+            clearTimeout(kill);
+            if(code===0){ send(res,{type:'progress',pct:100}); resolve(true); }
+            else { console.error('FFmpeg startcut (code '+code+'):',stderrFull.slice(-1500)); resolve(false); }
+          });
+        });
+
+        if(videoTmp) try{fs.unlinkSync(videoTmp);}catch{}
+        if(imageTmp) try{fs.unlinkSync(imageTmp);}catch{}
+
+        if(ok){
+          const size = (fs.statSync(outPath).size/1024/1024).toFixed(1);
+          send(res,{type:'done',file:outName,size,path:outPath});
+        } else {
+          send(res,{type:'error',msg:'Erreur FFmpeg — vérifier les logs serveur'});
+        }
+        res.end();
+      } catch(err){
+        if(videoTmp) try{fs.unlinkSync(videoTmp);}catch{}
+        if(imageTmp) try{fs.unlinkSync(imageTmp);}catch{}
+        console.error('StartCut error:',err);
         send(res,{type:'error',msg:err.message});
         res.end();
       }

@@ -1821,6 +1821,10 @@
         <span class="nav-step-icon" data-icon="scissors"></span> <span>Fast Cut</span>
         <span class="nav-step-badge">optionnel</span>
       </div>
+      <div class="nav-step" id="nav-startcut" onclick="goPage('startcut')">
+        <span class="nav-step-icon" data-icon="clapperboard"></span> <span>Start Cut</span>
+        <span class="nav-step-badge">optionnel</span>
+      </div>
       <div class="nav-step" id="nav-incrust" onclick="goPage('incrust')">
         <span class="nav-step-icon" data-icon="layers"></span> <span>Incrustation</span>
         <span class="nav-step-badge">optionnel</span>
@@ -1952,6 +1956,82 @@
       </div>
     </div>
 
+    <!-- PAGE : START CUT -->
+    <div class="page" id="page-startcut">
+      <div class="page-inner">
+        <div class="section-head">
+          <div class="section-title">🎬 Start Cut</div>
+          <div class="section-desc">Ajoute un écran noir puis une photo au tout début de ta vidéo — contrôle la durée de chaque étape</div>
+          <div class="optional-note">Outil optionnel — utile pour créer une intro écran noir + photo avant ta vidéo.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Fichiers</div>
+          <div class="fc-drop-grid">
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Vidéo</div>
+              <div class="fc-drop" id="sc-vid-drop" onclick="document.getElementById('sc-vid-input').click()" ondrop="handleScVideoDrop(event)" ondragover="event.preventDefault()">
+                <video id="sc-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="sc-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🎬</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                  <div style="font-size:10px;">MP4 · MOV · AVI</div>
+                </div>
+                <input type="file" id="sc-vid-input" accept="video/*" style="display:none" onchange="loadScVideo(this)"/>
+              </div>
+              <div id="sc-vid-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Photo / Image</div>
+              <div class="fc-drop" id="sc-img-drop" onclick="document.getElementById('sc-img-input').click()" ondrop="handleScImageDrop(event)" ondragover="event.preventDefault()">
+                <img id="sc-img-preview" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt=""/>
+                <div id="sc-img-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🖼️</span>
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);">Glisse ta photo</div>
+                  <div style="font-size:10px;">JPG · PNG · WEBP</div>
+                </div>
+                <input type="file" id="sc-img-input" accept="image/*" style="display:none" onchange="loadScImage(this)"/>
+              </div>
+              <div id="sc-img-name" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Paramètres de l'intro</div>
+          <div style="margin-bottom:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span class="ctrl-lbl" style="margin:0;">Durée de l'écran noir</span>
+              <span id="sc-black-val" style="color:var(--purple2);font-weight:700;font-size:12px;">1.0s</span>
+            </div>
+            <input type="range" id="sc-black-slider" min="0" max="10" step="0.1" value="1"
+                   oninput="document.getElementById('sc-black-val').textContent=parseFloat(this.value).toFixed(1)+'s'"
+                   style="width:100%;"/>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">Combien de temps l'écran reste noir au tout début</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span class="ctrl-lbl" style="margin:0;">Durée de la photo</span>
+              <span id="sc-photo-val" style="color:var(--purple2);font-weight:700;font-size:12px;">1.5s</span>
+            </div>
+            <input type="range" id="sc-photo-slider" min="0.1" max="10" step="0.1" value="1.5"
+                   oninput="document.getElementById('sc-photo-val').textContent=parseFloat(this.value).toFixed(1)+'s'"
+                   style="width:100%;"/>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">Combien de temps la photo reste à l'écran, juste après le noir</div>
+          </div>
+        </div>
+
+        <button class="export-btn" id="sc-gen-btn" onclick="generateStartCut()" style="margin-top:16px;opacity:.4;pointer-events:none;">🎬 Générer le start cut</button>
+
+        <div id="sc-progress-wrap" style="display:none;margin-top:14px;">
+          <div class="prog-bar-wrap"><div class="prog-bar" id="sc-prog-bar" style="width:0%;"></div></div>
+          <div id="sc-status" style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px;"></div>
+        </div>
+
+        <div id="sc-result" style="display:none;margin-top:12px;"></div>
+      </div>
+    </div>
+
     <!-- PAGE : INCRUSTATION GIF -->
     <div class="page" id="page-incrust">
       <div class="page-inner">
@@ -2075,49 +2155,141 @@
       <div class="page-inner">
         <div class="section-head">
           <div class="section-title">📝 Captions</div>
-          <div class="section-desc">Bibliothèque de templates personnels · glisse une vidéo · génère 1 vidéo par caption</div>
+          <div class="section-desc" id="cap-mode-desc">Bibliothèque de templates personnels · glisse une vidéo · génère 1 vidéo par caption</div>
         </div>
 
-        <!-- Main grid: library (left) + video/generate (right) -->
-        <div class="cap-page-grid">
+        <div class="bg-row" style="margin-bottom:14px;">
+          <div class="bg-btn active" id="cap-mode-manual-btn" onclick="setCapMode('manual')">📝 Mes templates</div>
+          <div class="bg-btn" id="cap-mode-auto-btn" onclick="setCapMode('auto')">✨ Auto (IA)</div>
+        </div>
 
-          <!-- Library -->
-          <div>
-            <div class="cap-lib-head">
-              <div class="ctrl-lbl" style="margin:0;">Ma bibliothèque</div>
-              <button class="btn-xs" onclick="openCapEditor(null)">＋ Nouveau template</button>
-            </div>
-            <div class="cap-tpl-grid" id="cap-tpl-grid">
-              <div class="cap-tpl-empty" id="cap-tpl-empty">
-                <span style="font-size:24px;">📝</span>
-                <div style="font-weight:700;color:var(--text2);">Aucun template</div>
-                <div>Clique sur «＋ Nouveau template» pour commencer</div>
+        <!-- MODE MANUEL : bibliothèque de templates -->
+        <div id="cap-mode-manual">
+          <!-- Main grid: library (left) + video/generate (right) -->
+          <div class="cap-page-grid">
+
+            <!-- Library -->
+            <div>
+              <div class="cap-lib-head">
+                <div class="ctrl-lbl" style="margin:0;">Ma bibliothèque</div>
+                <button class="btn-xs" onclick="openCapEditor(null)">＋ Nouveau template</button>
+              </div>
+              <div class="cap-tpl-grid" id="cap-tpl-grid">
+                <div class="cap-tpl-empty" id="cap-tpl-empty">
+                  <span style="font-size:24px;">📝</span>
+                  <div style="font-weight:700;color:var(--text2);">Aucun template</div>
+                  <div>Clique sur «＋ Nouveau template» pour commencer</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Video + Generate -->
-          <div class="cap-right-col">
-            <div class="ctrl-lbl">Vidéo source</div>
-            <div class="cap-vidrop" id="cap-vidrop"
-                 onclick="document.getElementById('cap-vid-input').click()"
-                 ondrop="handleCapGenDrop(event)" ondragover="event.preventDefault()">
-              <video id="cap-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
-              <div id="cap-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
-                <span style="font-size:26px;">🎬</span>
-                <div style="font-size:11px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
-                <div style="font-size:10px;">MP4 · MOV · AVI</div>
+            <!-- Video + Generate -->
+            <div class="cap-right-col">
+              <div class="ctrl-lbl">Vidéo source</div>
+              <div class="cap-vidrop" id="cap-vidrop"
+                   onclick="document.getElementById('cap-vid-input').click()"
+                   ondrop="handleCapGenDrop(event)" ondragover="event.preventDefault()">
+                <video id="cap-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="cap-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🎬</span>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                  <div style="font-size:10px;">MP4 · MOV · AVI</div>
+                </div>
+                <input type="file" id="cap-vid-input" accept="video/*" style="display:none" onchange="loadCapGenVideo(this)"/>
               </div>
-              <input type="file" id="cap-vid-input" accept="video/*" style="display:none" onchange="loadCapGenVideo(this)"/>
-            </div>
 
-            <div class="cap-sel-pill" id="cap-sel-pill">0 sélectionné</div>
-            <button class="export-btn" id="cap-gen-btn" onclick="generateWithTemplates()" style="opacity:.4;pointer-events:none;">⚡ Générer <span id="cap-gen-count">0</span> vidéo(s)</button>
-            <div id="cap-gen-status" style="font-size:11px;color:var(--text2);text-align:center;"></div>
-            <div class="cap-gen-results" id="cap-gen-results" style="display:none;"></div>
+              <div class="cap-sel-pill" id="cap-sel-pill">0 sélectionné</div>
+              <button class="export-btn" id="cap-gen-btn" onclick="generateWithTemplates()" style="opacity:.4;pointer-events:none;">⚡ Générer <span id="cap-gen-count">0</span> vidéo(s)</button>
+              <div id="cap-gen-status" style="font-size:11px;color:var(--text2);text-align:center;"></div>
+              <div class="cap-gen-results" id="cap-gen-results" style="display:none;"></div>
+            </div>
           </div>
         </div>
 
+        <!-- MODE AUTO (IA) : transcription automatique + templates animés -->
+        <div id="cap-mode-auto" style="display:none;">
+          <div class="cap-page-grid">
+
+            <!-- Templates -->
+            <div>
+              <div class="ctrl-lbl" style="margin-bottom:10px;">Style de caption</div>
+              <div class="cap-tpl-grid" id="autocap-tpl-grid">
+                <div class="cap-tpl-card cap-sel" id="autocap-tpl-karaoke" onclick="selectAutoTemplate('karaoke')">
+                  <div class="cap-tpl-prev" style="background:#12122a;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:13px;text-align:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);">And so my <span style="color:#39FF14;">fellow</span> Americans</div>
+                  </div>
+                  <div class="cap-tpl-foot"><div class="cap-tpl-nm">Karaoke surligné</div></div>
+                </div>
+                <div class="cap-tpl-card" id="autocap-tpl-bigword" onclick="selectAutoTemplate('bigword')">
+                  <div class="cap-tpl-prev" style="background:#12122a;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:22px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);">FELLOW</div>
+                  </div>
+                  <div class="cap-tpl-foot"><div class="cap-tpl-nm">Mot unique géant</div></div>
+                </div>
+                <div class="cap-tpl-card" id="autocap-tpl-classic" onclick="selectAutoTemplate('classic')">
+                  <div class="cap-tpl-prev" style="background:#12122a;">
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;text-align:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);">And so my fellow Americans</div>
+                  </div>
+                  <div class="cap-tpl-foot"><div class="cap-tpl-nm">Sous-titres classiques</div></div>
+                </div>
+              </div>
+
+              <div class="ctrl-lbl" style="margin:14px 0 8px;">Réglages</div>
+              <div class="cap-grid-2">
+                <div>
+                  <div class="ctrl-lbl">Langue parlée</div>
+                  <select class="select-s" id="autocap-lang-select">
+                    <option value="auto">🌐 Auto-détection</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="en">🇬🇧 Anglais</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="ctrl-lbl">Position</div>
+                  <div class="bg-row">
+                    <div class="bg-btn" onclick="setAutoCapPos(20)">Haut</div>
+                    <div class="bg-btn" onclick="setAutoCapPos(50)">Milieu</div>
+                    <div class="bg-btn active" id="autocap-pos-bottom" onclick="setAutoCapPos(78)">Bas</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cap-grid-2" style="margin-top:10px;">
+                <div>
+                  <div class="ctrl-lbl">Couleur du texte</div>
+                  <input type="color" id="autocap-color" value="#ffffff"/>
+                </div>
+                <div id="autocap-accent-row">
+                  <div class="ctrl-lbl">Couleur surlignée</div>
+                  <input type="color" id="autocap-accent" value="#39ff14"/>
+                </div>
+              </div>
+              <div class="toggle-row" id="autocap-uppercase-row" style="display:none;margin-top:10px;">
+                <span>MAJUSCULES</span>
+                <label class="toggle-sw"><input type="checkbox" id="autocap-uppercase"/><span class="toggle-sl"></span></label>
+              </div>
+            </div>
+
+            <!-- Video + Generate -->
+            <div class="cap-right-col">
+              <div class="ctrl-lbl">Vidéo source</div>
+              <div class="cap-vidrop" id="autocap-vidrop"
+                   onclick="document.getElementById('autocap-vid-input').click()"
+                   ondrop="handleAutoCapDrop(event)" ondragover="event.preventDefault()">
+                <video id="autocap-vid-preview" playsinline muted loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;"></video>
+                <div id="autocap-vid-ph" style="display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text3);pointer-events:none;">
+                  <span style="font-size:26px;">🎬</span>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);">Glisse ta vidéo</div>
+                  <div style="font-size:10px;">MP4 · MOV · AVI</div>
+                </div>
+                <input type="file" id="autocap-vid-input" accept="video/*" style="display:none" onchange="loadAutoCapVideo(this)"/>
+              </div>
+
+              <button class="export-btn" id="autocap-gen-btn" onclick="generateAutoCaptions()" style="opacity:.4;pointer-events:none;">✨ Générer les captions</button>
+              <div id="autocap-status" style="font-size:11px;color:var(--text2);text-align:center;"></div>
+              <div class="cap-gen-results" id="autocap-results" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -2391,7 +2563,7 @@
 // Plus de séquence imposée : "Générer" est l'onglet principal (tout ce
 // qu'il faut pour lancer une génération y est regroupé), les autres sont
 // des outils optionnels indépendants accessibles à tout moment.
-const PAGES = ['generate','captions','music','videos','fastcut','incrust','billing'];
+const PAGES = ['generate','captions','music','videos','fastcut','startcut','incrust','billing'];
 
 function staggerReveal(pg){
   if(!pg) return;
@@ -3801,6 +3973,149 @@ function initCaptionDrag(){}
 
 loadCapLib();
 
+// ── AUTO-CAPTIONS IA (whisper.cpp) ────────────────────────────
+let autoCapFile = null;
+let autoCapTemplateId = 'karaoke';
+let autoCapYPct = 78;
+
+function setCapMode(mode){
+  const manualBtn = document.getElementById('cap-mode-manual-btn');
+  const autoBtn   = document.getElementById('cap-mode-auto-btn');
+  const manualDiv = document.getElementById('cap-mode-manual');
+  const autoDiv   = document.getElementById('cap-mode-auto');
+  const desc      = document.getElementById('cap-mode-desc');
+  const isAuto = mode === 'auto';
+  manualBtn.classList.toggle('active', !isAuto);
+  autoBtn.classList.toggle('active', isAuto);
+  manualDiv.style.display = isAuto ? 'none' : '';
+  autoDiv.style.display   = isAuto ? '' : 'none';
+  desc.textContent = isAuto
+    ? 'Glisse une vidéo · transcription automatique · captions animées façon Opus Pro / Submagic'
+    : 'Bibliothèque de templates personnels · glisse une vidéo · génère 1 vidéo par caption';
+  if(isAuto) checkAutoCapReadiness();
+}
+
+let autoCapReadinessChecked = false;
+async function checkAutoCapReadiness(){
+  if(autoCapReadinessChecked) return;
+  autoCapReadinessChecked = true;
+  const status = document.getElementById('autocap-status');
+  try {
+    const r = await fetch('/whisper-status');
+    const s = await r.json();
+    if(!s.supported){
+      if(status) status.textContent = "⚠️ Auto-captions IA : disponible uniquement sur Windows pour le moment.";
+    } else if(!s.engineReady || !s.modelReady){
+      if(status) status.textContent = "ℹ️ Premier lancement : téléchargement du moteur IA (~130Mo, une seule fois).";
+    }
+  } catch {}
+}
+
+function selectAutoTemplate(id){
+  autoCapTemplateId = id;
+  ['karaoke','bigword','classic'].forEach(t => {
+    document.getElementById('autocap-tpl-'+t).classList.toggle('cap-sel', t === id);
+  });
+  document.getElementById('autocap-accent-row').style.display = id === 'karaoke' ? '' : 'none';
+  document.getElementById('autocap-uppercase-row').style.display = id === 'bigword' ? '' : 'none';
+}
+
+function setAutoCapPos(yPct){
+  autoCapYPct = yPct;
+  const row = document.getElementById('autocap-pos-bottom').parentElement;
+  Array.from(row.children).forEach(btn => btn.classList.remove('active'));
+  const idx = yPct === 20 ? 0 : yPct === 50 ? 1 : 2;
+  row.children[idx].classList.add('active');
+}
+
+function updateAutoGenBtn(){
+  const btn = document.getElementById('autocap-gen-btn');
+  const ready = !!autoCapFile;
+  btn.style.opacity = ready ? '1' : '.4';
+  btn.style.pointerEvents = ready ? 'auto' : 'none';
+}
+
+function loadAutoCapVideo(input){
+  const f = input && input.files ? input.files[0] : null;
+  if(!f) return;
+  autoCapFile = f;
+  const vid = document.getElementById('autocap-vid-preview');
+  const ph  = document.getElementById('autocap-vid-ph');
+  if(vid){ vid.src = URL.createObjectURL(f); vid.style.display = 'block'; vid.play().catch(()=>{}); }
+  if(ph) ph.style.display = 'none';
+  updateAutoGenBtn();
+}
+function handleAutoCapDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(!f || !f.type.startsWith('video/')) return;
+  const inp = document.getElementById('autocap-vid-input');
+  const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files;
+  loadAutoCapVideo(inp);
+}
+
+async function generateAutoCaptions(){
+  if(!autoCapFile){ alert('Charge d\'abord une vidéo.'); return; }
+
+  const btn     = document.getElementById('autocap-gen-btn');
+  const status  = document.getElementById('autocap-status');
+  const results = document.getElementById('autocap-results');
+  btn.style.opacity = '.5'; btn.style.pointerEvents = 'none';
+  if(results){ results.style.display = 'none'; results.innerHTML = ''; }
+  if(status) status.textContent = 'Préparation…';
+
+  const style = {
+    xPct: 50, yPct: autoCapYPct,
+    color: document.getElementById('autocap-color').value,
+    accentColor: document.getElementById('autocap-accent').value,
+    uppercase: document.getElementById('autocap-uppercase').checked,
+  };
+
+  const fd = new FormData();
+  fd.append('videos', autoCapFile);
+  fd.append('templateId', autoCapTemplateId);
+  fd.append('lang', document.getElementById('autocap-lang-select').value);
+  fd.append('style', JSON.stringify(style));
+
+  try {
+    const res = await fetch('/auto-captions', { method:'POST', body:fd });
+    const reader = res.body.getReader(); const dec = new TextDecoder();
+    let outcome = null;
+    while(true){
+      const {value,done} = await reader.read(); if(done) break;
+      dec.decode(value).split('\n').filter(Boolean).forEach(line => {
+        let ev; try { ev = JSON.parse(line); } catch { return; }
+        if(ev.type === 'setup'){
+          const label = ev.what === 'engine' ? "Téléchargement du moteur IA (une seule fois)…" : "Téléchargement du modèle de transcription (une seule fois)…";
+          if(status) status.textContent = `${label} ${ev.pct}%`;
+        } else if(ev.type === 'status'){
+          const labels = { extracting:'Extraction audio…', transcribing:'Transcription en cours…', rendering:'Génération de la vidéo…' };
+          if(status) status.textContent = labels[ev.msg] || ev.msg;
+        } else if(ev.type === 'progress'){
+          if(status) status.textContent = `Génération de la vidéo… ${ev.pct}%`;
+        } else if(ev.type === 'done'){
+          outcome = { file: ev.file, size: ev.size };
+        } else if(ev.type === 'error'){
+          outcome = { error: ev.msg };
+        }
+      });
+    }
+    if(outcome && outcome.file){
+      if(status) status.textContent = '✅ Vidéo générée · dossier Norys Reels Output';
+      if(results){
+        results.style.display = 'flex';
+        results.innerHTML = `<div class="cap-res-row"><span>${outcome.file} · ${outcome.size}MB</span></div>`;
+      }
+    } else {
+      if(status) status.textContent = '❌ ' + (outcome && outcome.error ? outcome.error : 'Erreur pendant la génération');
+    }
+  } catch(err){
+    if(status) status.textContent = '❌ ' + err.message;
+  }
+
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+
 // (old caption code removed — replaced by cap library above)
 
 // ── COMBINE MODE ──────────────────────────────────────────
@@ -4651,6 +4966,134 @@ async function generateFastCut(){
 
   try {
     const resp   = await fetch('/fastcut', { method:'POST', body:fd });
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '';
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for(const line of lines){
+        if(!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
+          if(msg.type === 'progress'){
+            progBar.style.width = msg.pct+'%';
+            status.textContent  = msg.pct+'%';
+          } else if(msg.type === 'done'){
+            progBar.style.width = '100%';
+            status.textContent  = '';
+            result.style.display = 'block';
+            result.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1.5px solid var(--border);">
+              <span style="font-size:18px;">✅</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${msg.file}</div>
+                <div style="font-size:10px;color:var(--text3);">${msg.size} MB</div>
+              </div>
+              <button class="btn-xs" onclick="openOutputFolder()">📂 Ouvrir</button>
+            </div>`;
+            registerGeneratedCount(1);
+          } else if(msg.type === 'error'){
+            status.textContent = '❌ ' + msg.msg;
+          }
+        } catch{}
+      }
+    }
+  } catch(e){
+    status.textContent = '❌ Erreur : ' + e.message;
+  }
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+
+let scVideoFile = null;
+let scImageFile = null;
+
+function handleScVideoDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('video/')) setScVideo(f);
+}
+function loadScVideo(input){ if(input.files[0]) setScVideo(input.files[0]); }
+function setScVideo(f){
+  scVideoFile = f;
+  const vid = document.getElementById('sc-vid-preview');
+  const ph  = document.getElementById('sc-vid-ph');
+  const nm  = document.getElementById('sc-vid-name');
+  const drop = document.getElementById('sc-vid-drop');
+  vid.src = URL.createObjectURL(f);
+  vid.style.display = 'block';
+  vid.play().catch(()=>{});
+  if(ph) ph.style.display = 'none';
+  if(drop) drop.classList.add('has-file');
+  nm.textContent = f.name;
+  checkScReady();
+}
+
+function handleScImageDrop(e){
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')) setScImage(f);
+}
+function loadScImage(input){ if(input.files[0]) setScImage(input.files[0]); }
+function setScImage(f){
+  scImageFile = f;
+  const img  = document.getElementById('sc-img-preview');
+  const ph   = document.getElementById('sc-img-ph');
+  const nm   = document.getElementById('sc-img-name');
+  const drop = document.getElementById('sc-img-drop');
+  img.src = URL.createObjectURL(f);
+  img.style.display = 'block';
+  if(ph) ph.style.display = 'none';
+  if(drop) drop.classList.add('has-file');
+  nm.textContent = f.name;
+  checkScReady();
+}
+
+function checkScReady(){
+  const btn = document.getElementById('sc-gen-btn');
+  if(!btn) return;
+  const ready = !!(scVideoFile && scImageFile);
+  btn.style.opacity = ready ? '1' : '.4';
+  btn.style.pointerEvents = ready ? 'auto' : 'none';
+}
+
+async function generateStartCut(){
+  if(!scVideoFile || !scImageFile) return;
+  if(reelsLimit !== Infinity && reelsUsed + 1 > reelsLimit){
+    NorysSound.error();
+    const remaining = Math.max(0, reelsLimit - reelsUsed);
+    const msg = remaining === 0
+      ? t('quotaExhausted').replace('{used}', reelsUsed).replace('{limit}', reelsLimit)
+      : t('quotaExceeded').replace('{requested}', 1).replace('{remaining}', remaining).replace('{limit}', reelsLimit);
+    showToast('🚫', msg, 7000);
+    goPage('billing');
+    return;
+  }
+  const btn      = document.getElementById('sc-gen-btn');
+  const progWrap = document.getElementById('sc-progress-wrap');
+  const progBar  = document.getElementById('sc-prog-bar');
+  const status   = document.getElementById('sc-status');
+  const result   = document.getElementById('sc-result');
+
+  btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  status.textContent = 'Préparation...';
+  result.style.display = 'none';
+  result.innerHTML = '';
+
+  const blackDuration = document.getElementById('sc-black-slider').value;
+  const photoDuration = document.getElementById('sc-photo-slider').value;
+
+  const fd = new FormData();
+  fd.append('video', scVideoFile, scVideoFile.name);
+  fd.append('image', scImageFile, scImageFile.name);
+  fd.append('blackDuration', blackDuration);
+  fd.append('photoDuration', photoDuration);
+
+  try {
+    const resp   = await fetch('/startcut', { method:'POST', body:fd });
     const reader = resp.body.getReader();
     const dec    = new TextDecoder();
     let buf = '';
