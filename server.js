@@ -460,10 +460,10 @@ function buildBigWordASS(words, style, W, H){
 // unique (pas de surbrillance mot par mot), mais avec un vrai timing
 // mot-par-mot (contrairement aux sous-titres manuels existants qui répartissent
 // le texte uniformément sur toute la durée faute de timing réel). Génère son
-// propre .ass (plutôt que de repasser par generateVariant()/buildCaptionFilter,
-// pensés pour les templates manuels) pour : déclarer PlayResX/Y correctement
-// et éviter le -ss aléatoire + les fausses métadonnées iPhone/GPS que
-// generateVariant() applique par défaut pour la génération de variantes.
+// propre .ass (plutôt que de repasser par generateVariant()/buildManualASS,
+// pensés pour les templates manuels) pour éviter le -ss aléatoire + les
+// fausses métadonnées iPhone/GPS que generateVariant() applique par défaut
+// pour la génération de variantes.
 function buildClassicASS(chunks, style, W, H){
   style = style || {};
   const color        = hexToASS(style.color       || '#FFFFFF');
@@ -574,27 +574,61 @@ function probeVideoInfo(filePath){
   } catch { return { width:1080, height:1920, duration:30, hasAudio:true, fps:30 }; }
 }
 
-function buildSRT(lines, totalDuration, posX, posY, rotation){
+// Construit un .ass pour les templates manuels (une caption = un texte statique
+// affiché à taille fixe pendant un intervalle donné). Remplace l'ancien pipeline
+// SRT + force_style : une SRT brute ne déclare pas PlayResX/Y, donc libass
+// appliquait une résolution par défaut (~384x288) et redimensionnait tout en
+// silence — c'est ce qui faisait dépasser le texte du cadre 9:16 dès qu'on
+// montait la taille de police pour un texte long. Ici PlayResX/Y = résolution
+// réelle de la vidéo, donc "size" correspond enfin à des pixels réels, et
+// MarginL/R borne la largeur de wrap automatique de libass (WrapStyle 0)
+// pour que le texte casse la ligne avant de toucher les bords au lieu d'en sortir.
+function buildManualASS(lines, style, W, H, totalDuration){
   if(!lines || !lines.length) return null;
+  style = style || {};
+  const color        = hexToASS(style.color        || '#FFFFFF');
+  const bg           = style.bg           || 'none';
+  const size         = parseInt(style.size) || 52;
+  const bold         = style.bold !== false ? -1 : 0;
+  const strokeWidth  = style.strokeWidth  !== undefined ? parseFloat(style.strokeWidth)  : 3;
+  const strokeColor  = hexToASS(style.strokeColor  || '#000000');
+  const fontName     = resolveAssFont(style.font);
+  const xPct = style.xPct !== undefined ? parseFloat(style.xPct) : 50;
+  const yPct = style.yPct !== undefined ? parseFloat(style.yPct) : 85;
+  const posX = Math.round(W*xPct/100), posY = Math.round(H*yPct/100);
+  const rotation = style.rotation ? parseFloat(style.rotation) : 0;
+  const rot = rotation ? '\\frz'+(-(rotation)) : ''; // ASS \frz = CCW, CSS rotate = CW → negate
+
+  let backColour = '&H00000000', borderStyle = 1, outline = strokeWidth, shadow = 1;
+  if(bg === 'black_semi') { backColour='&H99000000'; borderStyle=3; outline=0; shadow=0; }
+  if(bg === 'black_full') { backColour='&HFF000000'; borderStyle=3; outline=0; shadow=0; }
+  if(bg === 'white_full') { backColour='&HFFFFFFFF'; borderStyle=3; outline=0; shadow=0; }
+  if(bg === 'yellow_full'){ backColour='&HFF00E6FF'; borderStyle=3; outline=0; shadow=0; }
+
+  // Marge de sécurité (~7% de la largeur de chaque côté) : borne la largeur
+  // de wrap auto de libass pour qu'un texte long ne touche/dépasse jamais
+  // les bords du cadre, quelle que soit la taille de police choisie.
+  const safeMargin = Math.round(W * 0.07);
+
   const count = lines.length;
-  const fmt = t => {
-    const h  = Math.floor(t/3600);
-    const m  = Math.floor((t%3600)/60);
-    const sc = Math.floor(t%60);
-    const ms = Math.round((t%1)*1000);
-    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0')+','+String(ms).padStart(3,'0');
-  };
-  const rot = rotation && rotation !== 0 ? '\\frz'+(-(rotation)) : ''; // ASS \frz = CCW, CSS rotate = CW → negate
-  const posTag = (posX !== undefined && posY !== undefined)
-    ? '{\\pos('+posX+','+posY+')'+rot+'}'
-    : (rot ? '{'+rot+'}' : '');
-  let srt = '';
-  lines.forEach((line,i) => {
+  const evLines = lines.map((line,i) => {
     const st = line.start !== undefined ? line.start : (totalDuration/count)*i;
     const e  = line.end   !== undefined ? line.end   : (totalDuration/count)*(i+1) - 0.1;
-    srt += (i+1)+'\n'+fmt(st)+' --> '+fmt(e)+'\n'+posTag+line.text+'\n\n';
-  });
-  return srt;
+    if(e <= st) return null;
+    const txt = assEscapeText(line.text);
+    return 'Dialogue: 0,'+assTimestamp(st)+','+assTimestamp(e)+',M,,0,0,0,,{\\pos('+posX+','+posY+')'+rot+'}'+txt;
+  }).filter(Boolean);
+  if(!evLines.length) return null;
+
+  return [
+    '[Script Info]','ScriptType: v4.00+','PlayResX: '+W,'PlayResY: '+H,'WrapStyle: 0','',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    'Style: M,'+fontName+','+size+','+color+','+color+','+strokeColor+','+backColour+','+bold+',0,0,0,100,100,0,0,'+borderStyle+','+outline+','+shadow+',5,'+safeMargin+','+safeMargin+','+safeMargin+',1',
+    '','[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+    ...evLines, '',
+  ].join('\n');
 }
 
 // #RRGGBB → ASS BGR &H00BBGGRR
@@ -603,54 +637,18 @@ function hexToASS(hex){
   return '&H00' + h.slice(4,6) + h.slice(2,4) + h.slice(0,2);
 }
 
-// Construit le filtre FFmpeg subtitles= avec force_style ASS
-function buildCaptionFilter(srtPath, cs){
-  cs = cs || {};
-  const color        = cs.color        || '#FFFFFF';
-  const bg           = cs.bg           || 'none';
-  const size         = parseInt(cs.size) || 52;
-  const bold         = cs.bold !== false ? 1 : 0;
-  const strokeWidth  = cs.strokeWidth  !== undefined ? parseFloat(cs.strokeWidth)  : 3;
-  const strokeColor  = cs.strokeColor  || '#000000';
-
-  // Position libre xPct/yPct (% de 1080x1920)
-  const xPct = cs.xPct !== undefined ? parseFloat(cs.xPct) : 50;
-  const yPct = cs.yPct !== undefined ? parseFloat(cs.yPct) : 85;
-  cs._posX = Math.round(1080 * xPct / 100);
-  cs._posY = Math.round(1920 * yPct / 100);
-
-  const primaryColour = hexToASS(color);
-  const outlineColour = hexToASS(strokeColor);
-
-  let backColour = '&H00000000', borderStyle = 1, outline = strokeWidth, shadow = 1;
-  if(bg === 'black_semi') { backColour='&H99000000'; borderStyle=3; outline=0; shadow=0; }
-  if(bg === 'black_full') { backColour='&HFF000000'; borderStyle=3; outline=0; shadow=0; }
-  if(bg === 'white_full') { backColour='&HFFFFFFFF'; borderStyle=3; outline=0; shadow=0; }
-  if(bg === 'yellow_full'){ backColour='&HFF00E6FF'; borderStyle=3; outline=0; shadow=0; }
-
+// Construit le filtre FFmpeg subtitles= pointant vers un .ass déjà stylé
+// (voir buildManualASS) — le style est embarqué dans le script lui-même,
+// plus besoin de force_style ici.
+function buildAssSubtitleFilter(assPath){
   // Noto Color Emoji : font embarquée pour des emojis propres sur tous les OS
   // fontsdir= indique à libass où chercher les fonts custom
   const fontDir = fs.existsSync(FONT_PATH)
     ? path.dirname(FONT_PATH).replace(/\\/g,'/').replace(/:/g,'\\:')
     : null;
-
-  // Police sélectionnée par l'utilisateur, avec fallback Montserrat → Arial
-  const fontKey  = cs.font || 'montserrat';
-  const fontInfo = FONT_FILES[fontKey] || FONT_FILES.montserrat;
-  const fontName = fs.existsSync(fontInfo.path) ? fontInfo.assName
-    : fs.existsSync(MONTSERRAT_PATH) ? 'Montserrat-Bold' : 'Arial';
-
-  const styleStr = [
-    'FontName='+fontName, 'FontSize='+size,
-    'PrimaryColour='+primaryColour, 'BackColour='+backColour,
-    'OutlineColour='+outlineColour, 'Outline='+outline, 'Shadow='+shadow,
-    'BorderStyle='+borderStyle, 'Alignment=5',
-    'MarginL=0', 'MarginR=0', 'MarginV=0', 'Bold='+bold,
-  ].join(',');
-
-  const escaped = srtPath.replace(/\\/g,'/').replace(/:/g,'\\:').replace(/'/g,"\\'");
+  const escaped = assPath.replace(/\\/g,'/').replace(/:/g,'\\:').replace(/'/g,"\\'");
   const fontsDirArg = fontDir ? ':fontsdir=\'' + fontDir + '\'' : '';
-  return "subtitles='"+escaped+"'"+fontsDirArg+":force_style='"+styleStr+"'";
+  return "subtitles='"+escaped+"'"+fontsDirArg;
 }
 
 
@@ -841,23 +839,22 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   const PRESET = 'medium';
   const AUDIO  = '192k';
 
-  // Durée connue à l'avance pour calculer une vraie progression en direct
-  // (out_time_ms / durée totale) plutôt qu'un saut brutal de 0% à 100%.
-  const inputDuration = getVideoDuration(inputFile);
+  // Durée + résolution réelles connues à l'avance : la durée sert à calculer
+  // une vraie progression en direct (out_time_ms / durée totale), et la
+  // résolution garantit que les captions manuelles ci-dessous sont bien
+  // dimensionnées/positionnées sur le cadre réel de la vidéo (et non sur un
+  // 1080x1920 supposé — une vidéo source dans une autre résolution ferait
+  // sinon déborder ou mal placer le texte).
+  const videoInfo     = probeVideoInfo(inputFile);
+  const inputDuration = videoInfo.duration;
 
-  // ── Captions SRT ─────────────────────────────────────────────
-  let srtPath = null;
+  // ── Captions manuelles (.ass) ─────────────────────────────────
+  let capAssPath = null;
   if(captionLines.length){
-    const duration   = inputDuration;
-    const _xPct = (captionStyle && captionStyle.xPct !== undefined) ? parseFloat(captionStyle.xPct) : 50;
-    const _yPct = (captionStyle && captionStyle.yPct !== undefined) ? parseFloat(captionStyle.yPct) : 85;
-    const posX = Math.round(1080 * _xPct / 100);
-    const posY = Math.round(1920 * _yPct / 100);
-    const _rot = (captionStyle && captionStyle.rotation) ? parseFloat(captionStyle.rotation) : 0;
-    const srtContent = buildSRT(captionLines, duration, posX, posY, _rot);
-    if(srtContent){
-      srtPath = path.join(os.tmpdir(), 'ncap_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.srt');
-      fs.writeFileSync(srtPath, srtContent, 'utf8');
+    const assContent = buildManualASS(captionLines, captionStyle, videoInfo.width, videoInfo.height, inputDuration);
+    if(assContent){
+      capAssPath = path.join(os.tmpdir(), 'ncap_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.ass');
+      fs.writeFileSync(capAssPath, assContent, 'utf8');
     }
   }
 
@@ -884,8 +881,8 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   }
 
   // ── Ajouter caption au filtre clean si pas complex ────────────
-  if(srtPath && !hasRotate && !hasShrink){
-    const captionFilter = buildCaptionFilter(srtPath, captionStyle);
+  if(capAssPath && !hasRotate && !hasShrink){
+    const captionFilter = buildAssSubtitleFilter(capAssPath);
     if(captionFilter) cleanFilter = cleanFilter ? cleanFilter+','+captionFilter : captionFilter;
   }
 
@@ -1072,7 +1069,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     });
     const cleanup = () => {
       clearTimeout(killTimer);
-      if(srtPath) try{ fs.unlinkSync(srtPath); }catch{}
+      if(capAssPath) try{ fs.unlinkSync(capAssPath); }catch{}
     };
     // Si l'encodage échoue, ffmpeg a pu écrire un fichier de sortie partiel
     // (en-tête présent mais frames manquantes) — un fichier au nom normal
