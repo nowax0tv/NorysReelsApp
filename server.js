@@ -859,14 +859,17 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   }
 
   // ── Extraire rotate et shrink ─────────────────────────────────
+  // "special" peut combiner plusieurs effets à la fois (ex: "shrink+speed"),
+  // joints par '+' côté appelant — voir la boucle de sélection des templates.
+  const specialSet = new Set(String(special||'').split('+').filter(Boolean));
   const hasRotate = (filter||'').includes('__rotate__');
-  const hasShrink = special === 'shrink';
+  const hasShrink = specialSet.has('shrink');
   let rotateAngle = null;
   let cleanFilter = filter || '';
 
   // ── Vitesse aléatoire ±10% (setpts vidéo + atempo audio) ───────
   let speedFactor = null;
-  if(special === 'speed'){
+  if(specialSet.has('speed')){
     speedFactor = +(1 + rnd(-0.10, 0.10)).toFixed(4);
     const ptsFilter = 'setpts=' + (1 / speedFactor).toFixed(4) + '*PTS';
     cleanFilter = cleanFilter ? ptsFilter + ',' + cleanFilter : ptsFilter;
@@ -1290,8 +1293,11 @@ const server = http.createServer((req, res) => {
 
             for(const tpl of shuffled){
               tplIds.push(tpl.id);
-              if(tpl.special && tpl.special !== 'reverse'){
-                if(!specialsFound.length) specialsFound.push(tpl.special);
+              if(tpl.special){
+                // Tous les specials cochés s'appliquent ensemble (ex: Rétrécir +
+                // Vitesse aléatoire en même temps) plutôt que de tirer un seul
+                // gagnant au hasard par variante — voir generateVariant().
+                if(!specialsFound.includes(tpl.special)) specialsFound.push(tpl.special);
               } else if(tpl.filter){
                 const randomized = randomizeFilter(tpl.filter);
                 if(randomized) filterParts.push(randomized);
@@ -1312,7 +1318,7 @@ const server = http.createServer((req, res) => {
             combinedFilter  = normalParts.join(',');
             // Retirer hflip/vflip explicites — désormais gérés comme multiplicateurs
             combinedFilter  = combinedFilter.replace(/,?(hflip|vflip),?/g, ',').replace(/^,|,$/g,'');
-            combinedSpecial = specialsFound[0] || '';
+            combinedSpecial = specialsFound.join('+');
             tplId = 'all'+filters.length+'f';
 
             const ext     = outputFormat === 'mov' ? '.mov' : '.mp4';
@@ -1397,12 +1403,14 @@ const server = http.createServer((req, res) => {
 
         let captionText  = '';
         let captionStyle = {};
+        let outputFormat = 'mp4';
         const tmpFiles   = [];
 
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if(p.name==='captionText')   captionText  = val;
           else if(p.name==='captionStyle'){ try{ captionStyle=JSON.parse(val); }catch{} }
+          else if(p.name==='outputFormat') outputFormat = (val === 'mov') ? 'mov' : 'mp4';
           else if(p.name==='videos' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             const tmp = path.join(os.tmpdir(),'nexport_'+Date.now()+'_'+Math.random().toString(36).slice(2)+ext);
@@ -1417,10 +1425,11 @@ const server = http.createServer((req, res) => {
 
         const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
         if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
+        const outExt = outputFormat === 'mov' ? '.mov' : '.mp4';
 
         for(const vf of tmpFiles){
           const base    = path.basename(vf.name, path.extname(vf.name));
-          const outName = base + '_subtitled.mp4';
+          const outName = base + '_subtitled' + outExt;
           const outPath = path.join(outDir, outName);
 
           send(res, {type:'progress', file: outName});
@@ -1576,6 +1585,7 @@ const server = http.createServer((req, res) => {
 
         let posX=50, posY=20, sizePercent=30, opacity=0.4;
         let cropX=0, cropY=0, cropW=100, cropH=100;
+        let outputFormat = 'mp4';
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if     (p.name==='posX')        posX        = Math.max(0,   Math.min(100, parseFloat(val)||50));
@@ -1586,6 +1596,7 @@ const server = http.createServer((req, res) => {
           else if(p.name==='cropY')       cropY       = Math.max(0,   Math.min(99,  parseFloat(val)||0));
           else if(p.name==='cropW')       cropW       = Math.max(1,   Math.min(100, parseFloat(val)||100));
           else if(p.name==='cropH')       cropH       = Math.max(1,   Math.min(100, parseFloat(val)||100));
+          else if(p.name==='outputFormat') outputFormat = (val === 'mov') ? 'mov' : 'mp4';
           else if(p.name==='main' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             mainTmp = path.join(os.tmpdir(),'gi_main_'+Date.now()+ext);
@@ -1612,7 +1623,7 @@ const server = http.createServer((req, res) => {
 
         const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
         if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
-        const outName = 'incrust_'+Date.now()+'.mp4';
+        const outName = 'incrust_'+Date.now()+(outputFormat==='mov'?'.mov':'.mp4');
         const outPath = path.join(outDir, outName);
 
         // Circular cosine gradient mask: rgba (r/g/b pass-through, alpha = cosine falloff)
@@ -1716,10 +1727,12 @@ const server = http.createServer((req, res) => {
         const parts  = parseMultipart(body, bMatch[1]);
 
         let cutTime=2, insertDuration=0.5;
+        let outputFormat = 'mp4';
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if(p.name==='cutTime')             cutTime        = Math.max(0.1, parseFloat(val)||2);
           else if(p.name==='insertDuration') insertDuration = Math.max(0.01, Math.min(5, parseFloat(val)||0.1));
+          else if(p.name==='outputFormat')   outputFormat   = (val === 'mov') ? 'mov' : 'mp4';
           else if(p.name==='video' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             videoTmp = path.join(os.tmpdir(),'fc_vid_'+Date.now()+ext);
@@ -1741,7 +1754,7 @@ const server = http.createServer((req, res) => {
 
         const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
         if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
-        const outName = 'fastcut_'+Date.now()+'.mp4';
+        const outName = 'fastcut_'+Date.now()+(outputFormat==='mov'?'.mov':'.mp4');
         const outPath = path.join(outDir, outName);
 
         const fcParts = [
@@ -1833,10 +1846,12 @@ const server = http.createServer((req, res) => {
         const parts  = parseMultipart(body, bMatch[1]);
 
         let blackDuration=1, photoDuration=1.5;
+        let outputFormat = 'mp4';
         for(const p of parts){
           const val = p.data.toString('utf8').trim();
           if(p.name==='blackDuration')      blackDuration = Math.max(0, Math.min(30, parseFloat(val)||0));
           else if(p.name==='photoDuration') photoDuration = Math.max(0.1, Math.min(30, parseFloat(val)||1.5));
+          else if(p.name==='outputFormat')  outputFormat  = (val === 'mov') ? 'mov' : 'mp4';
           else if(p.name==='video' && p.filename){
             const ext = path.extname(p.filename)||'.mp4';
             videoTmp = path.join(os.tmpdir(),'sc_vid_'+Date.now()+ext);
@@ -1858,7 +1873,7 @@ const server = http.createServer((req, res) => {
 
         const outDir = path.join(os.homedir(),'Desktop','Norys Reels Output');
         if(!fs.existsSync(outDir)) fs.mkdirSync(outDir,{recursive:true});
-        const outName = 'startcut_'+Date.now()+'.mp4';
+        const outName = 'startcut_'+Date.now()+(outputFormat==='mov'?'.mov':'.mp4');
         const outPath = path.join(outDir, outName);
 
         const scParts = [];

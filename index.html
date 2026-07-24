@@ -1950,6 +1950,14 @@
           </div>
         </div>
 
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Format de sortie</div>
+          <select class="select-s" id="fc-format-select">
+            <option value="mp4">MP4 (standard)</option>
+            <option value="mov">MOV (iPhone)</option>
+          </select>
+        </div>
+
         <button class="export-btn" id="fc-gen-btn" onclick="generateFastCut()" style="margin-top:16px;opacity:.4;pointer-events:none;">✂️ Générer le fast cut</button>
 
         <div id="fc-progress-wrap" style="display:none;margin-top:14px;">
@@ -2024,6 +2032,14 @@
                    style="width:100%;"/>
             <div style="font-size:10px;color:var(--text3);margin-top:4px;">Combien de temps la photo reste à l'écran, juste après le noir</div>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Format de sortie</div>
+          <select class="select-s" id="sc-format-select">
+            <option value="mp4">MP4 (standard)</option>
+            <option value="mov">MOV (iPhone)</option>
+          </select>
         </div>
 
         <button class="export-btn" id="sc-gen-btn" onclick="generateStartCut()" style="margin-top:16px;opacity:.4;pointer-events:none;">🎬 Générer le start cut</button>
@@ -2127,6 +2143,14 @@
           </div>
         </div>
 
+        <div class="card" style="margin-top:12px;">
+          <div class="card-label">Format de sortie</div>
+          <select class="select-s" id="gi-format-select">
+            <option value="mp4">MP4 (standard)</option>
+            <option value="mov">MOV (iPhone)</option>
+          </select>
+        </div>
+
         <div style="display:flex;gap:10px;margin-top:16px;">
           <button class="export-btn" id="gi-gen-btn" onclick="generateIncrust()" style="flex:1;margin-top:0;opacity:.4;pointer-events:none;">🌀 Incruster</button>
           <button class="export-btn" onclick="openGiModal()" style="margin-top:0;flex:0 0 auto;background:rgba(255,255,255,.06);border-color:var(--border);">📱 Aperçu</button>
@@ -2202,6 +2226,12 @@
                 </div>
                 <input type="file" id="cap-vid-input" accept="video/*" style="display:none" onchange="loadCapGenVideo(this)"/>
               </div>
+
+              <div class="ctrl-lbl" style="margin-top:10px;">Format de sortie</div>
+              <select class="select-s" id="cap-format-select">
+                <option value="mp4">MP4 (standard)</option>
+                <option value="mov">MOV (iPhone)</option>
+              </select>
 
               <div class="cap-sel-pill" id="cap-sel-pill">0 sélectionné</div>
               <button class="export-btn" id="cap-gen-btn" onclick="generateWithTemplates()" style="opacity:.4;pointer-events:none;">⚡ Générer <span id="cap-gen-count">0</span> vidéo(s)</button>
@@ -3951,6 +3981,7 @@ async function generateWithTemplates(){
     fd.append('videos', capGenFile);
     fd.append('captionText', capText);
     fd.append('captionStyle', JSON.stringify(tpl.state || {}));
+    fd.append('outputFormat', (document.getElementById('cap-format-select') || {}).value || 'mp4');
     try {
       const res = await fetch('/export-captions', { method:'POST', body:fd });
       const reader = res.body.getReader(); const dec = new TextDecoder();
@@ -4186,9 +4217,12 @@ const TEMPLATES = [
   { id:'warm',     icon:'🌅', name:'Warm skin',          filter:'colorbalance=rs=0.03:gs=-0.01:bs=-0.02:rm=0.02:gm=-0.01:bm=-0.01', tag:'boost' },
   { id:'cine',     icon:'🎬', name:'Ciné',               filter:'eq=saturation=0.90:contrast=1.04', tag:'boost' },
 ];
+// Pas de "Miroir horizontal/vertical" ici : generateVariant() produit déjà
+// systématiquement original + miroir H + miroir V pour CHAQUE variante
+// (voir MIRROR_VARIANTS côté serveur) — les cocher ici n'aurait rien changé,
+// le serveur retirait même explicitement hflip/vflip du filtre avant de
+// construire ffmpeg.
 const SPECIAL_TEMPLATES = [
-  { id:'flip_h',   icon:'🪞', name:'Miroir horizontal',       filter:'hflip',                                    tag:'creative' },
-  { id:'flip_v',   icon:'🙃', name:'Miroir vertical',         filter:'vflip',                                    tag:'creative' },
   { id:'rotate',   icon:'🔄', name:'Rotation',                filter:'rotate=0.1745:fillcolor=black',            tag:'creative' },
   { id:'shrink',   icon:'🔳', name:'Rétrécir',                special:'shrink',                                  tag:'creative' },
   { id:'hue',      icon:'🎨', name:'Hue shift',               filter:'hue=h=30',                                 tag:'creative' },
@@ -4843,6 +4877,7 @@ async function generateIncrust(){
   fd.append('cropY', cropY);
   fd.append('cropW', cropW);
   fd.append('cropH', cropH);
+  fd.append('outputFormat', (document.getElementById('gi-format-select') || {}).value || 'mp4');
 
   try {
     const resp   = await fetch('/incrust', {method:'POST',body:fd});
@@ -4975,6 +5010,7 @@ async function generateFastCut(){
   fd.append('image', fcImageFile, fcImageFile.name);
   fd.append('cutTime', cutTime);
   fd.append('insertDuration', insertDuration);
+  fd.append('outputFormat', (document.getElementById('fc-format-select') || {}).value || 'mp4');
 
   try {
     const resp   = await fetch('/fastcut', { method:'POST', body:fd });
@@ -5103,6 +5139,7 @@ async function generateStartCut(){
   fd.append('image', scImageFile, scImageFile.name);
   fd.append('blackDuration', blackDuration);
   fd.append('photoDuration', photoDuration);
+  fd.append('outputFormat', (document.getElementById('sc-format-select') || {}).value || 'mp4');
 
   try {
     const resp   = await fetch('/startcut', { method:'POST', body:fd });
