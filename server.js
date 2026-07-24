@@ -1245,6 +1245,8 @@ const server = http.createServer((req, res) => {
         let gpsCountry       = 'random';
         let namingMode       = 'sequential';
         let outputFormat     = 'mp4';
+        let mirrorH          = true;
+        let mirrorV          = true;
         const tmpFiles   = [];
 
         for(const p of parts){
@@ -1265,6 +1267,8 @@ const server = http.createServer((req, res) => {
           else if(p.name==='gpsCountry')     gpsCountry     = val || 'random';
           else if(p.name==='namingMode')     namingMode     = (val === 'random') ? 'random' : 'sequential';
           else if(p.name==='outputFormat')   outputFormat   = (val === 'mov') ? 'mov' : 'mp4';
+          else if(p.name==='mirrorH')        mirrorH        = val !== '0';
+          else if(p.name==='mirrorV')        mirrorV        = val !== '0';
           else if(p.name==='musicFile' && p.filename){
             const ext = path.extname(p.filename) || '.mp3';
             musicTmp = path.join(os.tmpdir(), 'nmusic_'+Date.now()+ext);
@@ -1287,11 +1291,13 @@ const server = http.createServer((req, res) => {
           ? captionText.split('\n').map(l=>l.trim()).filter(Boolean).map(text=>({text}))
           : [];
 
-        // Chaque variante produit 3 fichiers : original, miroir horizontal (_mh), miroir vertical (_mv)
-        const MIRROR_VARIANTS = [['', null], ['_mh', 'hflip'], ['_mv', 'vflip']];
-        const total = tmpFiles.length * numVariants * 3;
+        // Chaque variante produit l'originale + les miroirs cochés (horizontal _mh, vertical _mv)
+        const MIRROR_VARIANTS = [['', null]];
+        if(mirrorH) MIRROR_VARIANTS.push(['_mh', 'hflip']);
+        if(mirrorV) MIRROR_VARIANTS.push(['_mv', 'vflip']);
+        const total = tmpFiles.length * numVariants * MIRROR_VARIANTS.length;
         send(res,{type:'start',total});
-        console.log('Generating '+total+' files ('+numVariants+' variants × 3 mirrors) → '+outputDir);
+        console.log('Generating '+total+' files ('+numVariants+' variants × '+MIRROR_VARIANTS.length+' mirror(s)) → '+outputDir);
 
         let success = 0;
         let globalIdx = 0; // index global sur tous les fichiers (pour la progression)

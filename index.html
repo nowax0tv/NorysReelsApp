@@ -2491,6 +2491,18 @@
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-label" style="margin-bottom:10px;" data-i18n="mirrorVariantsLabel">Variantes miroir (en plus de l'originale)</div>
+          <div class="toggle-row">
+            <span data-i18n="mirrorHLabel">Miroir horizontal</span>
+            <label class="toggle-sw"><input type="checkbox" id="mirror-h-toggle" checked/><span class="toggle-sl"></span></label>
+          </div>
+          <div class="toggle-row" style="margin-top:8px;">
+            <span data-i18n="mirrorVLabel">Miroir vertical</span>
+            <label class="toggle-sw"><input type="checkbox" id="mirror-v-toggle" checked/><span class="toggle-sl"></span></label>
+          </div>
+        </div>
+
         <div style="display:flex; gap:8px;">
           <button class="generate-btn" id="generate-btn" onclick="generate()" style="flex:1;">
             <div class="btn-inner">
@@ -2898,6 +2910,7 @@ const I18N = {
     injectMetadataLabel: 'Injecter métadonnées iPhone authentiques', injectMetadataSub: '(recommandé pour TikTok/Instagram)',
     iphoneModelLabel: 'Modèle iPhone', gpsCountryLabel: 'Pays GPS', randomOption: '🎲 Aléatoire',
     namingModeLabel: 'Numérotation de sortie', namingSequential: 'Séquentielle', namingRandom: 'Aléatoire',
+    mirrorVariantsLabel: 'Variantes miroir (en plus de l’originale)', mirrorHLabel: 'Miroir horizontal', mirrorVLabel: 'Miroir vertical',
     openFolderBtn: 'Ouvrir dossier',
     shareBtn: 'Partager', leaderboardBtn: 'Classement', logoutBtn: 'Déconnexion', closeBtn: 'Fermer',
     accessDeniedTitle: 'Accès non inclus', accessDeniedSub: 'Ton abonnement actuel ne donne pas accès à Norys Reels — passe à l’offre Agency pour débloquer l’app.',
@@ -2948,6 +2961,7 @@ const I18N = {
     injectMetadataLabel: 'Inject authentic iPhone metadata', injectMetadataSub: '(recommended for TikTok/Instagram)',
     iphoneModelLabel: 'iPhone model', gpsCountryLabel: 'GPS country', randomOption: '🎲 Random',
     namingModeLabel: 'Output numbering', namingSequential: 'Sequential', namingRandom: 'Random',
+    mirrorVariantsLabel: 'Mirror variants (in addition to the original)', mirrorHLabel: 'Horizontal mirror', mirrorVLabel: 'Vertical mirror',
     openFolderBtn: 'Open folder',
     shareBtn: 'Share', leaderboardBtn: 'Leaderboard', logoutBtn: 'Log out', closeBtn: 'Close',
     accessDeniedTitle: 'Access not included', accessDeniedSub: 'Your current plan does not include access to Norys Reels — upgrade to the Agency plan to unlock the app.',
@@ -4570,6 +4584,10 @@ async function generate(){
   fd.append('gpsCountry',    (document.getElementById('gps-country-select') || {}).value || 'random');
   fd.append('namingMode',    namingMode);
   fd.append('outputFormat',  (document.getElementById('output-format-select') || {}).value || 'mov');
+  const mirrorHToggle = document.getElementById('mirror-h-toggle');
+  const mirrorVToggle = document.getElementById('mirror-v-toggle');
+  fd.append('mirrorH', (!mirrorHToggle || mirrorHToggle.checked) ? '1' : '0');
+  fd.append('mirrorV', (!mirrorVToggle || mirrorVToggle.checked) ? '1' : '0');
   // Musique (si un fichier a été chargé sur la page Musique)
   if(musicFile){
     fd.append('musicFile', musicFile);
