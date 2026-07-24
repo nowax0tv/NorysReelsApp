@@ -2409,14 +2409,6 @@
             </div>
           </div>
 
-          <div class="shrink-card" id="rotate-fill-option" style="display:none;">
-            <div class="shrink-label" data-i18n="rotateFillLabel">Rendu de la rotation</div>
-            <div class="bg-row">
-              <div class="bg-btn active" id="rotate-fill-zoom" onclick="setRotateFill('zoom')">🔍 <span data-i18n="rotateFillZoom">Zoom (remplir le cadre)</span></div>
-              <div class="bg-btn" id="rotate-fill-border" onclick="setRotateFill('border')">🖼️ <span data-i18n="rotateFillBorder">Bordure (rien coupé)</span></div>
-            </div>
-          </div>
-
           <div id="t-grid" class="filter-grid"></div>
 
           <div class="filter-actions">
@@ -2869,7 +2861,6 @@ const I18N = {
     convCardLabel: 'Convertisseur MOV → MP4', convDropTitle: "Dépose un fichier .MOV (iPhone)", convDropSub: 'Conversion automatique en MP4 compatible',
     filtersTitle: 'Filtres visuels', filtersDesc: 'Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques',
     selectionLabel: 'Sélection', shrinkBgLabel: 'Fond du rétrécir', shrinkBgBlur: 'Flou vidéo', shrinkBgColor: 'Couleur unie',
-    rotateFillLabel: 'Rendu de la rotation', rotateFillZoom: 'Zoom (remplir le cadre)', rotateFillBorder: 'Bordure (rien coupé)',
     enableAll: 'Tout activer', disableAll: 'Tout désactiver', allActiveFilters: 'Tous les filtres actifs', randomValuesPerVariant: '+ valeurs aléatoires par variante',
     presetNamePh: 'Nom du preset…', save: 'Sauvegarder',
     captionsTitle: 'Sous-titres', captionsDesc: 'Texte gravé directement dans la vidéo · drag & drop la position',
@@ -2920,7 +2911,6 @@ const I18N = {
     convCardLabel: 'MOV → MP4 converter', convDropTitle: 'Drop a .MOV file (iPhone)', convDropSub: 'Automatic conversion to compatible MP4',
     filtersTitle: 'Visual filters', filtersDesc: 'Each variant applies every active filter with unique randomized values',
     selectionLabel: 'Selection', shrinkBgLabel: 'Shrink background', shrinkBgBlur: 'Blurred video', shrinkBgColor: 'Solid color',
-    rotateFillLabel: 'Rotation rendering', rotateFillZoom: 'Zoom (fill frame)', rotateFillBorder: 'Border (nothing cropped)',
     enableAll: 'Enable all', disableAll: 'Disable all', allActiveFilters: 'All active filters', randomValuesPerVariant: '+ random values per variant',
     presetNamePh: 'Preset name…', save: 'Save',
     captionsTitle: 'Captions', captionsDesc: 'Text burned directly into the video · drag &amp; drop the position',
@@ -4265,22 +4255,6 @@ function updateShrinkOption(){
   if(opt) opt.style.display = active.has('shrink') ? 'block' : 'none';
 }
 
-// ── ROTATE FILL MODE ───────────────────────────────────────────
-// Tourner un rectangle dans un cadre de même taille oblige à un compromis :
-// soit on zoome légèrement pour remplir le cadre à 100% (bords d'origine
-// tout juste rognés, invisible), soit on garde tout le sujet intact avec
-// une petite bordure sur 1-2 côtés (flou/couleur du rétrécir) pour combler.
-let rotateFillMode = 'zoom';
-function setRotateFill(mode){
-  rotateFillMode = mode;
-  document.getElementById('rotate-fill-zoom').classList.toggle('active', mode === 'zoom');
-  document.getElementById('rotate-fill-border').classList.toggle('active', mode === 'border');
-}
-function updateRotateFillOption(){
-  const opt = document.getElementById('rotate-fill-option');
-  if(opt) opt.style.display = active.has('rotate') ? 'block' : 'none';
-}
-
 // ── TEMPLATES ─────────────────────────────────────────────
 function renderTemplates(){
   const tagLabel = { safe:'🟢 '+t('groupSafe'), boost:'🟡 '+t('groupBoost'), creative:'🔴 '+t('groupCreative') };
@@ -4308,7 +4282,7 @@ function renderTemplates(){
 }
 
 function toggleChip(id){
-  setTimeout(() => { updateShrinkOption(); updateRotateFillOption(); }, 50);
+  setTimeout(updateShrinkOption, 50);
   active.has(id) ? active.delete(id) : active.add(id);
   const isOn = active.has(id);
   document.getElementById('chip-'+id).classList.toggle('on', isOn);
@@ -4322,7 +4296,7 @@ function setAll(on){
     on ? active.add(t.id) : active.delete(t.id);
     document.getElementById('chip-'+t.id).classList.toggle('on', on);
   });
-  updateShrinkOption(); updateRotateFillOption();
+  updateShrinkOption();
   updateCount();
 }
 
@@ -4590,7 +4564,6 @@ async function generate(){
   fd.append('combineMode', combineMode ? '1' : '0');
   fd.append('shrinkBgMode',  shrinkBgMode);
   fd.append('shrinkBgColor', shrinkBgColor);
-  fd.append('rotateFillMode', rotateFillMode);
   const metadataToggle = document.getElementById('inject-metadata-toggle');
   fd.append('injectMetadata', (!metadataToggle || metadataToggle.checked) ? '1' : '0');
   fd.append('deviceModelId', (document.getElementById('device-model-select') || {}).value || 'random');

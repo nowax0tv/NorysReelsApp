@@ -811,28 +811,14 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
   }
 }
 
-// Facteur de zoom nécessaire pour qu'un rectangle 540x960 tourné de `angle`
-// radians recouvre encore tout le cadre 540x960 une fois tourné — mode
-// "zoom" du rendu de rotation : remplit 100% du cadre, sans bordure, au prix
-// d'un léger rognage (invisible) des bords d'origine. +2% de marge contre
-// les arrondis. (L'autre mode, "border", garde tout le sujet intact avec
-// une petite bordure de flou/couleur sur 1-2 côtés — voir les branches
-// rotateAngle ci-dessous.)
-function rotateZoomFactor(angle){
-  const a = Math.abs(parseFloat(angle) || 0);
-  const cosA = Math.abs(Math.cos(a)), sinA = Math.abs(Math.sin(a));
-  return Math.max(cosA + (960/540)*sinA, (540/960)*sinA + cosA) * 1.02;
-}
-
 // ── GENERATE VARIANT ──────────────────────────────────────────
 
-function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, rotateFillMode, metaOpts, onProgress){
+function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress){
   special       = special       || '';
   captionLines  = captionLines  || [];
   captionStyle  = captionStyle  || {};
   shrinkBgMode  = shrinkBgMode  || 'blur';
   shrinkBgColor = (shrinkBgColor||'#ff69b4').replace('#','');
-  rotateFillMode = rotateFillMode === 'zoom' ? 'zoom' : 'border';
   metaOpts      = metaOpts      || {};
   const injectMetadata = metaOpts.injectMetadata !== false;
   const chosenDevice   = injectMetadata ? (findIphoneModel(metaOpts.deviceModelId) || pick(DEVICES)) : null;
@@ -953,24 +939,11 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // d'un rectangle propre) — même technique que la branche "fond
         // couleur unie" juste en dessous, qui n'a jamais eu ce bug.
         const mid = cleanFilter ? cleanFilter+',' : '';
-        let fgChain;
-        if(rotateFillMode === 'zoom'){
-          // Zoome le sujet avant de le tourner (facteur calculé selon l'angle)
-          // pour qu'une fois tourné, il recouvre encore tout 540x960 — puis
-          // recadre pile dessus. Toujours du vrai contenu, jamais de bordure,
-          // au prix d'un léger rognage invisible des bords d'origine.
-          const z = rotateZoomFactor(rotateAngle);
-          const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
-          fgChain = mid+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
-            + 'rotate='+rotateAngle+':fillcolor=black:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-            + 'crop=540:960,format=yuv420p';
-        } else {
-          fgChain = mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
-            + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-            + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0';
-        }
         fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-           + '[fg]'+fgChain+',scale=iw*'+sf+':ih*'+sf+'[small];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
+           + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+           + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
+           + 'scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       } else {
         // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
@@ -994,21 +967,11 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
       const mid2 = cleanFilter ? cleanFilter+',' : '';
       let fc2;
       if(rotateAngle){
-        let rotChain;
-        if(rotateFillMode === 'zoom'){
-          const z = rotateZoomFactor(rotateAngle);
-          const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
-          rotChain = mid2+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
-            + 'rotate='+rotateAngle+':fillcolor=0x'+bgHex+':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-            + 'crop=540:960[rot2];';
-        } else {
-          rotChain = mid2+'rotate='+rotateAngle+':fillcolor=0x'+bgHex
+        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
+            + '[0:v]'+mid2+'rotate='+rotateAngle+':fillcolor=0x'+bgHex
             + ':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+')'
             + ',scale=w=540:h=960:force_original_aspect_ratio=decrease'
-            + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];';
-        }
-        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
-            + '[0:v]'+rotChain
+            + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];'
             // shortest=1 : sans ça, color= est une source infinie (pas de
             // durée propre) et overlay répète sa dernière frame indéfiniment
             // une fois la vidéo terminée — l'encodage tournait à l'infini
@@ -1049,20 +1012,10 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     // le scale=decrease qui suit ramène ça dans 540x960 sans rogner le sujet
     // (voir le commentaire détaillé dans la branche rétrécir+rotation).
     const mid = cleanFilter ? cleanFilter+',' : '';
-    let fgChain2;
-    if(rotateFillMode === 'zoom'){
-      const z = rotateZoomFactor(rotateAngle);
-      const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
-      fgChain2 = mid+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
-        + 'rotate='+rotateAngle+':fillcolor=black:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-        + 'crop=540:960,format=yuv420p[rotated];';
-    } else {
-      fgChain2 = mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
-        + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-        + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0[rotated];';
-    }
     const fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+fgChain2
+      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
+      + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+      + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0[rotated];'
       + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
@@ -1283,7 +1236,6 @@ const server = http.createServer((req, res) => {
         let captionStyle = {};
         let shrinkBgMode  = 'blur';
         let shrinkBgColor = '#ff69b4';
-        let rotateFillMode = 'zoom';
         let musicMode    = 'replace';
         let musicVol     = 80;
         let origVol      = 50;
@@ -1305,7 +1257,6 @@ const server = http.createServer((req, res) => {
           else if(p.name==='captionStyle')  { try{ captionStyle=JSON.parse(val); }catch{} }
           else if(p.name==='shrinkBgMode')  shrinkBgMode  = val;
           else if(p.name==='shrinkBgColor') shrinkBgColor = val;
-          else if(p.name==='rotateFillMode') rotateFillMode = (val === 'border') ? 'border' : 'zoom';
           else if(p.name==='musicMode')   musicMode = val;
           else if(p.name==='musicVol')    musicVol  = Math.max(0, Math.min(100, parseInt(val)||80));
           else if(p.name==='origVol')     origVol   = Math.max(0, Math.min(100, parseInt(val)||50));
@@ -1343,10 +1294,14 @@ const server = http.createServer((req, res) => {
         console.log('Generating '+total+' files ('+numVariants+' variants × 3 mirrors) → '+outputDir);
 
         let success = 0;
-        let seqIdx   = 0;  // numéro de variante de base (sans les miroirs)
         let globalIdx = 0; // index global sur tous les fichiers (pour la progression)
         for(const vf of tmpFiles){
           const base = path.basename(vf.name, path.extname(vf.name));
+          // Remis à zéro à chaque vidéo source : en mode séquentiel, le nom de
+          // fichier inclut déjà `base` (nom de la vidéo) ci-dessous, donc
+          // repartir de 001 par vidéo ne crée aucune collision — et évite des
+          // numéros à 3 chiffres qui grimpent sans fin sur un gros batch.
+          let seqIdx = 0;
           for(let i=0; i<numVariants; i++){
             let tplId, combinedFilter, combinedSpecial;
 
@@ -1398,9 +1353,12 @@ const server = http.createServer((req, res) => {
             // Générer l'original + miroir horizontal + miroir vertical
             for(const [suffix, mirrorFilter] of MIRROR_VARIANTS){
               const thisAttemptIndex = globalIdx++;
+              // `base` (nom de la vidéo source) est inclus même en mode séquentiel :
+              // sans ça, générer plusieurs vidéos à la suite produisait le même
+              // "variant_001.mp4" à chaque fois et écrasait les fichiers précédents.
               const outName = namingMode === 'random'
                 ? base+'_'+randBase+suffix+ext
-                : 'variant_'+seqNum+suffix+ext;
+                : base+'_variant_'+seqNum+suffix+ext;
               const outPath = path.join(outputDir, outName);
               const thisFilter = mirrorFilter
                 ? (combinedFilter ? combinedFilter+','+mirrorFilter : mirrorFilter)
@@ -1408,7 +1366,7 @@ const server = http.createServer((req, res) => {
               console.log('['+(i+1)+'/'+numVariants+']'+suffix+' '+tplId+' → '+outName);
 
               let lastSentPct = -1;
-              const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, rotateFillMode, metaOpts, (fraction) => {
+              const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
                 const pct = Math.round(((thisAttemptIndex + fraction) / total) * 100);
                 if(pct !== lastSentPct){ lastSentPct = pct; send(res,{type:'subprogress',pct}); }
               });
