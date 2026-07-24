@@ -811,6 +811,21 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
   }
 }
 
+// Taille de canevas transparent minimale pour qu'un rectangle w×h tourné de
+// `angle` radians y tienne entièrement (bounding box exacte), + une petite
+// marge de sécurité 2%. Avant ça, le pad utilisait un facteur fixe ×1.2 —
+// insuffisant dès qu'on dépasse ~8° de rotation (côtés du sujet coupés par
+// le rotate avant même le crop de retour, alors que le fond flouté derrière,
+// lui, remplit tout le cadre — d'où le "flou ok mais vidéo pas entière").
+function rotatedPadSize(w, h, angle){
+  const a = Math.abs(parseFloat(angle) || 0);
+  const cosA = Math.abs(Math.cos(a)), sinA = Math.abs(Math.sin(a));
+  return {
+    w: Math.ceil((w*cosA + h*sinA) * 1.02),
+    h: Math.ceil((w*sinA + h*cosA) * 1.02),
+  };
+}
+
 // ── GENERATE VARIANT ──────────────────────────────────────────
 
 function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress){
@@ -927,8 +942,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // contenu rétréci. Sans alpha, black@0 devient du noir opaque et cache
         // le blur — c'est le bug "y'a du flou mais y'a du noir".
         const mid = cleanFilter ? cleanFilter+',' : '';
+        const rp  = rotatedPadSize(540, 960, rotateAngle);
         fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2,scale=iw*'+sf+':ih*'+sf+'[small];'
+           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad='+rp.w+':'+rp.h+':('+rp.w+'-iw)/2:('+rp.h+'-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=540:960,scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       } else {
         // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
@@ -994,8 +1010,9 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     // d'origine passe aussi en transparent (au lieu d'opaque) pour ne pas
     // lui-même cacher le fond.
     const mid = cleanFilter ? cleanFilter+',' : '';
+    const rp  = rotatedPadSize(540, 960, rotateAngle);
     const fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad=iw*1.2:ih*1.2:(ow-iw)/2:(oh-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=iw/1.2:ih/1.2[rotated];'
+      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad='+rp.w+':'+rp.h+':('+rp.w+'-iw)/2:('+rp.h+'-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=540:960[rotated];'
       + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
