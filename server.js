@@ -811,29 +811,28 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
   }
 }
 
-// Taille de canevas transparent minimale pour qu'un rectangle w×h tourné de
-// `angle` radians y tienne entièrement (bounding box exacte), + une petite
-// marge de sécurité 2%. Avant ça, le pad utilisait un facteur fixe ×1.2 —
-// insuffisant dès qu'on dépasse ~8° de rotation (côtés du sujet coupés par
-// le rotate avant même le crop de retour, alors que le fond flouté derrière,
-// lui, remplit tout le cadre — d'où le "flou ok mais vidéo pas entière").
-function rotatedPadSize(w, h, angle){
+// Facteur de zoom nécessaire pour qu'un rectangle 540x960 tourné de `angle`
+// radians recouvre encore tout le cadre 540x960 une fois tourné — mode
+// "zoom" du rendu de rotation : remplit 100% du cadre, sans bordure, au prix
+// d'un léger rognage (invisible) des bords d'origine. +2% de marge contre
+// les arrondis. (L'autre mode, "border", garde tout le sujet intact avec
+// une petite bordure de flou/couleur sur 1-2 côtés — voir les branches
+// rotateAngle ci-dessous.)
+function rotateZoomFactor(angle){
   const a = Math.abs(parseFloat(angle) || 0);
   const cosA = Math.abs(Math.cos(a)), sinA = Math.abs(Math.sin(a));
-  return {
-    w: Math.ceil((w*cosA + h*sinA) * 1.02),
-    h: Math.ceil((w*sinA + h*cosA) * 1.02),
-  };
+  return Math.max(cosA + (960/540)*sinA, (540/960)*sinA + cosA) * 1.02;
 }
 
 // ── GENERATE VARIANT ──────────────────────────────────────────
 
-function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress){
+function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, rotateFillMode, metaOpts, onProgress){
   special       = special       || '';
   captionLines  = captionLines  || [];
   captionStyle  = captionStyle  || {};
   shrinkBgMode  = shrinkBgMode  || 'blur';
   shrinkBgColor = (shrinkBgColor||'#ff69b4').replace('#','');
+  rotateFillMode = rotateFillMode === 'zoom' ? 'zoom' : 'border';
   metaOpts      = metaOpts      || {};
   const injectMetadata = metaOpts.injectMetadata !== false;
   const chosenDevice   = injectMetadata ? (findIphoneModel(metaOpts.deviceModelId) || pick(DEVICES)) : null;
@@ -941,10 +940,37 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         // vraiment transparent et que le fond flouté reste visible derrière le
         // contenu rétréci. Sans alpha, black@0 devient du noir opaque et cache
         // le blur — c'est le bug "y'a du flou mais y'a du noir".
+        //
+        // rotate=...:ow=rotw(angle):oh=roth(angle) laisse ffmpeg agrandir le
+        // canevas exactement à la taille du rectangle tourné (aucune perte),
+        // puis le scale force_original_aspect_ratio=decrease qui suit RAMÈNE
+        // ce canevas agrandi à l'intérieur de 540x960 (au lieu de le CROPER
+        // à cette taille) — donc rien n'est tronqué. L'ancienne version
+        // faisait un pad fixe puis un crop=540:960 après rotation : une
+        // rotation fait toujours dépasser certains côtés du rectangle
+        // d'origine hors de sa propre taille, donc ce crop coupait
+        // le sujet en plusieurs endroits (silhouette à 6+ côtés au lieu
+        // d'un rectangle propre) — même technique que la branche "fond
+        // couleur unie" juste en dessous, qui n'a jamais eu ce bug.
         const mid = cleanFilter ? cleanFilter+',' : '';
-        const rp  = rotatedPadSize(540, 960, rotateAngle);
+        let fgChain;
+        if(rotateFillMode === 'zoom'){
+          // Zoome le sujet avant de le tourner (facteur calculé selon l'angle)
+          // pour qu'une fois tourné, il recouvre encore tout 540x960 — puis
+          // recadre pile dessus. Toujours du vrai contenu, jamais de bordure,
+          // au prix d'un léger rognage invisible des bords d'origine.
+          const z = rotateZoomFactor(rotateAngle);
+          const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
+          fgChain = mid+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
+            + 'rotate='+rotateAngle+':fillcolor=black:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+            + 'crop=540:960,format=yuv420p';
+        } else {
+          fgChain = mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
+            + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+            + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0';
+        }
         fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad='+rp.w+':'+rp.h+':('+rp.w+'-iw)/2:('+rp.h+'-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=540:960,scale=iw*'+sf+':ih*'+sf+'[small];'
+           + '[fg]'+fgChain+',scale=iw*'+sf+':ih*'+sf+'[small];'
            + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       } else {
         // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
@@ -968,11 +994,21 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
       const mid2 = cleanFilter ? cleanFilter+',' : '';
       let fc2;
       if(rotateAngle){
-        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
-            + '[0:v]'+mid2+'rotate='+rotateAngle+':fillcolor=0x'+bgHex
+        let rotChain;
+        if(rotateFillMode === 'zoom'){
+          const z = rotateZoomFactor(rotateAngle);
+          const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
+          rotChain = mid2+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
+            + 'rotate='+rotateAngle+':fillcolor=0x'+bgHex+':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+            + 'crop=540:960[rot2];';
+        } else {
+          rotChain = mid2+'rotate='+rotateAngle+':fillcolor=0x'+bgHex
             + ':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+')'
             + ',scale=w=540:h=960:force_original_aspect_ratio=decrease'
-            + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];'
+            + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];';
+        }
+        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
+            + '[0:v]'+rotChain
             // shortest=1 : sans ça, color= est une source infinie (pas de
             // durée propre) et overlay répète sa dernière frame indéfiniment
             // une fois la vidéo terminée — l'encodage tournait à l'infini
@@ -999,20 +1035,34 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
         ...encodeArgs, ...meta, outputFile];
     }
   } else if(rotateAngle){
-    // Même bug que le rétrécir : [fg] doit être ramené à 540:960 avant le
-    // pad*1.2/rotate/crop, sinon il reste à la résolution d'origine (ex.
-    // 1080x1920), recouvre entièrement le canevas de fond flouté, et la
-    // bordure n'apparaît jamais.
+    // Même technique que le rétrécir+rotation ci-dessus : [fg] doit être
+    // ramené à 540:960 avant le rotate, sinon il reste à la résolution
+    // d'origine (ex. 1080x1920), recouvre entièrement le canevas de fond
+    // flouté, et la bordure n'apparaît jamais.
     // fillcolor=black@0 (transparent) ne sert à rien sans canal alpha sur
     // le flux — yuv420p n'en a pas, donc "transparent" devenait du noir
     // opaque (le fond flouté ne pouvait jamais apparaître dans les coins).
     // format=yuva420p avant le pad/rotate donne ce canal alpha, et le pad
     // d'origine passe aussi en transparent (au lieu d'opaque) pour ne pas
-    // lui-même cacher le fond.
+    // lui-même cacher le fond. rotate=...:ow=rotw:oh=roth agrandit le
+    // canevas exactement à la taille du rectangle tourné (zéro perte), puis
+    // le scale=decrease qui suit ramène ça dans 540x960 sans rogner le sujet
+    // (voir le commentaire détaillé dans la branche rétrécir+rotation).
     const mid = cleanFilter ? cleanFilter+',' : '';
-    const rp  = rotatedPadSize(540, 960, rotateAngle);
+    let fgChain2;
+    if(rotateFillMode === 'zoom'){
+      const z = rotateZoomFactor(rotateAngle);
+      const zw = Math.ceil(540*z), zh = Math.ceil(960*z);
+      fgChain2 = mid+'scale=w='+zw+':h='+zh+':force_original_aspect_ratio=increase,crop='+zw+':'+zh+','
+        + 'rotate='+rotateAngle+':fillcolor=black:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+        + 'crop=540:960,format=yuv420p[rotated];';
+    } else {
+      fgChain2 = mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
+        + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
+        + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0[rotated];';
+    }
     const fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,pad='+rp.w+':'+rp.h+':('+rp.w+'-iw)/2:('+rp.h+'-ih)/2:black@0,rotate='+rotateAngle+':fillcolor=black@0:ow=iw:oh=ih,crop=540:960[rotated];'
+      + '[fg]'+fgChain2
       + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
     args = ['-y', ...trimArgs, '-i', inputFile,
       '-filter_complex', fc,
@@ -1233,6 +1283,7 @@ const server = http.createServer((req, res) => {
         let captionStyle = {};
         let shrinkBgMode  = 'blur';
         let shrinkBgColor = '#ff69b4';
+        let rotateFillMode = 'zoom';
         let musicMode    = 'replace';
         let musicVol     = 80;
         let origVol      = 50;
@@ -1254,6 +1305,7 @@ const server = http.createServer((req, res) => {
           else if(p.name==='captionStyle')  { try{ captionStyle=JSON.parse(val); }catch{} }
           else if(p.name==='shrinkBgMode')  shrinkBgMode  = val;
           else if(p.name==='shrinkBgColor') shrinkBgColor = val;
+          else if(p.name==='rotateFillMode') rotateFillMode = (val === 'border') ? 'border' : 'zoom';
           else if(p.name==='musicMode')   musicMode = val;
           else if(p.name==='musicVol')    musicVol  = Math.max(0, Math.min(100, parseInt(val)||80));
           else if(p.name==='origVol')     origVol   = Math.max(0, Math.min(100, parseInt(val)||50));
@@ -1356,7 +1408,7 @@ const server = http.createServer((req, res) => {
               console.log('['+(i+1)+'/'+numVariants+']'+suffix+' '+tplId+' → '+outName);
 
               let lastSentPct = -1;
-              const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
+              const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, rotateFillMode, metaOpts, (fraction) => {
                 const pct = Math.round(((thisAttemptIndex + fraction) / total) * 100);
                 if(pct !== lastSentPct){ lastSentPct = pct; send(res,{type:'subprogress',pct}); }
               });
