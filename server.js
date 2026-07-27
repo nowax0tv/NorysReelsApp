@@ -813,13 +813,22 @@ function generateRandCut(inputFile, outputFile, vfStr, args){
 
 // ── GENERATE VARIANT ──────────────────────────────────────────
 
-function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress){
+function generateVariant(inputFile, outputFile, filter, special, captionLines, captionStyle, musicFile, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, onProgress, shrinkSizeMin, shrinkSizeMax){
   special       = special       || '';
   captionLines  = captionLines  || [];
   captionStyle  = captionStyle  || {};
   shrinkBgMode  = shrinkBgMode  || 'blur';
   shrinkBgColor = (shrinkBgColor||'#ff69b4').replace('#','');
   metaOpts      = metaOpts      || {};
+  // Plage de facteurs d'échelle pour le filtre "Rétrécir" — le plancher est
+  // piloté par le slider "Taille minimum du rétrécir" côté UI, le plafond
+  // reste fixe à 95% ; chaque variante tire une valeur aléatoire dans cette
+  // plage pour garder une empreinte unique sans jamais descendre sous le
+  // plancher voulu par l'utilisateur (voir shrinkSizeMin dans le parsing
+  // multipart).
+  shrinkSizeMin = Math.max(0.40, Math.min(0.95, +shrinkSizeMin || 0.75));
+  shrinkSizeMax = Math.max(0.40, Math.min(0.95, +shrinkSizeMax || 0.95));
+  if(shrinkSizeMin > shrinkSizeMax){ const tmp = shrinkSizeMin; shrinkSizeMin = shrinkSizeMax; shrinkSizeMax = tmp; }
   const injectMetadata = metaOpts.injectMetadata !== false;
   const chosenDevice   = injectMetadata ? (findIphoneModel(metaOpts.deviceModelId) || pick(DEVICES)) : null;
   const chosenLocation = injectMetadata ? pickLocationForCountry(metaOpts.gpsCountry) : null;
@@ -917,7 +926,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   let args;
 
   if(hasShrink){
-    const sf = +(rnd(0.70, 0.85)).toFixed(3);
+    const sf = +(rnd(shrinkSizeMin, shrinkSizeMax)).toFixed(3);
     let fc;
     if(bgMode(shrinkBgMode) === 'blur'){
       if(rotateAngle){
@@ -1236,6 +1245,8 @@ const server = http.createServer((req, res) => {
         let captionStyle = {};
         let shrinkBgMode  = 'blur';
         let shrinkBgColor = '#ff69b4';
+        let shrinkSizeMin = 0.75;
+        let shrinkSizeMax = 0.95;
         let musicMode    = 'replace';
         let musicVol     = 80;
         let origVol      = 50;
@@ -1259,6 +1270,16 @@ const server = http.createServer((req, res) => {
           else if(p.name==='captionStyle')  { try{ captionStyle=JSON.parse(val); }catch{} }
           else if(p.name==='shrinkBgMode')  shrinkBgMode  = val;
           else if(p.name==='shrinkBgColor') shrinkBgColor = val;
+          else if(p.name==='shrinkSizeMin'){
+            // Plancher (%) envoyé par le slider "Taille minimum du rétrécir" —
+            // chaque variante tire un facteur aléatoire entre ce plancher et
+            // un plafond fixe de 95% (quasi taille normale), donc ça reste
+            // aléatoire par variante (empreinte unique) sans jamais descendre
+            // sous la taille minimale voulue par l'utilisateur.
+            const pct = Math.max(50, Math.min(90, parseFloat(val)||75));
+            shrinkSizeMin = pct/100;
+            shrinkSizeMax = 0.95;
+          }
           else if(p.name==='musicMode')   musicMode = val;
           else if(p.name==='musicVol')    musicVol  = Math.max(0, Math.min(100, parseInt(val)||80));
           else if(p.name==='origVol')     origVol   = Math.max(0, Math.min(100, parseInt(val)||50));
@@ -1375,7 +1396,7 @@ const server = http.createServer((req, res) => {
               const ok = await generateVariant(vf.tmp, outPath, thisFilter, combinedSpecial, captionLines, captionStyle, musicTmp, musicMode, musicVol, origVol, shrinkBgMode, shrinkBgColor, metaOpts, (fraction) => {
                 const pct = Math.round(((thisAttemptIndex + fraction) / total) * 100);
                 if(pct !== lastSentPct){ lastSentPct = pct; send(res,{type:'subprogress',pct}); }
-              });
+              }, shrinkSizeMin, shrinkSizeMax);
               if(ok){ success++; send(res,{type:'progress',file:outName}); }
               else { send(res,{type:'error',file:outName,msg:'FFmpeg error'}); }
             }
