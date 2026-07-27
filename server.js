@@ -660,8 +660,10 @@ function rnd(min, max){
   return +(Math.random() * (max - min) + min).toFixed(4);
 }
 
-// Reçoit le filter string de base et randomise ses paramètres dans leur plage safe
-function randomizeFilter(filter){
+// Reçoit le filter string de base et randomise ses paramètres dans leur plage safe.
+// rotateMaxRad (radians) plafonne l'angle de rotation tiré au sort — piloté
+// par le slider "Degré de rotation max" côté UI, voir son parsing plus bas.
+function randomizeFilter(filter, rotateMaxRad){
   if(!filter) return filter;
 
   // ── PLAGES RANDOMISATION — max safe Instagram ───────────────
@@ -746,8 +748,8 @@ function randomizeFilter(filter){
   // fillcolor=black@0 pour rendre les coins transparents
   // Le blur bg est ajouté dans generateVariant via filter_complex
   if(filter.includes('rotate=') && filter.includes('fillcolor=black')){
-    const minRad = 0.0873;
-    const maxRad = 0.2618;
+    const minRad = 0.0873; // 5° — plancher fixe, la "valeur de base"
+    const maxRad = Math.max(minRad, +rotateMaxRad || 0.2618);
     const sign   = Math.random() > 0.5 ? 1 : -1;
     const angle  = +(sign * rnd(minRad, maxRad)).toFixed(4);
     // Marquer avec angle pour que generateVariant construise le filter_complex
@@ -755,6 +757,34 @@ function randomizeFilter(filter){
   }
 
   return filter;
+}
+
+// ── ROTATION "PLEIN CADRE" ──────────────────────────────────────
+// Faire tourner une vidéo sans jamais rien perdre oblige à rétrécir le
+// contenu visible (voir l'ancienne technique ow=rotw/oh=roth + scale=decrease
+// ci-dessous, conservée nulle part ailleurs) — combinée avec le filtre
+// "Rétrécir", ça cumulait deux rétrécissements et le résultat final finissait
+// bien plus petit que ce que le slider "Taille minimum" laissait penser.
+// Décision : on préfère zoomer légèrement AVANT de tourner (facteur calculé
+// géométriquement pour que le recadrage final tombe pile dans du contenu
+// réel, jamais dans les coins vides de la rotation) puis recadrer au centre
+// — la vidéo tourne en remplissant tout le cadre, quitte à perdre un peu les
+// bords d'origine. Le sujet principal, généralement centré, reste visible.
+// Résultat : la rotation ne rétrécit plus rien "en plus" — le slider
+// "Rétrécir" redevient le seul et vrai contrôle de la taille finale.
+const ROTATE_CANVAS_W = 540, ROTATE_CANVAS_H = 960;
+function buildRotateCoverFragment(angleRad){
+  const absRad = Math.abs(angleRad);
+  // Zoom nécessaire pour qu'un cadre ROTATE_CANVAS_W x ROTATE_CANVAS_H,
+  // une fois tourné de angleRad, contienne encore entièrement un cadre de
+  // cette même taille en son centre (formule inverse de l'agrandissement de
+  // canevas ow=rotw/oh=roth : W/(W·cosθ + H·sinθ) rétrécit, son inverse zoome).
+  const zoom = Math.cos(absRad) + (ROTATE_CANVAS_H / ROTATE_CANVAS_W) * Math.sin(absRad);
+  return 'scale=w=' + ROTATE_CANVAS_W + ':h=' + ROTATE_CANVAS_H + ':force_original_aspect_ratio=increase'
+       + ',crop=' + ROTATE_CANVAS_W + ':' + ROTATE_CANVAS_H
+       + ',scale=iw*' + zoom.toFixed(4) + ':ih*' + zoom.toFixed(4)
+       + ',rotate=' + angleRad + ':fillcolor=black'
+       + ',crop=' + ROTATE_CANVAS_W + ':' + ROTATE_CANVAS_H;
 }
 
 
@@ -889,6 +919,13 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     if(rm){
       rotateAngle = rm[1];
       cleanFilter = cleanFilter.replace(/,?__rotate__-?[\d.]+,?/g, ',').replace(/^,|,$/g, '');
+      // Le fragment "plein cadre" (zoom + rotation + recadrage, voir
+      // buildRotateCoverFragment) produit directement du 540x960 sans coins
+      // vides — on l'injecte comme un filtre normal dans cleanFilter, donc le
+      // reste du pipeline (shrink, etc.) n'a plus besoin de traiter la
+      // rotation comme un cas spécial nécessitant son propre filter_complex.
+      const rotFrag = buildRotateCoverFragment(parseFloat(rotateAngle));
+      cleanFilter = cleanFilter ? cleanFilter + ',' + rotFrag : rotFrag;
     }
   }
 
@@ -926,110 +963,43 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   let args;
 
   if(hasShrink){
+    // Si une rotation est active, cleanFilter contient déjà le fragment
+    // "plein cadre" (buildRotateCoverFragment, voir plus haut) qui produit
+    // du 540x960 propre sans coins vides — donc plus besoin de traiter la
+    // rotation comme un cas à part ici : le même gabarit sert dans les deux
+    // cas, et le scale=decrease ci-dessous ne fait rien de plus quand les
+    // dimensions sont déjà correctes.
     const sf = +(rnd(shrinkSizeMin, shrinkSizeMax)).toFixed(3);
     let fc;
     if(bgMode(shrinkBgMode) === 'blur'){
-      if(rotateAngle){
-        // Même technique que le rotate seul (lignes ~609) : on ajoute un canal
-        // alpha (yuva420p) AVANT le pad/rotate pour que fillcolor=black@0 soit
-        // vraiment transparent et que le fond flouté reste visible derrière le
-        // contenu rétréci. Sans alpha, black@0 devient du noir opaque et cache
-        // le blur — c'est le bug "y'a du flou mais y'a du noir".
-        //
-        // rotate=...:ow=rotw(angle):oh=roth(angle) laisse ffmpeg agrandir le
-        // canevas exactement à la taille du rectangle tourné (aucune perte),
-        // puis le scale force_original_aspect_ratio=decrease qui suit RAMÈNE
-        // ce canevas agrandi à l'intérieur de 540x960 (au lieu de le CROPER
-        // à cette taille) — donc rien n'est tronqué. L'ancienne version
-        // faisait un pad fixe puis un crop=540:960 après rotation : une
-        // rotation fait toujours dépasser certains côtés du rectangle
-        // d'origine hors de sa propre taille, donc ce crop coupait
-        // le sujet en plusieurs endroits (silhouette à 6+ côtés au lieu
-        // d'un rectangle propre) — même technique que la branche "fond
-        // couleur unie" juste en dessous, qui n'a jamais eu ce bug.
-        const mid = cleanFilter ? cleanFilter+',' : '';
-        fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
-           + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-           + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
-           + 'scale=iw*'+sf+':ih*'+sf+'[small];'
-           + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
-      } else {
-        // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
-        // déjà plus grande que ça (1080x1920 typique), le facteur de
-        // rétrécissement (0.70-0.85) s'applique à SA résolution d'origine
-        // et reste plus grand que le canevas : le fond flouté ne se voit
-        // alors jamais (bordure invisible, bug constaté en testant).
-        const mid = cleanFilter ? cleanFilter+',' : '';
-        fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-           + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,scale=iw*'+sf+':ih*'+sf+',format=yuv420p[small];'
-           + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
-      }
+      // [fg] doit d'abord être ramené à 540:960 — sinon pour une vidéo
+      // déjà plus grande que ça (1080x1920 typique), le facteur de
+      // rétrécissement s'applique à SA résolution d'origine et reste
+      // plus grand que le canevas : le fond flouté ne se voit alors
+      // jamais (bordure invisible, bug constaté en testant).
+      const mid = cleanFilter ? cleanFilter+',' : '';
+      fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
+         + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,scale=iw*'+sf+':ih*'+sf+',format=yuv420p[small];'
+         + '[blurred][small]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
       args = ['-y', ...trimArgs, '-i', inputFile,
         '-filter_complex', fc,
         '-map', '[out]', '-map', '0:a?',
         ...encodeArgs, ...meta, outputFile];
     } else {
-      // Couleur unie — même approche que blur mais fond coloré uni
+      // Couleur unie — même approche que blur mais fond coloré uni.
+      // shortest=1 : sans ça, color= est une source infinie et overlay
+      // tourne indéfiniment une fois la vidéo terminée (testé : ffmpeg ne
+      // s'arrêtait jamais tout seul, fichier final corrompu par le timeout).
       const bgHex = shrinkBgColor || 'ffffff';
-      const inv = +(1/sf).toFixed(4);
       const mid2 = cleanFilter ? cleanFilter+',' : '';
-      let fc2;
-      if(rotateAngle){
-        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
-            + '[0:v]'+mid2+'rotate='+rotateAngle+':fillcolor=0x'+bgHex
-            + ':ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+')'
-            + ',scale=w=540:h=960:force_original_aspect_ratio=decrease'
-            + ',pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+'[rot2];'
-            // shortest=1 : sans ça, color= est une source infinie (pas de
-            // durée propre) et overlay répète sa dernière frame indéfiniment
-            // une fois la vidéo terminée — l'encodage tournait à l'infini
-            // (testé : toujours en cours après 10 min, fichier final corrompu
-            // car tué par le timeout serveur).
-            + '[bg2][rot2]overlay=(W-w)/2:(H-h)/2:shortest=1'
-            + ',scale=iw*'+sf+':ih*'+sf
-            + ',pad=iw*'+inv+':ih*'+inv+':(ow-iw)/2:(oh-ih)/2:0x'+bgHex
-            + ',format=yuv420p[out2]';
-      } else {
-        // Même correction que pour le fond flouté : normaliser à 540:960
-        // avant d'appliquer le facteur de rétrécissement.
-        // shortest=1 : sans ça, color= est une source infinie et overlay
-        // tourne indéfiniment une fois la vidéo terminée (voir commentaire
-        // plus haut, même bug, vérifié en testant — ffmpeg ne s'arrêtait
-        // jamais tout seul).
-        fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
-            + '[0:v]'+mid2+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+',scale=iw*'+sf+':ih*'+sf+'[sm2];'
-            + '[bg2][sm2]overlay=(W-w)/2:(H-h)/2:shortest=1,format=yuv420p[out2]';
-      }
+      const fc2 = 'color=c=0x'+bgHex+':size=540x960[bg2];'
+          + '[0:v]'+mid2+'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:0x'+bgHex+',scale=iw*'+sf+':ih*'+sf+'[sm2];'
+          + '[bg2][sm2]overlay=(W-w)/2:(H-h)/2:shortest=1,format=yuv420p[out2]';
       args = ['-y', ...trimArgs, '-i', inputFile,
         '-filter_complex', fc2,
         '-map', '[out2]', '-map', '0:a?',
         ...encodeArgs, ...meta, outputFile];
     }
-  } else if(rotateAngle){
-    // Même technique que le rétrécir+rotation ci-dessus : [fg] doit être
-    // ramené à 540:960 avant le rotate, sinon il reste à la résolution
-    // d'origine (ex. 1080x1920), recouvre entièrement le canevas de fond
-    // flouté, et la bordure n'apparaît jamais.
-    // fillcolor=black@0 (transparent) ne sert à rien sans canal alpha sur
-    // le flux — yuv420p n'en a pas, donc "transparent" devenait du noir
-    // opaque (le fond flouté ne pouvait jamais apparaître dans les coins).
-    // format=yuva420p avant le pad/rotate donne ce canal alpha, et le pad
-    // d'origine passe aussi en transparent (au lieu d'opaque) pour ne pas
-    // lui-même cacher le fond. rotate=...:ow=rotw:oh=roth agrandit le
-    // canevas exactement à la taille du rectangle tourné (zéro perte), puis
-    // le scale=decrease qui suit ramène ça dans 540x960 sans rogner le sujet
-    // (voir le commentaire détaillé dans la branche rétrécir+rotation).
-    const mid = cleanFilter ? cleanFilter+',' : '';
-    const fc = 'split=2[bg][fg];[bg]scale=w=600:h=1060:force_original_aspect_ratio=increase,crop=600:1060,boxblur=20:5,crop=540:960[blurred];'
-      + '[fg]'+mid+'scale=w=540:h=960:force_original_aspect_ratio=decrease,format=yuva420p,pad=540:960:(540-iw)/2:(960-ih)/2:black@0,'
-      + 'rotate='+rotateAngle+':fillcolor=black@0:ow=rotw('+rotateAngle+'):oh=roth('+rotateAngle+'),'
-      + 'scale=w=540:h=960:force_original_aspect_ratio=decrease,pad=540:960:(540-iw)/2:(960-ih)/2:black@0[rotated];'
-      + '[blurred][rotated]overlay=(W-w)/2:(H-h)/2,format=yuv420p[out]';
-    args = ['-y', ...trimArgs, '-i', inputFile,
-      '-filter_complex', fc,
-      '-map', '[out]', '-map', '0:a?',
-      ...encodeArgs, ...meta, outputFile];
   } else {
     const vf = [cleanFilter, 'format=yuv420p'].filter(Boolean).join(',');
     args = ['-y', ...trimArgs, '-i', inputFile,
@@ -1247,6 +1217,7 @@ const server = http.createServer((req, res) => {
         let shrinkBgColor = '#ff69b4';
         let shrinkSizeMin = 0.75;
         let shrinkSizeMax = 0.95;
+        let rotateMaxRad  = 0.2618; // 15° — plafond par défaut, voir slider "Degré de rotation max"
         let musicMode    = 'replace';
         let musicVol     = 80;
         let origVol      = 50;
@@ -1279,6 +1250,14 @@ const server = http.createServer((req, res) => {
             const pct = Math.max(50, Math.min(90, parseFloat(val)||75));
             shrinkSizeMin = pct/100;
             shrinkSizeMax = 0.95;
+          }
+          else if(p.name==='rotateDegreeMax'){
+            // Plafond (°) envoyé par le slider "Degré de rotation max" — même
+            // principe que shrinkSizeMin : chaque variante tire un angle
+            // aléatoire entre la base (5°, valeur plancher fixe) et ce
+            // plafond choisi par l'utilisateur, signe (gauche/droite) aléatoire.
+            const deg = Math.max(5, Math.min(30, parseFloat(val)||15));
+            rotateMaxRad = deg * Math.PI / 180;
           }
           else if(p.name==='musicMode')   musicMode = val;
           else if(p.name==='musicVol')    musicVol  = Math.max(0, Math.min(100, parseInt(val)||80));
@@ -1350,7 +1329,7 @@ const server = http.createServer((req, res) => {
                 // gagnant au hasard par variante — voir generateVariant().
                 if(!specialsFound.includes(tpl.special)) specialsFound.push(tpl.special);
               } else if(tpl.filter){
-                const randomized = randomizeFilter(tpl.filter);
+                const randomized = randomizeFilter(tpl.filter, rotateMaxRad);
                 if(randomized) filterParts.push(randomized);
               }
             }
