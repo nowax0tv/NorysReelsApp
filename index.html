@@ -1838,7 +1838,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.31</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.32</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -2505,22 +2505,33 @@
                 <input type="checkbox" id="inject-metadata-toggle" checked onchange="toggleMetadataOptions()"/>
                 <span class="toggle-sl"></span>
               </label>
-              <span data-icon="smartphone"></span> <strong data-i18n="injectMetadataLabel">Injecter métadonnées iPhone authentiques</strong>
+              <span data-icon="smartphone"></span> <strong data-i18n="injectMetadataLabel">Injecter métadonnées d'appareil authentiques</strong>
               <span style="color:var(--text3);" data-i18n="injectMetadataSub">(recommandé pour TikTok/Instagram)</span>
             </span>
           </div>
           <div id="metadata-options" class="cap-grid-2" style="margin-top:14px;">
             <div>
-              <div class="ctrl-lbl" data-i18n="iphoneModelLabel">Modèle iPhone</div>
+              <div class="ctrl-lbl" data-i18n="iphoneModelLabel">Modèle d'appareil</div>
               <select class="select-s" id="device-model-select">
-                <option value="iphone15promax" selected>iPhone 15 Pro Max</option>
-                <option value="random" data-i18n="randomOption">🎲 Aléatoire</option>
-                <option value="iphone15pro">iPhone 15 Pro</option>
-                <option value="iphone15">iPhone 15</option>
-                <option value="iphone14promax">iPhone 14 Pro Max</option>
-                <option value="iphone14pro">iPhone 14 Pro</option>
-                <option value="iphone13promax">iPhone 13 Pro Max</option>
+                <option value="random" data-i18n="randomOption">🎲 Aléatoire (tous)</option>
+                <optgroup label="📱 iPhone">
+                  <option value="random-iphone" data-i18n="randomIphoneOption">🎲 Aléatoire iPhone</option>
+                  <option value="iphone15promax" selected>iPhone 15 Pro Max</option>
+                  <option value="iphone15pro">iPhone 15 Pro</option>
+                  <option value="iphone15">iPhone 15</option>
+                  <option value="iphone14promax">iPhone 14 Pro Max</option>
+                  <option value="iphone14pro">iPhone 14 Pro</option>
+                  <option value="iphone13promax">iPhone 13 Pro Max</option>
+                </optgroup>
+                <optgroup label="🤖 Android">
+                  <option value="random-android" data-i18n="randomAndroidOption">🎲 Aléatoire Android</option>
+                  <option value="android-s24ultra">Samsung Galaxy S24 Ultra</option>
+                  <option value="android-s23ultra">Samsung Galaxy S23 Ultra</option>
+                  <option value="android-pixel8pro">Google Pixel 8 Pro</option>
+                  <option value="android-pixel8">Google Pixel 8</option>
+                </optgroup>
               </select>
+              <div class="gen-preview-note" style="margin-top:6px;" data-i18n="deviceModelHint">Si tu postes depuis un émulateur Android (LDPlayer...), choisis un modèle Android pour rester cohérent avec l'appareil qui poste réellement.</div>
             </div>
             <div>
               <div class="ctrl-lbl" data-i18n="gpsCountryLabel">Pays GPS</div>
@@ -2994,8 +3005,10 @@ const I18N = {
     groupSafe: 'Invisibles — hash unique garanti', groupBoost: 'Subtils — améliore le reach', groupCreative: 'Créatifs — effet visible',
     levelLabel: 'Niveau', statTotal: 'Reels générés', statMember: 'Membre depuis',
     outputFormatLabel: 'Format de sortie', formatMov: 'MOV (iPhone — recommandé)', formatMp4: 'MP4 (standard)',
-    injectMetadataLabel: 'Injecter métadonnées iPhone authentiques', injectMetadataSub: '(recommandé pour TikTok/Instagram)',
-    iphoneModelLabel: 'Modèle iPhone', gpsCountryLabel: 'Pays GPS', randomOption: '🎲 Aléatoire',
+    injectMetadataLabel: "Injecter métadonnées d'appareil authentiques", injectMetadataSub: '(recommandé pour TikTok/Instagram)',
+    iphoneModelLabel: "Modèle d'appareil", gpsCountryLabel: 'Pays GPS', randomOption: '🎲 Aléatoire (tous)',
+    randomIphoneOption: '🎲 Aléatoire iPhone', randomAndroidOption: '🎲 Aléatoire Android',
+    deviceModelHint: "Si tu postes depuis un émulateur Android (LDPlayer...), choisis un modèle Android pour rester cohérent avec l'appareil qui poste réellement.",
     namingModeLabel: 'Numérotation de sortie', namingSequential: 'Séquentielle', namingRandom: 'Aléatoire',
     mirrorVariantsLabel: 'Variantes miroir (en plus de l’originale)', mirrorHLabel: 'Miroir horizontal', mirrorVLabel: 'Miroir vertical',
     openFolderBtn: 'Ouvrir dossier',
@@ -3051,8 +3064,10 @@ const I18N = {
     groupSafe: 'Invisible — guaranteed unique hash', groupBoost: 'Subtle — improves reach', groupCreative: 'Creative — visible effect',
     levelLabel: 'Level', statTotal: 'Reels generated', statMember: 'Member since',
     outputFormatLabel: 'Output format', formatMov: 'MOV (iPhone — recommended)', formatMp4: 'MP4 (standard)',
-    injectMetadataLabel: 'Inject authentic iPhone metadata', injectMetadataSub: '(recommended for TikTok/Instagram)',
-    iphoneModelLabel: 'iPhone model', gpsCountryLabel: 'GPS country', randomOption: '🎲 Random',
+    injectMetadataLabel: 'Inject authentic device metadata', injectMetadataSub: '(recommended for TikTok/Instagram)',
+    iphoneModelLabel: 'Device model', gpsCountryLabel: 'GPS country', randomOption: '🎲 Random (all)',
+    randomIphoneOption: '🎲 Random iPhone', randomAndroidOption: '🎲 Random Android',
+    deviceModelHint: 'If you post from an Android emulator (LDPlayer...), pick an Android model to stay consistent with the device that actually posts.',
     namingModeLabel: 'Output numbering', namingSequential: 'Sequential', namingRandom: 'Random',
     mirrorVariantsLabel: 'Mirror variants (in addition to the original)', mirrorHLabel: 'Horizontal mirror', mirrorVLabel: 'Vertical mirror',
     openFolderBtn: 'Open folder',

@@ -66,7 +66,12 @@ const LOCATIONS = [
   { lat:'29.4241',  lon:'-98.4936',  city:'San Antonio'   },
 ];
 
-// ── MODÈLES iPhone (sélecteur manuel page Générer) ─────────────
+// ── MODÈLES iPhone / Android (sélecteur manuel page Générer) ───
+// Deux listes distinctes pour que "Aléatoire" à l'intérieur d'une marque ne
+// mélange jamais iPhone et Android — utile pour rester cohérent avec l'app
+// utilisée pour poster (ex: LDPlayer = émulateur Android, donc des
+// métadonnées vidéo iPhone créent une incohérence avec l'appareil qui poste
+// réellement).
 const IPHONE_MODELS = [
   { id:'iphone15promax', make:'Apple', model:'iPhone 15 Pro Max', software:'17.4.0' },
   { id:'iphone15pro',    make:'Apple', model:'iPhone 15 Pro',     software:'17.3.1' },
@@ -75,7 +80,19 @@ const IPHONE_MODELS = [
   { id:'iphone14pro',    make:'Apple', model:'iPhone 14 Pro',     software:'17.1.2' },
   { id:'iphone13promax', make:'Apple', model:'iPhone 13 Pro Max', software:'17.0.3' },
 ];
+const ANDROID_MODELS = [
+  { id:'android-s24ultra', make:'Samsung', model:'SM-S928U',    software:'14' },
+  { id:'android-s23ultra', make:'Samsung', model:'SM-S918U',    software:'14' },
+  { id:'android-pixel8pro', make:'Google', model:'Pixel 8 Pro', software:'14' },
+  { id:'android-pixel8',    make:'Google', model:'Pixel 8',     software:'14' },
+];
 function findIphoneModel(id){ return IPHONE_MODELS.find(m => m.id === id) || null; }
+function findAndroidModel(id){ return ANDROID_MODELS.find(m => m.id === id) || null; }
+function findDeviceModel(id){
+  if(id === 'random-iphone')  return pick(IPHONE_MODELS);
+  if(id === 'random-android') return pick(ANDROID_MODELS);
+  return findIphoneModel(id) || findAndroidModel(id) || null;
+}
 
 // ── LOCALISATIONS GPS par pays (sélecteur manuel page Générer) ──
 const LOCATIONS_BY_COUNTRY = {
@@ -835,7 +852,7 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   shrinkSizeMax = Math.max(0.40, Math.min(0.95, +shrinkSizeMax || 0.95));
   if(shrinkSizeMin > shrinkSizeMax){ const tmp = shrinkSizeMin; shrinkSizeMin = shrinkSizeMax; shrinkSizeMax = tmp; }
   const injectMetadata = metaOpts.injectMetadata !== false;
-  const chosenDevice   = injectMetadata ? (findIphoneModel(metaOpts.deviceModelId) || pick(DEVICES)) : null;
+  const chosenDevice   = injectMetadata ? (findDeviceModel(metaOpts.deviceModelId) || pick(DEVICES)) : null;
   const chosenLocation = injectMetadata ? pickLocationForCountry(metaOpts.gpsCountry) : null;
 
   const dev  = chosenDevice;
@@ -938,7 +955,13 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     '-maxrate', maxrateM + 'M', '-bufsize', bufsizeM + 'M',
     '-r', String(outputFps),
     '-c:a', 'aac', '-b:a', AUDIO, '-ar', '48000',
-    '-movflags', '+faststart',
+    // +use_metadata_tags : sans ce flag, le muxer MP4 standard (isom) ignore
+    // silencieusement les -metadata make=/model=/etc. plus bas — aucune
+    // erreur, le fichier sort juste sans les métadonnées d'appareil, donc
+    // l'injection "authentique" ne servait à rien en sortie MP4 (seul MOV
+    // fonctionnait, testé et confirmé). Inoffensif pour MOV, qui les
+    // acceptait déjà nativement.
+    '-movflags', '+faststart+use_metadata_tags',
   ];
 
   const trimArgs = rnd(0,1) > 0.05 ? ['-ss', String(+(rnd(0,0.8)).toFixed(4))] : [];
