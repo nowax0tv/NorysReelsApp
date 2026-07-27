@@ -661,7 +661,12 @@ function rnd(min, max){
 }
 
 // Reçoit le filter string de base et randomise ses paramètres dans leur plage safe
-function randomizeFilter(filter){
+// rotateMaxRad (radians) plafonne l'angle de rotation tiré au sort — piloté
+// par le slider "Degré de rotation max" côté UI (voir son parsing plus bas).
+// Un angle plus petit rétrécit moins (voir le calcul de compensation dans
+// generateVariant), donc ce slider est aussi le principal levier pour
+// remonter la taille finale quand Rétrécir + Rotation sont combinés.
+function randomizeFilter(filter, rotateMaxRad){
   if(!filter) return filter;
 
   // ── PLAGES RANDOMISATION — max safe Instagram ───────────────
@@ -746,8 +751,8 @@ function randomizeFilter(filter){
   // fillcolor=black@0 pour rendre les coins transparents
   // Le blur bg est ajouté dans generateVariant via filter_complex
   if(filter.includes('rotate=') && filter.includes('fillcolor=black')){
-    const minRad = 0.0873;
-    const maxRad = 0.2618;
+    const minRad = 0.0873; // 5° — plancher fixe
+    const maxRad = Math.max(minRad, +rotateMaxRad || 0.2618);
     const sign   = Math.random() > 0.5 ? 1 : -1;
     const angle  = +(sign * rnd(minRad, maxRad)).toFixed(4);
     // Marquer avec angle pour que generateVariant construise le filter_complex
@@ -1264,6 +1269,7 @@ const server = http.createServer((req, res) => {
         let shrinkBgColor = '#ff69b4';
         let shrinkSizeMin = 0.75;
         let shrinkSizeMax = 0.95;
+        let rotateMaxRad  = 0.2618; // 15° — plafond par défaut, voir slider "Degré de rotation max"
         let musicMode    = 'replace';
         let musicVol     = 80;
         let origVol      = 50;
@@ -1296,6 +1302,13 @@ const server = http.createServer((req, res) => {
             const pct = Math.max(50, Math.min(90, parseFloat(val)||75));
             shrinkSizeMin = pct/100;
             shrinkSizeMax = 0.95;
+          }
+          else if(p.name==='rotateDegreeMax'){
+            // Plafond (°) envoyé par le slider "Degré de rotation max" —
+            // chaque variante tire un angle aléatoire entre 5° (plancher
+            // fixe) et ce plafond, signe (gauche/droite) aléatoire.
+            const deg = Math.max(5, Math.min(30, parseFloat(val)||15));
+            rotateMaxRad = deg * Math.PI / 180;
           }
           else if(p.name==='musicMode')   musicMode = val;
           else if(p.name==='musicVol')    musicVol  = Math.max(0, Math.min(100, parseInt(val)||80));
@@ -1367,7 +1380,7 @@ const server = http.createServer((req, res) => {
                 // gagnant au hasard par variante — voir generateVariant().
                 if(!specialsFound.includes(tpl.special)) specialsFound.push(tpl.special);
               } else if(tpl.filter){
-                const randomized = randomizeFilter(tpl.filter);
+                const randomized = randomizeFilter(tpl.filter, rotateMaxRad);
                 if(randomized) filterParts.push(randomized);
               }
             }

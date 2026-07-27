@@ -1838,7 +1838,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.28</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.29</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -2457,6 +2457,15 @@
             </div>
           </div>
 
+          <div class="shrink-card" id="rotate-degree-option" style="display:none;">
+            <div class="shrink-label" data-i18n="rotateDegreeLabel">Degré de rotation max</div>
+            <div class="slider-row">
+              <div class="big-num" id="rotate-degree-display">15°</div>
+              <input type="range" id="rotate-degree-slider" min="5" max="30" value="15" oninput="setRotateDegreeMax(this.value)"/>
+            </div>
+            <div class="gen-preview-note" style="margin-top:6px;" id="rotate-degree-hint">Chaque variante tourne d'un angle aléatoire entre 5° et 15°, à gauche ou à droite. Réduire l'angle agrandit la taille finale possible avec "Rétrécir".</div>
+          </div>
+
           <div id="t-grid" class="filter-grid"></div>
 
           <div class="filter-actions">
@@ -2947,6 +2956,8 @@ const I18N = {
     selectionLabel: 'Sélection', shrinkBgLabel: 'Fond du rétrécir', shrinkBgBlur: 'Flou vidéo', shrinkBgColor: 'Couleur unie',
     shrinkSizeLabel: 'Taille minimum du rétrécir',
     shrinkSizeHint: 'Chaque variante prend une taille aléatoire entre {min}% et {max}% — jamais en dessous.',
+    rotateDegreeLabel: 'Degré de rotation max',
+    rotateDegreeHint: 'Chaque variante tourne d\'un angle aléatoire entre {min}° et {max}°, à gauche ou à droite. Réduire l\'angle agrandit la taille finale possible avec "Rétrécir".',
     previewLabel: 'Aperçu en direct', previewEmpty: "Ajoute une vidéo pour voir l'aperçu",
     previewNote: 'Aperçu approximatif — certains effets (coupes, vitesse) ne sont visibles que sur la vidéo finale.',
     enableAll: 'Tout activer', disableAll: 'Tout désactiver', allActiveFilters: 'Tous les filtres actifs', randomValuesPerVariant: '+ valeurs aléatoires par variante',
@@ -3002,6 +3013,8 @@ const I18N = {
     selectionLabel: 'Selection', shrinkBgLabel: 'Shrink background', shrinkBgBlur: 'Blurred video', shrinkBgColor: 'Solid color',
     shrinkSizeLabel: 'Minimum shrink size',
     shrinkSizeHint: 'Each variant gets a random size between {min}% and {max}% — never below.',
+    rotateDegreeLabel: 'Max rotation angle',
+    rotateDegreeHint: 'Each variant rotates by a random angle between {min}° and {max}°, left or right. Lowering the angle raises how large the final result can be with "Shrink".',
     previewLabel: 'Live preview', previewEmpty: 'Add a video to see the preview',
     previewNote: 'Approximate preview — some effects (cuts, speed) only show on the final video.',
     enableAll: 'Enable all', disableAll: 'Disable all', allActiveFilters: 'All active filters', randomValuesPerVariant: '+ random values per variant',
@@ -3071,6 +3084,8 @@ function applyTranslations(){
   // interpolée ({min}/{max}), pas gérable par le simple mécanisme data-i18n.
   const hint = document.getElementById('shrink-size-hint');
   if(hint && typeof shrinkSizeMin !== 'undefined') hint.textContent = t('shrinkSizeHint').replace('{min}', shrinkSizeMin).replace('{max}', SHRINK_SIZE_CEIL);
+  const rotHint = document.getElementById('rotate-degree-hint');
+  if(rotHint && typeof rotateDegreeMax !== 'undefined') rotHint.textContent = t('rotateDegreeHint').replace('{min}', ROTATE_DEGREE_BASE_MIN).replace('{max}', rotateDegreeMax);
 }
 
 function setLanguage(lang){
@@ -3650,6 +3665,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { setupDrop(); } catch(e){ console.error('setupDrop:', e); }
   runSplash();
   try { updateShrinkOption(); } catch(e){ console.error('updateShrinkOption:', e); }
+  try { updateRotateDegreeOption(); } catch(e){ console.error('updateRotateDegreeOption:', e); }
   try { updateCount(); } catch(e){ console.error('updateCount:', e); }
   try { updateGeneratePreview(); } catch(e){ console.error('updateGeneratePreview:', e); }
 });
@@ -4371,6 +4387,29 @@ function updateShrinkOption(){
   updateGeneratePreview();
 }
 
+// Plafond (°) choisi par l'utilisateur via le slider "Degré de rotation
+// max" — même principe que shrinkSizeMin pour "Rétrécir" : chaque variante
+// tire un angle aléatoire entre ROTATE_DEGREE_BASE_MIN (plancher fixe) et
+// ce plafond, signe (gauche/droite) aléatoire. Voir rotateMaxRad côté
+// server.js — un angle plus petit rétrécit moins, donc ce slider agrandit
+// aussi le plafond de taille atteignable avec "Rétrécir".
+const ROTATE_DEGREE_BASE_MIN = 5;
+let rotateDegreeMax = 15;
+function setRotateDegreeMax(val){
+  rotateDegreeMax = Math.max(ROTATE_DEGREE_BASE_MIN, Math.min(30, parseInt(val)||15));
+  const label = document.getElementById('rotate-degree-display');
+  if(label) label.textContent = rotateDegreeMax + '°';
+  const hint = document.getElementById('rotate-degree-hint');
+  if(hint) hint.textContent = t('rotateDegreeHint').replace('{min}', ROTATE_DEGREE_BASE_MIN).replace('{max}', rotateDegreeMax);
+  previewRotateWasActive = false; // force un nouveau tirage dans la nouvelle plage
+  updateGeneratePreview();
+}
+function updateRotateDegreeOption(){
+  const opt = document.getElementById('rotate-degree-option');
+  if(opt) opt.style.display = active.has('rotate') ? 'block' : 'none';
+  updateGeneratePreview();
+}
+
 // ── TEMPLATES ─────────────────────────────────────────────
 function renderTemplates(){
   const tagLabel = { safe:'🟢 '+t('groupSafe'), boost:'🟡 '+t('groupBoost'), creative:'🔴 '+t('groupCreative') };
@@ -4399,6 +4438,7 @@ function renderTemplates(){
 
 function toggleChip(id){
   setTimeout(updateShrinkOption, 50);
+  setTimeout(updateRotateDegreeOption, 50);
   active.has(id) ? active.delete(id) : active.add(id);
   const isOn = active.has(id);
   document.getElementById('chip-'+id).classList.toggle('on', isOn);
@@ -4414,6 +4454,7 @@ function setAll(on){
     document.getElementById('chip-'+t.id).classList.toggle('on', on);
   });
   updateShrinkOption();
+  updateRotateDegreeOption();
   updateCount();
   updateGeneratePreview();
 }
@@ -4456,6 +4497,7 @@ function savePreset(){
   input.value = '';
   renderPresetTags();
   updateShrinkOption();
+  updateRotateDegreeOption();
   const btn = document.querySelector('.preset-save-btn');
   if(!btn) return;
   const orig = btn.textContent;
@@ -4473,6 +4515,7 @@ function applyFilterPreset(idx){
   p.filters.forEach(id => active.add(id));
   renderTemplates();
   updateShrinkOption();
+  updateRotateDegreeOption();
   updateGeneratePreview();
 }
 function deletePreset(e, idx){
@@ -4553,7 +4596,8 @@ function getGenPreviewTransform(){
   if(active.has('rotate')){
     if(!previewRotateWasActive){
       const sign = Math.random() > 0.5 ? 1 : -1;
-      previewRotateDeg = sign * (5 + Math.random() * 10);
+      const span = Math.max(0, rotateDegreeMax - ROTATE_DEGREE_BASE_MIN);
+      previewRotateDeg = sign * (ROTATE_DEGREE_BASE_MIN + Math.random() * span);
     }
     parts.push('rotate(' + previewRotateDeg.toFixed(1) + 'deg)');
   }
@@ -4801,6 +4845,7 @@ async function generate(){
   fd.append('shrinkBgMode',  shrinkBgMode);
   fd.append('shrinkBgColor', shrinkBgColor);
   fd.append('shrinkSizeMin', shrinkSizeMin);
+  fd.append('rotateDegreeMax', rotateDegreeMax);
   const metadataToggle = document.getElementById('inject-metadata-toggle');
   fd.append('injectMetadata', (!metadataToggle || metadataToggle.checked) ? '1' : '0');
   fd.append('deviceModelId', (document.getElementById('device-model-select') || {}).value || 'random');
