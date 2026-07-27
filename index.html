@@ -1838,7 +1838,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.23</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.24</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -4561,11 +4561,25 @@ function getGenPreviewTransform(){
   return parts.join(' ');
 }
 
+// Facteur d'échelle géométrique quand une rotation est appliquée : côté
+// serveur, rotate=...:ow=rotw(angle):oh=roth(angle) agrandit le canevas pour
+// contenir le rectangle tourné sans rien perdre, puis scale=decrease ramène
+// ce canevas agrandi dans 540x960 — donc le contenu visible rétrécit d'autant
+// que l'angle est grand, MÊME quand "Rétrécir" n'est pas coché (voir la
+// branche `else if(rotateAngle)` dans server.js, qui s'applique à toute
+// rotation, pas seulement combinée avec le shrink).
+function getRotateFitScale(deg){
+  const rad = Math.abs(deg) * Math.PI / 180;
+  const w = 540, h = 960;
+  const rotw = w * Math.cos(rad) + h * Math.sin(rad);
+  return Math.min(1, w / rotw);
+}
+
 function updateGeneratePreview(){
   const mainVid   = document.getElementById('gen-prev-main');
   if(!mainVid) return; // page pas encore rendue
+  const compWrap  = document.getElementById('gen-prev-shrink');
   const empty     = document.getElementById('gen-preview-empty');
-  const shrinkWrap= document.getElementById('gen-prev-shrink');
   const bgVid     = document.getElementById('gen-prev-shrink-bg-vid');
   const bgSolid   = document.getElementById('gen-prev-shrink-bg-solid');
   const fgVid     = document.getElementById('gen-prev-shrink-fg-vid');
@@ -4588,24 +4602,34 @@ function updateGeneratePreview(){
 
   const cssFilter = getGenPreviewFilterCSS();
   const transform = getGenPreviewTransform();
-  const isShrink  = active.has('shrink');
+  const isShrink   = active.has('shrink');
+  const isRotate   = active.has('rotate');
+  // Toute rotation (avec ou sans "Rétrécir" coché) déclenche côté serveur la
+  // même composition fond flou/couleur + contenu inséré — voir server.js.
+  const isComposite = isShrink || isRotate;
 
-  mainVid.style.display    = (file && !isShrink) ? 'block' : 'none';
-  if(shrinkWrap) shrinkWrap.style.display = (file && isShrink) ? 'block' : 'none';
+  mainVid.style.display  = (file && !isComposite) ? 'block' : 'none';
+  if(compWrap) compWrap.style.display = (file && isComposite) ? 'block' : 'none';
 
-  if(!isShrink){
+  if(!isComposite){
     mainVid.style.filter    = cssFilter;
     mainVid.style.transform = transform;
   } else if(fgVid){
     fgVid.style.filter    = cssFilter;
     fgVid.style.transform = transform;
-    // L'aperçu montre la taille moyenne de la plage aléatoire réelle
-    // (shrinkSizeMin → SHRINK_SIZE_CEIL), pas juste le plancher — plus
-    // représentatif de ce à quoi ressembleront la plupart des variantes.
-    const previewSize = (shrinkSizeMin + SHRINK_SIZE_CEIL) / 2;
-    fgVid.style.width     = previewSize + '%';
-    fgVid.style.height    = previewSize + '%';
-    const isBlur = shrinkBgMode === 'blur';
+
+    // Taille visible : la moyenne de la plage "Rétrécir" (si cochée) combinée
+    // au rétrécissement géométrique dû à la rotation (si cochée) — les deux
+    // s'appliquent en cascade côté serveur quand ils sont actifs ensemble.
+    let previewSize = isShrink ? (shrinkSizeMin + SHRINK_SIZE_CEIL) / 2 : 100;
+    if(isRotate) previewSize *= getRotateFitScale(previewRotateDeg);
+    fgVid.style.width  = previewSize + '%';
+    fgVid.style.height = previewSize + '%';
+
+    // Fond : le mode couleur unie n'est appliqué côté serveur que si
+    // "Rétrécir" est coché — une rotation seule force toujours le fond flou
+    // (boxblur), quel que soit le réglage "Fond du rétrécir".
+    const isBlur = !isShrink || shrinkBgMode === 'blur';
     if(bgVid)   bgVid.style.display   = isBlur ? 'block' : 'none';
     if(bgSolid){
       bgSolid.style.display    = isBlur ? 'none' : 'block';
