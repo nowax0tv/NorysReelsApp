@@ -1838,7 +1838,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.27</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.28</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -4560,6 +4560,16 @@ function getGenPreviewTransform(){
   previewRotateWasActive = active.has('rotate');
   return parts.join(' ');
 }
+// Rétrécissement géométrique qu'une rotation d'angle `deg` impose déjà pour
+// tenir dans son propre cadre sans rien couper (même formule que server.js,
+// w=540 h=960) — sert de plafond pour la taille affichée par "Rétrécir" :
+// au-delà de ça, le serveur ne peut pas aller sans cropper, donc l'aperçu ne
+// doit pas non plus laisser croire à une taille inatteignable.
+function getRotateFitScale(deg){
+  const rad = Math.abs(deg) * Math.PI / 180;
+  const w = 540, h = 960;
+  return Math.min(1, w / (w * Math.cos(rad) + h * Math.sin(rad)));
+}
 
 function updateGeneratePreview(){
   const mainVid   = document.getElementById('gen-prev-main');
@@ -4602,7 +4612,12 @@ function updateGeneratePreview(){
     // L'aperçu montre la taille moyenne de la plage aléatoire réelle
     // (shrinkSizeMin → SHRINK_SIZE_CEIL), pas juste le plancher — plus
     // représentatif de ce à quoi ressembleront la plupart des variantes.
-    const previewSize = (shrinkSizeMin + SHRINK_SIZE_CEIL) / 2;
+    // Si la rotation est aussi active, elle impose déjà son propre
+    // rétrécissement géométrique (zéro perte) : le serveur compense en
+    // priorité (voir server.js), donc la taille finale ne peut jamais
+    // dépasser ce plafond — l'aperçu doit refléter la même limite physique.
+    let previewSize = (shrinkSizeMin + SHRINK_SIZE_CEIL) / 2;
+    if(active.has('rotate')) previewSize = Math.min(previewSize, getRotateFitScale(previewRotateDeg) * 100);
     fgVid.style.width     = previewSize + '%';
     fgVid.style.height    = previewSize + '%';
     const isBlur = shrinkBgMode === 'blur';

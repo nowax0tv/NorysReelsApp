@@ -926,7 +926,24 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
   let args;
 
   if(hasShrink){
-    const sf = +(rnd(shrinkSizeMin, shrinkSizeMax)).toFixed(3);
+    // Le plancher choisi par l'utilisateur (slider "Taille minimum du
+    // rétrécir") doit représenter la taille FINALE visible, même quand la
+    // rotation est aussi active. Sans compensation, le rétrécissement
+    // géométrique que la rotation impose déjà pour ne rien couper (voir
+    // ow=rotw/oh=roth plus bas) se cumule avec ce sf — le résultat finit
+    // alors toujours plus petit que prévu, même slider au maximum. On
+    // calcule donc sf pour COMPENSER ce rétrécissement plutôt que de
+    // l'ignorer : sf = cible / rétrécissement_naturel_de_la_rotation,
+    // borné à 1 (au-delà il faudrait cropper, ce qu'on évite volontairement
+    // pour ne jamais perdre un bout du sujet).
+    const target = +(rnd(shrinkSizeMin, shrinkSizeMax)).toFixed(3);
+    let sf = target;
+    if(rotateAngle){
+      const absRad = Math.abs(parseFloat(rotateAngle));
+      const naturalFit = 540 / (540 * Math.cos(absRad) + 960 * Math.sin(absRad));
+      sf = Math.min(1, target / naturalFit);
+    }
+    sf = +sf.toFixed(3);
     let fc;
     if(bgMode(shrinkBgMode) === 'blur'){
       if(rotateAngle){
