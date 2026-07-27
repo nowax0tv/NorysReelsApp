@@ -1838,7 +1838,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.22</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.23</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -4539,10 +4539,25 @@ function getGenPreviewFilterCSS(){
   if(active.has('bleach'))   parts.push('saturate(.3)', 'contrast(1.3)');
   return parts.join(' ');
 }
+// Côté serveur (randomizeFilter() dans server.js), chaque variante tire un
+// angle aléatoire entre 5° et 15°, signe (gauche/droite) aléatoire — l'aperçu
+// utilisait avant un angle fixe (toujours 6deg), donnant l'impression à tort
+// que la rotation va toujours dans le même sens. On tire maintenant un angle
+// dans la même plage, renouvelé à chaque activation du filtre, pour montrer
+// que la direction change réellement d'une génération à l'autre.
+let previewRotateDeg      = 0;
+let previewRotateWasActive = false;
 function getGenPreviewTransform(){
   const parts = [];
   if(active.has('zoom'))   parts.push('scale(1.05)');
-  if(active.has('rotate')) parts.push('rotate(6deg)');
+  if(active.has('rotate')){
+    if(!previewRotateWasActive){
+      const sign = Math.random() > 0.5 ? 1 : -1;
+      previewRotateDeg = sign * (5 + Math.random() * 10);
+    }
+    parts.push('rotate(' + previewRotateDeg.toFixed(1) + 'deg)');
+  }
+  previewRotateWasActive = active.has('rotate');
   return parts.join(' ');
 }
 
