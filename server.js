@@ -917,11 +917,26 @@ function generateVariant(inputFile, outputFile, filter, special, captionLines, c
     '-metadata', 'title=',
   ] : ['-map_metadata', '-1'];
 
+  // Le fps de sortie était fixé à 30 en dur, donc une vidéo source filmée à
+  // 60fps (courant sur iPhone) se faisait amputer la moitié de ses frames —
+  // mouvement moins fluide qu'à l'origine, même symptôme que le bug de
+  // résolution forcée en 540x960. On garde maintenant le fps réel de la
+  // source (déjà sondé plus haut via probeVideoInfo), borné entre 24 et 60 :
+  // pas de gain à monter au-delà de 60 (Instagram/TikTok ne l'exploitent
+  // pas), et pas de descente en dessous de 24 (saccades visibles).
+  const outputFps = Math.max(24, Math.min(60, Math.round(videoInfo.fps) || 30));
+  // Le plafond de bitrate (maxrate/bufsize) était pensé pour du 30fps — à
+  // fps plus élevé, il y a plus de frames à encoder pour la même durée, donc
+  // on le remonte proportionnellement pour ne pas brider la qualité par
+  // image (sinon le "gain" de fluidité se paierait en frames plus compressées).
+  const rateMult = outputFps / 30;
+  const maxrateM  = +(6  * rateMult).toFixed(1);
+  const bufsizeM  = +(12 * rateMult).toFixed(1);
   const encodeArgs = [
     '-c:v', 'libx264', '-profile:v', 'high', '-level', '4.0',
     '-crf', String(CRF), '-preset', PRESET,
-    '-maxrate', '6M', '-bufsize', '12M',
-    '-r', '30',
+    '-maxrate', maxrateM + 'M', '-bufsize', bufsizeM + 'M',
+    '-r', String(outputFps),
     '-c:a', 'aac', '-b:a', AUDIO, '-ar', '48000',
     '-movflags', '+faststart',
   ];
