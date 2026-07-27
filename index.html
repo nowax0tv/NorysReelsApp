@@ -702,43 +702,6 @@
     }
     .bg-btn.active { border-color: var(--purple2); color: var(--purple2); background: var(--dim); box-shadow: 0 0 16px rgba(124,58,237,.3), inset 0 1px 0 rgba(255,255,255,.06); }
 
-    .shrink-size-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-    .shrink-size-row .slider-row { gap: 12px; }
-    .shrink-size-row .big-num { font-size: 26px; min-width: 52px; }
-
-    /* ── GÉNÉRER : aperçu live ─────────────── */
-    #page-generate .page-inner { max-width: 1060px; }
-    .generate-layout { display: flex; align-items: flex-start; gap: 28px; }
-    .generate-main { flex: 1; min-width: 0; }
-    .generate-preview-col { width: 240px; flex-shrink: 0; position: sticky; top: 0; }
-    .gen-preview-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 10px; }
-    .gen-preview-phone {
-      position: relative; width: 100%; aspect-ratio: 9/16;
-      background: #04040c; border-radius: 16px; overflow: hidden;
-      border: 1px solid var(--border2); box-shadow: 0 20px 50px rgba(0,0,0,.5);
-    }
-    .gen-preview-phone video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .2s ease, transform .2s ease; }
-    .gen-preview-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; font-size: 11px; color: var(--text3); line-height: 1.5; z-index: 2; }
-    .gen-preview-vignette {
-      position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .2s ease;
-      background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.65) 100%); z-index: 3;
-    }
-    .gen-preview-grain {
-      position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .2s ease; mix-blend-mode: overlay; z-index: 3;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    }
-    .gen-prev-shrink-bg-solid { position: absolute; inset: 0; }
-    .gen-prev-shrink-fg-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-    .gen-prev-shrink-fg-wrap video { position: static; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.5); overflow: hidden; }
-    .gen-preview-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
-    .gen-preview-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text2); }
-    .gen-preview-note { font-size: 10px; color: var(--text3); margin-top: 10px; line-height: 1.5; }
-    @media (max-width: 980px) {
-      .generate-layout { flex-direction: column; }
-      .generate-preview-col { width: 100%; position: static; }
-      .gen-preview-phone { max-width: 240px; margin: 0 auto; }
-    }
-
     /* ── BILLING ───────────────────────────── */
     .billing-plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 4px; }
     .billing-plan-card {
@@ -1838,7 +1801,7 @@
       <div class="topbar-logo-icon"><span data-icon="zap" style="color:#fff;"></span></div>
       <div class="topbar-logo-name">NORYS REELS</div>
     </div>
-    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.25</div>
+    <div class="topbar-version" style="align-self:flex-start;margin-bottom:20px;">v2.5.26</div>
 
     <nav class="sidebar-nav">
       <div class="nav-step active" id="nav-generate" onclick="goPage('generate')">
@@ -2410,9 +2373,6 @@
           <div class="section-desc" data-i18n="generateDesc">Lance la génération de tes variantes uniques</div>
         </div>
 
-        <div class="generate-layout">
-        <div class="generate-main">
-
         <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
           <span class="drop-icon" data-icon="cloudUpload"></span>
           <div class="drop-title" data-i18n="dropTitle">Glisse tes vidéos ici</div>
@@ -2447,23 +2407,6 @@
                 <input type="color" id="shrink-custom-color" value="#ffffff" oninput="setShrinkColor(this.value)"/>
               </div>
             </div>
-            <div class="shrink-size-row">
-              <div class="shrink-label" style="margin-bottom:8px;" data-i18n="shrinkSizeLabel">Taille minimum du rétrécir</div>
-              <div class="slider-row">
-                <div class="big-num" id="shrink-size-display">75%</div>
-                <input type="range" id="shrink-size-slider" min="50" max="90" value="75" oninput="setShrinkSizeMin(this.value)"/>
-              </div>
-              <div class="gen-preview-note" style="margin-top:6px;" id="shrink-size-hint">Chaque variante prend une taille aléatoire entre 75% et 95% — jamais en dessous.</div>
-            </div>
-          </div>
-
-          <div class="shrink-card" id="rotate-degree-option" style="display:none;">
-            <div class="shrink-label" data-i18n="rotateDegreeLabel">Degré de rotation max</div>
-            <div class="slider-row">
-              <div class="big-num" id="rotate-degree-display">15°</div>
-              <input type="range" id="rotate-degree-slider" min="5" max="30" value="15" oninput="setRotateDegreeMax(this.value)"/>
-            </div>
-            <div class="gen-preview-note" style="margin-top:6px;" id="rotate-degree-hint">Chaque variante tourne d'un angle aléatoire entre 5° et 15°, à gauche ou à droite.</div>
           </div>
 
           <div id="t-grid" class="filter-grid"></div>
@@ -2568,30 +2511,6 @@
             </div>
           </button>
           <button class="btn-xs" id="open-folder-btn" onclick="openOutputFolder()" style="flex-shrink:0;padding:0 18px;"><span data-icon="folderOpen"></span> <span data-i18n="openFolderBtn">Ouvrir dossier</span></button>
-        </div>
-
-        </div>
-        <div class="generate-preview-col">
-          <div class="gen-preview-label" data-i18n="previewLabel">Aperçu en direct</div>
-          <div class="gen-preview-phone" id="gen-preview-phone">
-            <div class="gen-preview-empty" id="gen-preview-empty" data-i18n="previewEmpty">Ajoute une vidéo pour voir l'aperçu</div>
-
-            <video id="gen-prev-main" muted loop playsinline style="display:none;"></video>
-
-            <div id="gen-prev-shrink" style="display:none;position:absolute;inset:0;">
-              <video id="gen-prev-shrink-bg-vid" muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(14px) brightness(.7);transform:scale(1.15);"></video>
-              <div class="gen-prev-shrink-bg-solid" id="gen-prev-shrink-bg-solid" style="display:none;"></div>
-              <div class="gen-prev-shrink-fg-wrap">
-                <video id="gen-prev-shrink-fg-vid" muted loop playsinline style="width:77%;height:77%;object-fit:cover;"></video>
-              </div>
-            </div>
-
-            <div class="gen-preview-vignette" id="gen-preview-vignette"></div>
-            <div class="gen-preview-grain" id="gen-preview-grain"></div>
-          </div>
-          <div class="gen-preview-badges" id="gen-preview-badges"></div>
-          <div class="gen-preview-note" data-i18n="previewNote">Aperçu approximatif — certains effets (coupes, vitesse) ne sont visibles que sur la vidéo finale.</div>
-        </div>
         </div>
       </div>
     </div>
@@ -2954,12 +2873,6 @@ const I18N = {
     convCardLabel: 'Convertisseur MOV → MP4', convDropTitle: "Dépose un fichier .MOV (iPhone)", convDropSub: 'Conversion automatique en MP4 compatible',
     filtersTitle: 'Filtres visuels', filtersDesc: 'Chaque variante applique tous les filtres actifs avec des valeurs randomisées uniques',
     selectionLabel: 'Sélection', shrinkBgLabel: 'Fond du rétrécir', shrinkBgBlur: 'Flou vidéo', shrinkBgColor: 'Couleur unie',
-    shrinkSizeLabel: 'Taille minimum du rétrécir',
-    shrinkSizeHint: 'Chaque variante prend une taille aléatoire entre {min}% et {max}% — jamais en dessous.',
-    rotateDegreeLabel: 'Degré de rotation max',
-    rotateDegreeHint: "Chaque variante tourne d'un angle aléatoire entre {min}° et {max}°, à gauche ou à droite.",
-    previewLabel: 'Aperçu en direct', previewEmpty: "Ajoute une vidéo pour voir l'aperçu",
-    previewNote: 'Aperçu approximatif — certains effets (coupes, vitesse) ne sont visibles que sur la vidéo finale.',
     enableAll: 'Tout activer', disableAll: 'Tout désactiver', allActiveFilters: 'Tous les filtres actifs', randomValuesPerVariant: '+ valeurs aléatoires par variante',
     presetNamePh: 'Nom du preset…', save: 'Sauvegarder',
     captionsTitle: 'Sous-titres', captionsDesc: 'Texte gravé directement dans la vidéo · drag & drop la position',
@@ -3011,12 +2924,6 @@ const I18N = {
     convCardLabel: 'MOV → MP4 converter', convDropTitle: 'Drop a .MOV file (iPhone)', convDropSub: 'Automatic conversion to compatible MP4',
     filtersTitle: 'Visual filters', filtersDesc: 'Each variant applies every active filter with unique randomized values',
     selectionLabel: 'Selection', shrinkBgLabel: 'Shrink background', shrinkBgBlur: 'Blurred video', shrinkBgColor: 'Solid color',
-    shrinkSizeLabel: 'Minimum shrink size',
-    shrinkSizeHint: 'Each variant gets a random size between {min}% and {max}% — never below.',
-    rotateDegreeLabel: 'Max rotation angle',
-    rotateDegreeHint: 'Each variant rotates by a random angle between {min}° and {max}°, left or right.',
-    previewLabel: 'Live preview', previewEmpty: 'Add a video to see the preview',
-    previewNote: 'Approximate preview — some effects (cuts, speed) only show on the final video.',
     enableAll: 'Enable all', disableAll: 'Disable all', allActiveFilters: 'All active filters', randomValuesPerVariant: '+ random values per variant',
     presetNamePh: 'Preset name…', save: 'Save',
     captionsTitle: 'Captions', captionsDesc: 'Text burned directly into the video · drag &amp; drop the position',
@@ -3080,12 +2987,6 @@ function applyTranslations(){
   if(langBtn) langBtn.textContent = currentLang.toUpperCase();
   // Login : texte dépendant de l'état signin/signup, pas un simple data-i18n statique
   if(typeof authMode !== 'undefined') refreshLoginTexts();
-  // Idem pour le hint "Taille minimum du rétrécir" : contient une valeur
-  // interpolée ({min}/{max}), pas gérable par le simple mécanisme data-i18n.
-  const hint = document.getElementById('shrink-size-hint');
-  if(hint && typeof shrinkSizeMin !== 'undefined') hint.textContent = t('shrinkSizeHint').replace('{min}', shrinkSizeMin).replace('{max}', SHRINK_SIZE_CEIL);
-  const rotHint = document.getElementById('rotate-degree-hint');
-  if(rotHint && typeof rotateDegreeMax !== 'undefined') rotHint.textContent = t('rotateDegreeHint').replace('{min}', ROTATE_DEGREE_BASE_MIN).replace('{max}', rotateDegreeMax);
 }
 
 function setLanguage(lang){
@@ -3665,9 +3566,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { setupDrop(); } catch(e){ console.error('setupDrop:', e); }
   runSplash();
   try { updateShrinkOption(); } catch(e){ console.error('updateShrinkOption:', e); }
-  try { updateRotateDegreeOption(); } catch(e){ console.error('updateRotateDegreeOption:', e); }
   try { updateCount(); } catch(e){ console.error('updateCount:', e); }
-  try { updateGeneratePreview(); } catch(e){ console.error('updateGeneratePreview:', e); }
 });
 
 
@@ -4352,39 +4251,22 @@ let combineMode = false;
 // ── SHRINK BG ──────────────────────────────────────────────
 let shrinkBgMode  = 'blur';
 let shrinkBgColor = '#ff69b4';
-// Taille plancher choisie par l'utilisateur (%) : chaque variante tire une
-// taille aléatoire entre cette valeur et SHRINK_SIZE_CEIL (jamais en dessous
-// du plancher, voir shrinkSizeMin côté server.js) — garde des hash/empreintes
-// uniques par variante tout en respectant la limite basse voulue.
-const SHRINK_SIZE_CEIL = 95;
-let shrinkSizeMin = 75;
 function setShrinkBg(mode){
   shrinkBgMode = mode;
   document.getElementById('shrink-bg-blur').classList.toggle('active', mode === 'blur');
   document.getElementById('shrink-bg-color').classList.toggle('active', mode === 'color');
   const picker = document.getElementById('shrink-color-picker');
   if(picker) picker.style.display = mode === 'color' ? 'flex' : 'none';
-  updateGeneratePreview();
 }
 function setShrinkColor(hex){
   shrinkBgColor = hex;
   const el = document.getElementById('shrink-custom-color');
   if(el) el.value = hex;
   document.querySelectorAll('#shrink-color-picker .swatch').forEach(s => s.classList.remove('active'));
-  updateGeneratePreview();
-}
-function setShrinkSizeMin(val){
-  shrinkSizeMin = Math.max(50, Math.min(90, parseInt(val)||75));
-  const label = document.getElementById('shrink-size-display');
-  if(label) label.textContent = shrinkSizeMin + '%';
-  const hint = document.getElementById('shrink-size-hint');
-  if(hint) hint.textContent = t('shrinkSizeHint').replace('{min}', shrinkSizeMin).replace('{max}', SHRINK_SIZE_CEIL);
-  updateGeneratePreview();
 }
 function updateShrinkOption(){
   const opt = document.getElementById('shrink-bg-option');
   if(opt) opt.style.display = active.has('shrink') ? 'block' : 'none';
-  updateGeneratePreview();
 }
 
 // ── TEMPLATES ─────────────────────────────────────────────
@@ -4415,13 +4297,11 @@ function renderTemplates(){
 
 function toggleChip(id){
   setTimeout(updateShrinkOption, 50);
-  setTimeout(updateRotateDegreeOption, 50);
   active.has(id) ? active.delete(id) : active.add(id);
   const isOn = active.has(id);
   document.getElementById('chip-'+id).classList.toggle('on', isOn);
   isOn ? NorysSound.toggleOn() : NorysSound.toggleOff();
   updateCount();
-  updateGeneratePreview();
 }
 
 function setAll(on){
@@ -4431,9 +4311,7 @@ function setAll(on){
     document.getElementById('chip-'+t.id).classList.toggle('on', on);
   });
   updateShrinkOption();
-  updateRotateDegreeOption();
   updateCount();
-  updateGeneratePreview();
 }
 
 function updateCount(){
@@ -4474,7 +4352,6 @@ function savePreset(){
   input.value = '';
   renderPresetTags();
   updateShrinkOption();
-  updateRotateDegreeOption();
   const btn = document.querySelector('.preset-save-btn');
   if(!btn) return;
   const orig = btn.textContent;
@@ -4492,8 +4369,6 @@ function applyFilterPreset(idx){
   p.filters.forEach(id => active.add(id));
   renderTemplates();
   updateShrinkOption();
-  updateRotateDegreeOption();
-  updateGeneratePreview();
 }
 function deletePreset(e, idx){
   e.stopPropagation();
@@ -4538,154 +4413,6 @@ function renderFiles(){
       <span class="file-pill-size">${(f.size/1024/1024).toFixed(1)} MB</span>
       <span class="file-pill-rm" onclick="rmFile('${f.name}')">✕</span>
     </div>`).join('');
-  updateGeneratePreview();
-}
-
-// ── APERÇU LIVE (onglet Générer) ────────────────────────────
-// Approximation CSS des filtres ffmpeg (pas un rendu pixel-perfect, juste
-// de quoi visualiser l'effet général avant de lancer la génération réelle).
-let genPreviewObjectURL = null;
-let genPreviewFileRef   = null;
-
-function getGenPreviewFilterCSS(){
-  const parts = [];
-  if(active.has('bright'))   parts.push('brightness(1.08)');
-  if(active.has('sat'))      parts.push('saturate(1.15)');
-  if(active.has('contrast')) parts.push('contrast(1.08)');
-  if(active.has('pop'))      parts.push('contrast(1.08)', 'saturate(1.18)', 'brightness(1.02)');
-  if(active.has('warm'))     parts.push('sepia(.12)', 'saturate(1.1)');
-  if(active.has('cine'))     parts.push('saturate(.9)', 'contrast(1.05)');
-  if(active.has('hue'))      parts.push('hue-rotate(30deg)');
-  if(active.has('bleach'))   parts.push('saturate(.3)', 'contrast(1.3)');
-  return parts.join(' ');
-}
-// Côté serveur (randomizeFilter() dans server.js), chaque variante tire un
-// angle aléatoire entre 5° et 15°, signe (gauche/droite) aléatoire — l'aperçu
-// utilisait avant un angle fixe (toujours 6deg), donnant l'impression à tort
-// que la rotation va toujours dans le même sens. On tire maintenant un angle
-// dans la même plage, renouvelé à chaque activation du filtre, pour montrer
-// que la direction change réellement d'une génération à l'autre.
-let previewRotateDeg      = 0;
-let previewRotateWasActive = false;
-// Plafond (°) choisi par l'utilisateur via le slider "Degré de rotation max" —
-// même principe que shrinkSizeMin pour "Rétrécir" : chaque variante tire un
-// angle aléatoire entre ROTATE_DEGREE_BASE_MIN (plancher fixe) et ce plafond,
-// signe (gauche/droite) aléatoire. Voir rotateMaxRad côté server.js.
-const ROTATE_DEGREE_BASE_MIN = 5;
-let rotateDegreeMax = 15;
-function setRotateDegreeMax(val){
-  rotateDegreeMax = Math.max(ROTATE_DEGREE_BASE_MIN, Math.min(30, parseInt(val)||15));
-  const label = document.getElementById('rotate-degree-display');
-  if(label) label.textContent = rotateDegreeMax + '°';
-  const hint = document.getElementById('rotate-degree-hint');
-  if(hint) hint.textContent = t('rotateDegreeHint').replace('{min}', ROTATE_DEGREE_BASE_MIN).replace('{max}', rotateDegreeMax);
-  // Force un nouveau tirage d'angle dans la nouvelle plage au prochain rendu,
-  // même si "Rotation" reste actif sans être re-basculé.
-  previewRotateWasActive = false;
-  updateGeneratePreview();
-}
-function updateRotateDegreeOption(){
-  const opt = document.getElementById('rotate-degree-option');
-  if(opt) opt.style.display = active.has('rotate') ? 'block' : 'none';
-  updateGeneratePreview();
-}
-// Facteur de rétrécissement géométrique qu'impose une rotation d'angle `deg`
-// pour tenir entièrement dans son propre cadre sans rien perdre (formule
-// utilisée par buildRotateCoverFragment côté serveur, w=540 h=960 — voir
-// server.js). getGenPreviewTransform() en prend l'inverse comme zoom
-// compensatoire : la vidéo tourne en remplissant tout le cadre, quitte à
-// recadrer un peu ses propres bords, plutôt que de rétrécir le contenu
-// visible — c'est le choix fait côté génération réelle (les coins coupés
-// sont acceptés pour que "Rétrécir" reste le seul contrôle de la taille).
-function getRotateFitScale(deg){
-  const rad = Math.abs(deg) * Math.PI / 180;
-  const w = 540, h = 960;
-  const rotw = w * Math.cos(rad) + h * Math.sin(rad);
-  return Math.min(1, w / rotw);
-}
-function getGenPreviewTransform(){
-  const parts = [];
-  if(active.has('zoom'))   parts.push('scale(1.05)');
-  if(active.has('rotate')){
-    if(!previewRotateWasActive){
-      const sign = Math.random() > 0.5 ? 1 : -1;
-      const span = Math.max(0, rotateDegreeMax - ROTATE_DEGREE_BASE_MIN);
-      previewRotateDeg = sign * (ROTATE_DEGREE_BASE_MIN + Math.random() * span);
-    }
-    const zoom = 1 / getRotateFitScale(previewRotateDeg);
-    parts.push('scale(' + zoom.toFixed(3) + ')');
-    parts.push('rotate(' + previewRotateDeg.toFixed(1) + 'deg)');
-  }
-  previewRotateWasActive = active.has('rotate');
-  return parts.join(' ');
-}
-
-function updateGeneratePreview(){
-  const mainVid   = document.getElementById('gen-prev-main');
-  if(!mainVid) return; // page pas encore rendue
-  const compWrap  = document.getElementById('gen-prev-shrink');
-  const empty     = document.getElementById('gen-preview-empty');
-  const bgVid     = document.getElementById('gen-prev-shrink-bg-vid');
-  const bgSolid   = document.getElementById('gen-prev-shrink-bg-solid');
-  const fgVid     = document.getElementById('gen-prev-shrink-fg-vid');
-  const vignette  = document.getElementById('gen-preview-vignette');
-  const grain     = document.getElementById('gen-preview-grain');
-  const badges    = document.getElementById('gen-preview-badges');
-
-  const file = files[0] || null;
-  if(file !== genPreviewFileRef){
-    genPreviewFileRef = file;
-    if(genPreviewObjectURL){ URL.revokeObjectURL(genPreviewObjectURL); genPreviewObjectURL = null; }
-    if(file){
-      genPreviewObjectURL = URL.createObjectURL(file);
-      [mainVid, bgVid, fgVid].forEach(v=>{ v.src = genPreviewObjectURL; v.play().catch(()=>{}); });
-    } else {
-      [mainVid, bgVid, fgVid].forEach(v=>{ v.removeAttribute('src'); v.load(); });
-    }
-  }
-  if(empty) empty.style.display = file ? 'none' : 'flex';
-
-  const cssFilter = getGenPreviewFilterCSS();
-  const transform = getGenPreviewTransform();
-  const isShrink   = active.has('shrink');
-  // Seul "Rétrécir" compose (fond flou/couleur + contenu inséré). La
-  // rotation seule remplit maintenant tout le cadre (zoom compensatoire,
-  // voir getGenPreviewTransform) — comme côté serveur, elle ne force plus
-  // aucun rétrécissement ni fond séparé.
-  const isComposite = isShrink;
-
-  mainVid.style.display  = (file && !isComposite) ? 'block' : 'none';
-  if(compWrap) compWrap.style.display = (file && isComposite) ? 'block' : 'none';
-
-  if(!isComposite){
-    mainVid.style.filter    = cssFilter;
-    mainVid.style.transform = transform;
-  } else if(fgVid){
-    fgVid.style.filter    = cssFilter;
-    fgVid.style.transform = transform;
-
-    // Taille visible = la moyenne de la plage "Rétrécir" choisie par
-    // l'utilisateur — c'est maintenant le seul facteur (la rotation ne
-    // rétrécit plus rien en plus, voir server.js).
-    const previewSize = (shrinkSizeMin + SHRINK_SIZE_CEIL) / 2;
-    fgVid.style.width  = previewSize + '%';
-    fgVid.style.height = previewSize + '%';
-
-    const isBlur = shrinkBgMode === 'blur';
-    if(bgVid)   bgVid.style.display   = isBlur ? 'block' : 'none';
-    if(bgSolid){
-      bgSolid.style.display    = isBlur ? 'none' : 'block';
-      bgSolid.style.background = shrinkBgColor;
-    }
-  }
-
-  if(vignette) vignette.style.opacity = active.has('vignette') ? '1' : '0';
-  if(grain)    grain.style.opacity    = active.has('grain') ? '.5' : '0';
-
-  if(badges){
-    const shown = [...TEMPLATES, ...SPECIAL_TEMPLATES].filter(t=>active.has(t.id));
-    badges.innerHTML = shown.map(t=>`<span class="gen-preview-badge">${t.icon} ${t.name}</span>`).join('');
-  }
 }
 
 // ── MUSIQUE ────────────────────────────────────────────────────
@@ -4851,8 +4578,6 @@ async function generate(){
   fd.append('combineMode', combineMode ? '1' : '0');
   fd.append('shrinkBgMode',  shrinkBgMode);
   fd.append('shrinkBgColor', shrinkBgColor);
-  fd.append('shrinkSizeMin', shrinkSizeMin);
-  fd.append('rotateDegreeMax', rotateDegreeMax);
   const metadataToggle = document.getElementById('inject-metadata-toggle');
   fd.append('injectMetadata', (!metadataToggle || metadataToggle.checked) ? '1' : '0');
   fd.append('deviceModelId', (document.getElementById('device-model-select') || {}).value || 'random');
